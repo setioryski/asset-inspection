@@ -1,0 +1,199 @@
+/* Basic Reset */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+    padding: 10px;
+}
+
+/* Navbar styling */
+nav {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+nav ul li {
+    margin: 0 15px;
+}
+
+nav ul li a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+nav ul li a:hover {
+    text-decoration: underline;
+}
+
+/* Title styling */
+h1 {
+    text-align: center;
+    margin-top: 70px; /* Adjusted to account for the fixed navbar */
+    color: #333;
+}
+
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.filter-container {
+    margin-bottom: 20px;
+    overflow-x: auto;
+    display: flex;
+    width: 100%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+}
+
+th, td {
+    padding: 12px;
+    border: 1px solid #e1e1e1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+th {
+    background-color: #007BFF;
+    color: white;
+    font-weight: 600;
+}
+
+tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+img {
+    width: 80px;
+    height: auto;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.date-picker-form {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    gap: 10px;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.date-picker-form label {
+    font-size: 14px;
+    color: #333;
+    margin-right: 10px;
+    white-space: nowrap;
+}
+
+.date-picker-form input[type="date"],
+.date-picker-form select,
+.date-picker-form button {
+    flex: 1;
+    min-width: 120px;
+    margin-right: 10px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.date-picker-form button {
+    min-width: 150px;
+}
+
+.filter-button {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.filter-button:hover {
+    background-color: #0056b3;
+}
+
+.export-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.export-button:hover {
+    background-color: #218838;
+}
+
+@media (max-width: 600px) {
+    .date-picker-form {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+    
+    .date-picker-form label {
+        margin-right: 5px;
+    }
+
+    .date-picker-form input[type="date"],
+    .date-picker-form select,
+    .date-picker-form button {
+        margin-right: 5px;
+    }
+
+    .date-picker-form button {
+        min-width: 120px;
+    }
+}

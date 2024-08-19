@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulir Inspeksi Aset</title>
+    <link rel="stylesheet" href="/stylesinspection.css">
+</head>
+<body>
+    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="/path/to/style.css"> <!-- Update path as needed -->
+        <title>Formulir Inspeksi Aset</title>
+    </head>
+    <body>
+        <nav>
+            <ul>
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/admin">Admin</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    
+        <h1>Formulir Inspeksi Aset</h1>
+    
+        <form action="/upload" method="post" enctype="multipart/form-data" id="inspectionForm">
+            <div>
+                <label for="foto">Foto:</label>
+                <input type="file" id="foto" name="foto" required onchange="previewFile()">
+                <img id="previewImg" src="" alt="Image preview" height="200" style="display: none;"><br>
+            </div>
+    
+            <div>
+                <label for="id_user">Nama Petugas:</label>
+                <select id="id_user" name="id_user" required>
+                    <option value="<%= user.id %>"><%= user.name %></option>
+                </select>
+            </div>
+    
+            <div>
+                <label for="id_tipe_lantai">Lantai:</label>
+                <select id="id_tipe_lantai" name="id_tipe_lantai" required onchange="filterOptionsByLantai()">
+                    <option value="" selected disabled>Pilih Lantai</option>
+                    <% tipe_lantai.forEach(tl => { %>
+                        <option value="<%= tl.id %>"><%= tl.nama_lantai %></option>
+                    <% }); %>
+                </select>
+            </div>
+    
+            <div>
+                <label for="id_tipe_aset">Nama Aset:</label>
+                <select id="id_tipe_aset" name="id_tipe_aset" required onchange="handleSelection('aset')" disabled>
+                    <option value="" selected disabled>Pilih Aset</option>
+                    <% tipe_aset.forEach(ta => { %>
+                        <option value="<%= ta.id %>" data-lantai="<%= ta.lantai_id %>"><%= ta.nama_tipe %> (lantai: <%= ta.lantai_id %>)</option>
+                    <% }); %>
+                </select>
+            </div>
+    
+            <div>
+                <label for="id_tipe_hb">Box Hydrant:</label>
+                <select id="id_tipe_hb" name="id_tipe_hb" required onchange="handleSelection('hb')" disabled>
+                    <option value="" selected disabled>Pilih Box Hydrant</option>
+                    <% tipe_hb.forEach(hb => { %>
+                        <option value="<%= hb.id %>" data-lantai="<%= hb.lantai_id %>"><%= hb.nama_tipe %> (lantai: <%= hb.lantai_id %>)</option>
+                    <% }); %>
+                </select>
+            </div>
+            
+            <div>
+                <label for="id_tipe_door">Emergency Door:</label>
+                <select id="id_tipe_door" name="id_tipe_door" required onchange="handleSelection('door')" disabled>
+                    <option value="" selected disabled>Pilih Emergency Door</option>
+                    <% tipe_door.forEach(door => { %>
+                        <option value="<%= door.id %>" data-lantai="<%= door.lantai_id %>"><%= door.nama_tipe %> (lantai: <%= door.lantai_id %>)</option>
+                    <% }); %>
+                </select>
+            </div>
+    
+            <div>
+                <label for="id_kondisi">Kondisi:</label>
+                <select id="id_kondisi" name="id_kondisi" required disabled>
+                    <option value="" selected disabled>Pilih Kondisi</option>
+                    <% tipe_kondisi.forEach(tk => { %>
+                        <option value="<%= tk.id %>"><%= tk.nama_kondisi %></option>
+                    <% }); %>
+                </select>
+            </div>
+    
+            <div>
+                <label for="catatan">Catatan:</label>
+                <textarea id="catatan" name="catatan"></textarea>
+            </div>
+    
+            <button type="submit" id="submitButton">Kirim</button>
+        </form>
+    
+        <div id="successMessage">Form submitted successfully!</div>
+        <div id="errorMessage">There was an error submitting the form.</div>
+    
+
+    <script>
+        const lantaiSelect = document.getElementById('id_tipe_lantai');
+        const asetSelect = document.getElementById('id_tipe_aset');
+        const hbSelect = document.getElementById('id_tipe_hb');
+        const doorSelect = document.getElementById('id_tipe_door');
+        const kondisiSelect = document.getElementById('id_kondisi');
+
+        const originalAsetOptions = Array.from(asetSelect.options);
+        const originalHbOptions = Array.from(hbSelect.options);
+        const originalDoorOptions = Array.from(doorSelect.options);
+        const originalKondisiOptions = Array.from(kondisiSelect.options);
+
+        function filterOptionsByLantai() {
+            const selectedLantaiId = lantaiSelect.value;
+            console.log(`Selected lantai ID: ${selectedLantaiId}`); // Debugging
+
+            filterDropdownOptions(asetSelect, originalAsetOptions, selectedLantaiId);
+            filterDropdownOptions(hbSelect, originalHbOptions, selectedLantaiId);
+            filterDropdownOptions(doorSelect, originalDoorOptions, selectedLantaiId);
+
+            // Enable the Nama Aset, Box Hydrant, and Emergency Door selects
+            asetSelect.disabled = false;
+            hbSelect.disabled = false;
+            doorSelect.disabled = false;
+        }
+
+        function filterDropdownOptions(selectElement, originalOptions, lantaiId) {
+            selectElement.innerHTML = '<option value="" selected disabled>Pilih...</option>';
+            const filteredOptions = originalOptions.filter(option => {
+                if (!option.value) return false; // Skip default option
+                const dataLantai = option.getAttribute('data-lantai');
+                console.log(`Option value: ${option.value}, data-lantai: ${dataLantai}, comparison: ${dataLantai === String(lantaiId)}`);
+                return dataLantai === String(lantaiId);
+            });
+            console.log(`Filtered options for ${selectElement.id}:`, filteredOptions); // Debugging
+            filteredOptions.forEach(option => selectElement.appendChild(option));
+        }
+
+        function handleSelection(selected) {
+            if (selected === 'aset' || selected === 'hb' || selected === 'door') {
+                kondisiSelect.disabled = false;
+            }
+
+            if (selected === 'aset') {
+                hbSelect.value = '';
+                hbSelect.disabled = true;
+                doorSelect.value = '';
+                doorSelect.disabled = true;
+                resetKondisiOptions();
+            } else if (selected === 'hb') {
+                asetSelect.value = '';
+                asetSelect.disabled = true;
+                doorSelect.value = '';
+                doorSelect.disabled = true;
+                resetKondisiOptions();
+            } else if (selected === 'door') {
+                asetSelect.value = '';
+                asetSelect.disabled = true;
+                hbSelect.value = '';
+                hbSelect.disabled = true;
+                updateKondisiOptionsForDoor();
+            }
+        }
+
+        function resetKondisiOptions() {
+            kondisiSelect.innerHTML = '';
+            originalKondisiOptions.forEach(option => {
+                kondisiSelect.appendChild(option);
+            });
+        }
+
+        function updateKondisiOptionsForDoor() {
+            kondisiSelect.innerHTML = '';
+            const filteredOptions = originalKondisiOptions.filter(option => option.text === 'Baik' || option.text === 'Rusak');
+            filteredOptions.forEach(option => {
+                kondisiSelect.appendChild(option);
+            });
+        }
+
+        document.getElementById('inspectionForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent form submission
+
+            // Perform form submission via AJAX or fetch
+            const formData = new FormData(this);
+
+            fetch(this.action, {
+                method: this.method,
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    // Reset form fields as required
+                    document.getElementById('foto').value = '';
+                    document.getElementById('previewImg').src = '';
+                    document.getElementById('previewImg').style.display = 'none';
+
+                    asetSelect.value = '';
+                    asetSelect.disabled = true;
+                    hbSelect.value = '';
+                    hbSelect.disabled = true;
+                    doorSelect.value = '';
+                    doorSelect.disabled = true;
+                    kondisiSelect.value = '';
+                    kondisiSelect.disabled = true;
+                    document.getElementById('catatan').value = '';
+
+                    // Re-enable and re-populate selects based on the selected lantai
+                    filterOptionsByLantai();
+
+                    // Display success message
+                    const successMessage = document.getElementById('successMessage');
+                    successMessage.style.display = 'block';
+
+                    // Hide the success message after a few seconds (optional)
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 5000);
+                } else {
+                    const errorMessage = document.getElementById('errorMessage');
+                    errorMessage.style.display = 'block';
+
+                    // Hide the error message after a few seconds (optional)
+                    setTimeout(() => {
+                        errorMessage.style.display = 'none';
+                    }, 5000);
+                }
+
+                const submitButton = document.getElementById('submitButton');
+                submitButton.textContent = 'Kirim';
+                submitButton.disabled = false;
+                submitButton.classList.remove('loading');
+            }).catch(error => {
+                console.error('Error:', error);
+
+                const errorMessage = document.getElementById('errorMessage');
+                errorMessage.style.display = 'block';
+
+                // Hide the error message after a few seconds (optional)
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 5000);
+
+                const submitButton = document.getElementById('submitButton');
+                submitButton.textContent = 'Kirim';
+                submitButton.disabled = false;
+                submitButton.classList.remove('loading');
+            });
+
+            const submitButton = document.getElementById('submitButton');
+            submitButton.textContent = 'Mengirim...'; // Change button text to indicate loading
+            submitButton.disabled = true; // Disable the button to prevent multiple submissions
+            submitButton.classList.add('loading'); // Add loading class for any additional styling
+        });
+
+        function previewFile() {
+            const preview = document.getElementById('previewImg');
+            const file = document.getElementById('foto').files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = function () {
+                preview.src = reader.result;
+                preview.style.display = 'block';
+            }
+
+            if (file) {
+                reader.readAsDataURL(file);
+            } else {
+                preview.src = "";
+                preview.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
