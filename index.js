@@ -139,8 +139,8 @@ app.get('/logout', (req, res) => {
 app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.single('foto'), async (req, res) => {
     const { catatan, id_user, id_tipe_aset, id_tipe_lantai, id_kondisi, id_tipe_hb, id_tipe_door } = req.body;
 
-    if (!req.file || !id_kondisi || !id_user || !id_tipe_lantai || !id_tipe_aset && !id_tipe_hb && !id_tipe_door) {
-        return res.status(400).send('Missing required fields.');
+    if (!req.file || !id_kondisi || !id_user || !id_tipe_lantai || (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)) {
+        return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
 
     const resizedImagePath = `uploads/resized-${req.file.filename}`;
@@ -164,19 +164,20 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
         pool.query(query, queryValues, (err, result) => {
             if (err) {
                 console.error('Failed to insert into database:', err);
-                return res.status(500).send('Database insertion failed.');
+                return res.status(500).json({ success: false, message: 'Database insertion failed.' });
             }
+
             deleteFileWithRetry(req.file.path); // Cleanup original file
+            res.status(200).json({ success: true, message: 'Form submitted successfully!' });
         });
 
-        // Respond to user after image processing is complete
-        res.redirect('/back');
     } catch (error) {
         console.error('Error during processing:', error);
         deleteFileWithRetry(req.file.path); // Cleanup original file even on failure
-        return res.status(500).send(error.message);
+        return res.status(500).json({ success: false, message: error.message });
     }
 });
+
 
 
 // Function to delete a file with retries on EPERM errors
