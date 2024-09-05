@@ -9,8 +9,20 @@
     <h1>Edit Petugas</h1>
     <form action="/update-user" method="post">
         <input type="hidden" name="id" value="<%= user.id %>">
+        
         <label for="nama">Name:</label>
-        <input type="text" id="nama" name="nama" value="<%= user.nama %>" required>
+        <input type="text" id="nama" name="nama" value="<%= user.name %>" required>
+        
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" placeholder="Enter new password" required>
+        
+        <label for="role">Role:</label>
+        <select id="role" name="role_id" required>
+            <option value="1" <%= user.role_id == 1 ? 'selected' : '' %>>Admin</option>
+            <option value="2" <%= user.role_id == 2 ? 'selected' : '' %>>Petugas</option>
+            <!-- Add more roles as needed -->
+        </select>
+
         <button type="submit">Update</button>
     </form>
     <a href="/admin">Back to Admin Dashboard</a>

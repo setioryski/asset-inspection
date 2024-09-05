@@ -11,7 +11,7 @@ const util = require('util');
 const https = require('https');
 const rateLimit = require('express-rate-limit');
 const dashboardRoutes = require('./routes/dashboard');
-const { queryAsync } = require('./config/db'); // Updated to use queryAsync
+const { pool,queryAsync } = require('./config/db'); // Updated to use queryAsync
 const { isAuthenticated, checkRole } = require('./authMiddleware'); // Authentication and role-check middleware
 
 // Reading the SSL certificate files
@@ -31,16 +31,8 @@ const loginLimiter = rateLimit({
 // MySQL connection pool setup
 
 // Multer configuration for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/')
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + '.' + file.mimetype.split('/')[1])
-    }
-});
-const upload = multer({ dest: 'uploads/' });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Set up views directory and view engine
 app.set('views', path.join(__dirname, 'views'));
@@ -136,39 +128,45 @@ app.get('/logout', (req, res) => {
 app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.single('foto'), async (req, res) => {
     const { catatan, id_user, id_tipe_aset, id_tipe_lantai, id_kondisi, id_tipe_hb, id_tipe_door } = req.body;
 
+    // Validate required fields
     if (!req.file || !id_kondisi || !id_user || !id_tipe_lantai || (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
 
-    const resizedImagePath = `uploads/resized-${req.file.filename}`;
+    // Define the path for the resized image
+    const resizedImagePath = `uploads/resized-${Date.now()}-${req.file.originalname}`;
 
     try {
-        await sharp(req.file.path)
-            .rotate()
-            .resize(800)
-            .jpeg({ quality: 70 })
-            .toFile(resizedImagePath);
+        // Process image resizing and database insert in parallel
+        await Promise.all([
+            // Image processing: Resize and save the image
+            sharp(req.file.buffer)
+                .rotate() // Rotate based on EXIF data
+                .resize(800) // Resize to 800px width
+                .jpeg({ quality: 70 }) // Convert to JPEG with 70% quality
+                .toFile(resizedImagePath), // Save the resized image directly to disk
 
-        const query = `
-            INSERT INTO aset (
-                foto, id_kondisi, catatan, id_user, id_tipe_aset, id_tipe_lantai, id_tipe_hb, id_tipe_door
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const queryValues = [
-            resizedImagePath, id_kondisi, catatan, id_user, id_tipe_aset, id_tipe_lantai, id_tipe_hb, id_tipe_door
-        ];
+            // Database insertion
+            queryAsync(`
+                INSERT INTO aset (
+                    foto, id_kondisi, catatan, id_user, id_tipe_aset, id_tipe_lantai, id_tipe_hb, id_tipe_door
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, [resizedImagePath, id_kondisi, catatan, id_user, id_tipe_aset, id_tipe_lantai, id_tipe_hb, id_tipe_door])
+        ]);
 
-        await queryAsync(query, queryValues);
-
-        deleteFileWithRetry(req.file.path); 
+        // Return success response
         res.status(200).json({ success: true, message: 'Form submitted successfully!' });
-
     } catch (error) {
         console.error('Error during processing:', error);
-        deleteFileWithRetry(req.file.path); 
+
+        // Attempt to delete the resized file with retries on error
+        deleteFileWithRetry(resizedImagePath);
+
+        // Return error response
         return res.status(500).json({ success: false, message: error.message });
     }
 });
+
 
 
 
@@ -299,13 +297,12 @@ app.get('/inspection', isAuthenticated, checkRole(['admin', 'petugas']), async (
 // ADMIN FUNCTION
 
 // Route to display form for adding new 'user'
+// Route to render the form for adding a new user
 app.get('/add-user-form', (req, res) => {
     res.render('add-user-form');
 });
 
-// Route to handle adding new 'user'
-app.use(express.urlencoded({ extended: true }));
-
+// Route to handle adding a new user
 app.post('/add-user', async (req, res) => {
     try {
         const { name, password, role } = req.body;
@@ -316,277 +313,320 @@ app.post('/add-user', async (req, res) => {
         await queryAsync('INSERT INTO user (name, password, role_id) VALUES (?, ?, ?)', [name, hashedPassword, roleId]);
         res.redirect('/admin');
     } catch (error) {
+        console.error('Error adding user:', error);
         res.status(500).send('Server error: ' + error.message);
     }
 });
 
-// Route to display edit form for 'user'
-app.get('/edit-user-form/:id', (req, res) => {
-    const id = req.params.id;
-    const query = 'SELECT * FROM user WHERE id = ?';
-    queryAsync(query, [id], (err, results) => {
-        if (err) {
-            console.error('Failed to retrieve user:', err);
-            return res.status(500).send('Error retrieving user');
-        }
+// Route to display the edit form for a user
+app.get('/edit-user-form/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const query = 'SELECT * FROM user WHERE id = ?';
+        const results = await queryAsync(query, [id]);
+
         if (results.length > 0) {
             res.render('edit-user-form', { user: results[0] });
         } else {
-            res.status(404).send('Petugas not found');
+            res.status(404).send('User not found');
         }
-    });
+    } catch (error) {
+        console.error('Error retrieving user:', error);
+        res.status(500).send('Error retrieving user');
+    }
 });
 
+// Route to handle updating a user
+app.post('/update-user', async (req, res) => {
+    const { id, nama, password, role_id } = req.body;
 
-// Route to handle updating 'user'
-app.post('/update-user', (req, res) => {
-    const { id, name } = req.body;
-    const sql = 'UPDATE user SET name = ? WHERE id = ?';
-    queryAsync(sql, [name, id], (err, result) => {
-        if (err) {
-            return res.status(500).send('Error updating user');
+    try {
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Update the user's name, password, and role_id
+        const sql = 'UPDATE user SET name = ?, password = ?, role_id = ? WHERE id = ?';
+        
+        // Execute the SQL query using await
+        const result = await pool.query(sql, [nama, hashedPassword, role_id, id]);
+
+        // Check if the update was successful
+        if (result.affectedRows === 0) {
+            return res.status(404).send('User not found or no changes made');
         }
+
+        // Redirect to the admin page if successful
         res.redirect('/admin');
-    });
+    } catch (error) {
+        // Log the error and send a 500 status
+        console.error('Error updating user:', error);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
-// Route to handle deleting 'user'
-app.post('/delete-user', (req, res) => {
+
+// Route to handle deleting a user
+app.post('/delete-user', async (req, res) => {
     const { id } = req.body;
     const sql = 'DELETE FROM user WHERE id = ?';
-    queryAsync(sql, [id], (err, result) => {
-        if (err) {
-            return res.status(500).send('Error deleting user');
+
+    try {
+        const result = await queryAsync(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).send('User not found');
         }
+
         res.redirect('/admin');
-    });
+    } catch (err) {
+        console.error('Error deleting user:', err);
+        res.status(500).send('Error deleting user');
+    }
 });
 
-// Display form for adding new 'tipe_lantai'
+// Route to render the form for adding a new 'tipe_lantai'
 app.get('/add-tipe-lantai-form', (req, res) => {
     res.render('add-tipe-lantai-form');
 });
 
-// Handle adding new 'tipe_lantai'
-app.post('/add-tipe-lantai', (req, res) => {
+// Route to handle adding a new 'tipe_lantai'
+app.post('/add-tipe-lantai', async (req, res) => {
     const { nama_lantai } = req.body;
     const sql = 'INSERT INTO tipe_lantai (nama_lantai) VALUES (?)';
-    queryAsync(sql, [nama_lantai], (err, result) => {
-        if (err) {
-            console.error('Error adding tipe_lantai:', err);
-            return res.status(500).send('Failed to add new tipe_lantai');
-        }
+
+    try {
+        await queryAsync(sql, [nama_lantai]);
         res.redirect('/admin');
-    });
+    } catch (err) {
+        console.error('Error adding tipe_lantai:', err);
+        res.status(500).send('Failed to add new tipe_lantai');
+    }
 });
 
-
-// Display form for editing 'tipe_lantai'
-app.get('/edit-tipe-lantai-form/:id', (req, res) => {
+// Route to render the edit form for 'tipe_lantai'
+app.get('/edit-tipe-lantai-form/:id', async (req, res) => {
     const id = req.params.id;
     const sql = 'SELECT * FROM tipe_lantai WHERE id = ?';
-    queryAsync(sql, [id], (err, results) => {
-        if (err) {
-            return res.status(500).send('Error retrieving tipe_lantai');
+
+    try {
+        const results = await queryAsync(sql, [id]);
+
+        if (results.length > 0) {
+            res.render('edit-tipe-lantai-form', { tipe_lantai: results[0] });
+        } else {
+            res.status(404).send('Floor type not found');
         }
-        res.render('edit-tipe-lantai-form', { tipe_lantai: results[0] });
-    });
+    } catch (err) {
+        res.status(500).send('Error retrieving tipe_lantai');
+    }
 });
 
-// Handle updating 'tipe_lantai'
-app.post('/update-tipe-lantai', (req, res) => {
+// Route to handle updating 'tipe_lantai'
+app.post('/update-tipe-lantai', async (req, res) => {
     const { id, nama_lantai } = req.body;
     const sql = 'UPDATE tipe_lantai SET nama_lantai = ? WHERE id = ?';
-    queryAsync(sql, [nama_lantai, id], (err, result) => {
-        if (err) {
-            return res.status(500).send('Error updating tipe_lantai');
-        }
+
+    try {
+        await queryAsync(sql, [nama_lantai, id]);
         res.redirect('/admin');
-    });
+    } catch (err) {
+        res.status(500).send('Error updating tipe_lantai');
+    }
 });
 
-// Ensure you have an add-tipe-aset-form.ejs file in your views folder
-app.get('/add-tipe-aset-form', (req, res) => {
-    res.render('add-tipe-aset-form');  // Ensure you have an add-tipe-aset-form.ejs file in your views folder
-});
-
-app.post('/add-tipe-aset', (req, res) => {
-    const { nama_tipe } = req.body;
-    const sql = 'INSERT INTO tipe_aset (nama_tipe) VALUES (?)';
-    queryAsync(sql, [nama_tipe], (err, result) => {
-        if (err) {
-            console.error('Error adding tipe_aset:', err);
-            return res.status(500).send('Failed to add new tipe_aset');
-        }
-        res.redirect('/admin');
-    });
-});
-
-app.get('/edit-tipe-aset-form/:id', (req, res) => {
-    const id = req.params.id;
-    const sql = 'SELECT * FROM tipe_aset WHERE id = ?';
-    queryAsync(sql, [id], (err, results) => {
-        if (err) {
-            console.error('Error retrieving tipe_aset for edit:', err);
-            return res.status(500).send('Failed to retrieve tipe_aset for editing');
-        }
-        if (results.length > 0) {
-            res.render('edit-tipe-aset-form', { tipe_aset: results[0] });  // Ensure you have an edit-tipe-aset-form.ejs file
-        } else {
-            res.send('Tipe Aset not found');
-        }
-    });
-});
-
-app.post('/update-tipe-aset', (req, res) => {
-    const { id, nama_tipe } = req.body;
-    const sql = 'UPDATE tipe_aset SET nama_tipe = ? WHERE id = ?';
-    queryAsync(sql, [nama_tipe, id], (err, result) => {
-        if (err) {
-            console.error('Error updating tipe_aset:', err);
-            return res.status(500).send('Failed to update tipe_aset');
-        }
-        res.redirect('/admin');
-    });
-});
-
-
-app.post('/delete-tipe-aset', (req, res) => {
-    const { id } = req.body;
-    const sql = 'DELETE FROM tipe_aset WHERE id = ?';
-    queryAsync(sql, [id], (err, result) => {
-        if (err) {
-            console.error('Error deleting tipe_aset:', err);
-            return res.status(500).send('Failed to delete tipe_aset');
-        }
-        res.redirect('/admin');
-    });
-});
-app.post('/delete-tipe-lantai', (req, res) => {
+// Route to handle deleting 'tipe_lantai'
+app.post('/delete-tipe-lantai', async (req, res) => {
     const { id } = req.body;
     const sql = 'DELETE FROM tipe_lantai WHERE id = ?';
-    queryAsync(sql, [id], (err, result) => {
-        if (err) {
-            console.error('Error deleting tipe_aset:', err);
-            return res.status(500).send('Failed to delete tipe_aset');
-        }
+
+    try {
+        await queryAsync(sql, [id]);
         res.redirect('/admin');
-    });
+    } catch (err) {
+        console.error('Error deleting tipe_lantai:', err);
+        res.status(500).send('Failed to delete tipe_lantai');
+    }
 });
 
-// Route to render the edit form
-// Routes for managing tipe_hb
+// Route to render the form for adding a new 'tipe_aset'
+app.get('/add-tipe-aset-form', (req, res) => {
+    res.render('add-tipe-aset-form');
+});
+
+// Route to handle adding a new 'tipe_aset'
+app.post('/add-tipe-aset', async (req, res) => {
+    const { nama_tipe } = req.body;
+    const sql = 'INSERT INTO tipe_aset (nama_tipe) VALUES (?)';
+
+    try {
+        await queryAsync(sql, [nama_tipe]);
+        res.redirect('/admin');
+    } catch (err) {
+        console.error('Error adding tipe_aset:', err);
+        res.status(500).send('Failed to add new tipe_aset');
+    }
+});
+
+// Route to render the edit form for 'tipe_aset'
+app.get('/edit-tipe-aset-form/:id', async (req, res) => {
+    const id = req.params.id;
+    const sql = 'SELECT * FROM tipe_aset WHERE id = ?';
+
+    try {
+        const results = await queryAsync(sql, [id]);
+
+        if (results.length > 0) {
+            res.render('edit-tipe-aset-form', { tipe_aset: results[0] });
+        } else {
+            res.status(404).send('Asset type not found');
+        }
+    } catch (err) {
+        res.status(500).send('Failed to retrieve tipe_aset for editing');
+    }
+});
+
+// Route to handle updating 'tipe_aset'
+app.post('/update-tipe-aset', async (req, res) => {
+    const { id, nama_tipe } = req.body;
+    const sql = 'UPDATE tipe_aset SET nama_tipe = ? WHERE id = ?';
+
+    try {
+        await queryAsync(sql, [nama_tipe, id]);
+        res.redirect('/admin');
+    } catch (err) {
+        res.status(500).send('Failed to update tipe_aset');
+    }
+});
+
+// Route to handle deleting 'tipe_aset'
+app.post('/delete-tipe-aset', async (req, res) => {
+    const { id } = req.body;
+    const sql = 'DELETE FROM tipe_aset WHERE id = ?';
+
+    try {
+        await queryAsync(sql, [id]);
+        res.redirect('/admin');
+    } catch (err) {
+        console.error('Error deleting tipe_aset:', err);
+        res.status(500).send('Failed to delete tipe_aset');
+    }
+});
+
+// Route to render the form for adding a new 'tipe_hb'
 app.get('/add-tipe-hb-form', isAuthenticated, checkRole(['admin']), (req, res) => {
     res.render('add-tipe-hb-form');
 });
 
+// Route to handle adding 'tipe_hb'
 app.post('/admin/tipe_hb/add', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const { nama_tipe } = req.body;
+
     try {
-        const { nama_tipe } = req.body;
         await queryAsync('INSERT INTO tipe_hb (nama_tipe) VALUES (?)', [nama_tipe]);
         res.redirect('/admin');
     } catch (err) {
-        console.error('Failed to add tipe_hb:', err);
         res.status(500).send('Error adding tipe_hb');
     }
 });
 
+// Route to render the edit form for 'tipe_hb'
 app.get('/edit-tipe-hb-form/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const id = req.params.id;
+
     try {
-        const id = req.params.id;
         const result = await queryAsync('SELECT id, nama_tipe FROM tipe_hb WHERE id = ?', [id]);
-        const tipeHb = result[0];
-        res.render('edit-tipe-hb-form', { tipeHb });
+        if (result.length > 0) {
+            res.render('edit-tipe-hb-form', { tipeHb: result[0] });
+        } else {
+            res.status(404).send('HB type not found');
+        }
     } catch (err) {
-        console.error('Failed to retrieve tipe_hb for edit:', err);
         res.status(500).send('Error retrieving tipe_hb for edit');
     }
 });
 
+// Route to handle updating 'tipe_hb'
 app.post('/admin/tipe_hb/update/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const id = req.params.id;
+    const { nama_tipe } = req.body;
+
     try {
-        const id = req.params.id;
-        const { nama_tipe } = req.body;
         await queryAsync('UPDATE tipe_hb SET nama_tipe = ? WHERE id = ?', [nama_tipe, id]);
         res.redirect('/admin');
     } catch (err) {
-        console.error('Failed to update tipe_hb:', err);
         res.status(500).send('Error updating tipe_hb');
     }
 });
 
-// Routes for managing tipe_door
-app.get('/add-tipe-door-form', isAuthenticated, checkRole(['admin']), (req, res) => {
-    res.render('add-tipe-door-form');
-});
-
-app.post('/admin/tipe_door/add', isAuthenticated, checkRole(['admin']), async (req, res) => {
-    try {
-        const { nama_tipe } = req.body;
-        await queryAsync('INSERT INTO tipe_door (nama_tipe) VALUES (?)', [nama_tipe]);
-        res.redirect('/admin');
-    } catch (err) {
-        console.error('Failed to add tipe_door:', err);
-        res.status(500).send('Error adding tipe_door');
-    }
-});
-
-app.get('/edit-tipe-door-form/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
-    try {
-        const id = req.params.id;
-        const result = await queryAsync('SELECT id, nama_tipe FROM tipe_door WHERE id = ?', [id]);
-        const tipeDoor = result[0];
-        res.render('edit-tipe-door-form', { tipeDoor });
-    } catch (err) {
-        console.error('Failed to retrieve tipe_door for edit:', err);
-        res.status(500).send('Error retrieving tipe_door for edit');
-    }
-});
-
-app.post('/admin/tipe_door/update/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
-    try {
-        const id = req.params.id;
-        const { nama_tipe } = req.body;
-        await queryAsync('UPDATE tipe_door SET nama_tipe = ? WHERE id = ?', [nama_tipe, id]);
-        res.redirect('/admin');
-    } catch (err) {
-        console.error('Failed to update tipe_door:', err);
-        res.status(500).send('Error updating tipe_door');
-    }
-});
-
+// Route to handle deleting 'tipe_hb'
 app.post('/delete-tipe-hb', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const id = req.body.id;
+
     try {
-        const id = req.body.id;
-        console.log('Deleting HB type with ID:', id);
-        const result = await queryAsync('DELETE FROM tipe_hb WHERE id = ?', [id]);
-        console.log('Delete result for HB type:', result);
+        await queryAsync('DELETE FROM tipe_hb WHERE id = ?', [id]);
         res.redirect('/admin');
     } catch (err) {
-        console.error('Failed to delete tipe_hb:', err);
         res.status(500).send('Error deleting tipe_hb');
     }
 });
 
-app.post('/delete-tipe-door', isAuthenticated, checkRole(['admin']), async (req, res) => {
+// Route to render the form for adding a new 'tipe_door'
+app.get('/add-tipe-door-form', isAuthenticated, checkRole(['admin']), (req, res) => {
+    res.render('add-tipe-door-form');
+});
+
+// Route to handle adding 'tipe_door'
+app.post('/admin/tipe_door/add', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const { nama_tipe } = req.body;
+
     try {
-        const id = req.body.id;
-        console.log('Deleting door type with ID:', id);
-        const result = await queryAsync('DELETE FROM tipe_door WHERE id = ?', [id]);
-        console.log('Delete result for door type:', result);
+        await queryAsync('INSERT INTO tipe_door (nama_tipe) VALUES (?)', [nama_tipe]);
         res.redirect('/admin');
     } catch (err) {
-        console.error('Failed to delete tipe_door:', err);
-        res.status(500).send('Error deleting tipe_door');
+        res.status(500).send('Error adding tipe_door');
     }
 });
 
+// Route to render the edit form for 'tipe_door'
+app.get('/edit-tipe-door-form/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const id = req.params.id;
 
+    try {
+        const result = await queryAsync('SELECT id, nama_tipe FROM tipe_door WHERE id = ?', [id]);
+        if (result.length > 0) {
+            res.render('edit-tipe-door-form', { tipeDoor: result[0] });
+        } else {
+            res.status(404).send('Door type not found');
+        }
+    } catch (err) {
+        res.status(500).send('Error retrieving tipe_door for edit');
+    }
+});
 
+// Route to handle updating 'tipe_door'
+app.post('/admin/tipe_door/update/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const id = req.params.id;
+    const { nama_tipe } = req.body;
 
+    try {
+        await queryAsync('UPDATE tipe_door SET nama_tipe = ? WHERE id = ?', [nama_tipe, id]);
+        res.redirect('/admin');
+    } catch (err) {
+        res.status(500).send('Error updating tipe_door');
+    }
+});
 
+// Route to handle deleting 'tipe_door'
+app.post('/delete-tipe-door', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const id = req.body.id;
 
-
+    try {
+        await queryAsync('DELETE FROM tipe_door WHERE id = ?', [id]);
+        res.redirect('/admin');
+    } catch (err) {
+        res.status(500).send('Error deleting tipe_door');
+    }
+});
 
 
 // Example implementations of data-fetching functions
@@ -698,21 +738,6 @@ app.get('/inspection', ensureAuthenticated, (req, res) => {
 
 
 
-//delete path
-function deleteFile(path) {
-    fs.unlink(path, (err) => {
-        if (err) {
-            if (err.code === 'EPERM') {
-                // Retry after a delay if it's a permission error
-                setTimeout(() => deleteFile(path), 1000);
-            } else {
-                console.error('Failed to delete file:', err);
-            }
-        } else {
-            console.log('File deleted successfully');
-        }
-    });
-}
 
 function deleteFileWithRetry(filePath, maxAttempts = 3) {
     let attempts = 0;
@@ -730,7 +755,11 @@ function deleteFileWithRetry(filePath, maxAttempts = 3) {
                 console.log(`File ${filePath} deleted successfully`);
             }
         });
-    };}
+    };
+
+    attemptDeletion();
+}
+
 
 
 //https
