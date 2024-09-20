@@ -128,7 +128,10 @@ app.get('/logout', (req, res) => {
 app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.single('foto'), async (req, res) => {
     const { catatan, id_user, id_tipe_aset, id_tipe_lantai, id_kondisi, id_tipe_hb, id_tipe_door } = req.body;
 
+<<<<<<< HEAD
     // Validate required fields
+=======
+>>>>>>> 64d9b3a (repair index.js warn)
     if (!req.file || !id_kondisi || !id_user || !id_tipe_lantai || (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
@@ -154,6 +157,7 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
             `, [resizedImagePath, id_kondisi, catatan, id_user, id_tipe_aset, id_tipe_lantai, id_tipe_hb, id_tipe_door])
         ]);
 
+<<<<<<< HEAD
         // Return success response
         res.status(200).json({ success: true, message: 'Form submitted successfully!' });
     } catch (error) {
@@ -163,11 +167,33 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
         deleteFileWithRetry(resizedImagePath);
 
         // Return error response
+=======
+        pool.query(query, queryValues, (err, result) => {
+            if (err) {
+                console.error('Failed to insert into database:', err);
+                return res.status(500).json({ success: false, message: 'Database insertion failed.' });
+            }
+
+            deleteFileWithRetry(req.file.path); // Cleanup original file
+            res.status(200).json({ success: true, message: 'Form submitted successfully!' });
+        });
+
+    } catch (error) {
+        console.error('Error during processing:', error);
+        deleteFileWithRetry(req.file.path); // Cleanup original file even on failure
+>>>>>>> 64d9b3a (repair index.js warn)
         return res.status(500).json({ success: false, message: error.message });
     }
 });
 
 
+<<<<<<< HEAD
+=======
+
+// Function to delete a file with retries on EPERM errors
+function deleteFileWithRetry(filePath, maxAttempts = 3) {
+    let attempts = 0;
+>>>>>>> 64d9b3a (repair index.js warn)
 
 
 // Function to delete a file with retries on EPERM errors

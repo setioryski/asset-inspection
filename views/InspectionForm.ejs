@@ -73,8 +73,95 @@
     </style>
 </head>
 <body>
+<<<<<<< HEAD
     <!-- Online/Offline Status Indicator -->
     <div id="statusIndicator">Anda sedang offline. Data akan disimpan secara lokal.</div>
+=======
+    <nav>
+        <ul>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/admin">Admin</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </nav>
+
+    <h1>Formulir Inspeksi Aset</h1>
+
+    <form action="/upload" method="post" enctype="multipart/form-data" id="inspectionForm">
+        <div>
+            <label for="foto">Foto:</label>
+            <input type="file" id="foto" name="foto" required onchange="previewFile()">
+            <img id="previewImg" src="" alt="Image preview" height="200" style="display: none;"><br>
+        </div>
+
+        <div>
+            <label for="id_user">Nama Petugas:</label>
+            <select id="id_user" name="id_user" required>
+                <option value="<%= user.id %>"><%= user.name %></option>
+            </select>
+        </div>
+
+        <div>
+            <label for="id_tipe_lantai">Lantai:</label>
+            <select id="id_tipe_lantai" name="id_tipe_lantai" required onchange="filterOptionsByLantai()">
+                <option value="" selected disabled>Pilih Lantai</option>
+                <% tipe_lantai.forEach(tl => { %>
+                    <option value="<%= tl.id %>"><%= tl.nama_lantai %></option>
+                <% }); %>
+            </select>
+        </div>
+
+        <div>
+            <label for="id_tipe_aset">Nama Aset:</label>
+            <select id="id_tipe_aset" name="id_tipe_aset" required onchange="handleSelection('aset')" disabled>
+                <option value="" selected disabled>Pilih Aset</option>
+                <% tipe_aset.forEach(ta => { %>
+                    <option value="<%= ta.id %>" data-lantai="<%= ta.lantai_id %>"><%= ta.nama_tipe %> (lantai: <%= ta.lantai_id %>)</option>
+                <% }); %>
+            </select>
+        </div>
+
+        <div>
+            <label for="id_tipe_hb">Box Hydrant:</label>
+            <select id="id_tipe_hb" name="id_tipe_hb" required onchange="handleSelection('hb')" disabled>
+                <option value="" selected disabled>Pilih Box Hydrant</option>
+                <% tipe_hb.forEach(hb => { %>
+                    <option value="<%= hb.id %>" data-lantai="<%= hb.lantai_id %>"><%= hb.nama_tipe %> (lantai: <%= hb.lantai_id %>)</option>
+                <% }); %>
+            </select>
+        </div>
+        
+        <div>
+            <label for="id_tipe_door">Emergency Door:</label>
+            <select id="id_tipe_door" name="id_tipe_door" required onchange="handleSelection('door')" disabled>
+                <option value="" selected disabled>Pilih Emergency Door</option>
+                <% tipe_door.forEach(door => { %>
+                    <option value="<%= door.id %>" data-lantai="<%= door.lantai_id %>"><%= door.nama_tipe %> (lantai: <%= door.lantai_id %>)</option>
+                <% }); %>
+            </select>
+        </div>
+
+        <div>
+            <label for="id_kondisi">Kondisi:</label>
+            <select id="id_kondisi" name="id_kondisi" required disabled>
+                <option value="" selected disabled>Pilih Kondisi</option>
+                <% tipe_kondisi.forEach(tk => { %>
+                    <option value="<%= tk.id %>"><%= tk.nama_kondisi %></option>
+                <% }); %>
+            </select>
+        </div>
+
+        <div>
+            <label for="catatan">Catatan:</label>
+            <textarea id="catatan" name="catatan"></textarea>
+        </div>
+
+        <button type="submit" id="submitButton">Kirim</button>
+    </form>
+
+    <div id="successMessage" style="display: none; color: green;">Form submitted successfully!</div>
+    <div id="errorMessage" style="display: none; color: red;">There was an error submitting the form.</div>
+>>>>>>> 64d9b3a (repair index.js warn)
 
     <!-- Navigation Bar -->
     <nav>
@@ -197,6 +284,7 @@
 
     <!-- JavaScript Code -->
     <script>
+<<<<<<< HEAD
         const entryList = document.getElementById('entryList');
         const savedEntriesDiv = document.getElementById('savedEntries');
         const toggleSavedEntriesButton = document.getElementById('toggleSavedEntriesButton');
@@ -286,6 +374,8 @@
             }
         });
 
+=======
+>>>>>>> 64d9b3a (repair index.js warn)
         function previewFile() {
             const preview = document.getElementById('previewImg');
             const file = document.getElementById('foto').files[0];
@@ -304,6 +394,7 @@
             }
         }
 
+<<<<<<< HEAD
         // Save form data to IndexedDB
         document.getElementById('saveButton').addEventListener('click', function () {
             const formElement = document.getElementById('inspectionForm');
@@ -710,6 +801,61 @@
         }
 
         // Filter options by selected lantai
+=======
+        document.getElementById('inspectionForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
+
+            const formData = new FormData(this);
+            const submitButton = document.getElementById('submitButton');
+
+            submitButton.textContent = 'Mengirim...'; // Change button text to indicate loading
+            submitButton.disabled = true; // Disable the button to prevent multiple submissions
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const successMessage = document.getElementById('successMessage');
+                    successMessage.textContent = 'Form submitted successfully!';
+                    successMessage.style.display = 'block';
+
+                    // Optionally reset the form
+                    document.getElementById('inspectionForm').reset();
+                    document.getElementById('previewImg').src = '';
+                    document.getElementById('previewImg').style.display = 'none';
+
+                    // Hide the success message after a few seconds
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 5000);
+                } else {
+                    throw new Error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+
+                // Show error message
+                const errorMessage = document.getElementById('errorMessage');
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+
+                // Hide the error message after a few seconds
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 5000);
+            })
+            .finally(() => {
+                submitButton.textContent = 'Kirim'; // Reset button text
+                submitButton.disabled = false; // Re-enable the submit button
+            });
+        });
+
+>>>>>>> 64d9b3a (repair index.js warn)
         function filterOptionsByLantai() {
             const selectedLantaiId = document.getElementById('id_tipe_lantai').value;
             filterDropdownOptions('id_tipe_aset', selectedLantaiId);
@@ -719,6 +865,7 @@
 
         function filterDropdownOptions(selectId, lantaiId) {
             const selectElement = document.getElementById(selectId);
+<<<<<<< HEAD
 
             // Clear existing options
             selectElement.innerHTML = '<option value="" selected disabled>Pilih...</option>';
@@ -729,6 +876,15 @@
             options.forEach(function(option) {
                 if (option.getAttribute('data-lantai') === lantaiId) {
                     selectElement.appendChild(option.cloneNode(true));
+=======
+            const options = Array.from(selectElement.options);
+
+            selectElement.innerHTML = '<option value="" selected disabled>Pilih...</option>';
+
+            options.forEach(option => {
+                if (option.getAttribute('data-lantai') === lantaiId) {
+                    selectElement.appendChild(option);
+>>>>>>> 64d9b3a (repair index.js warn)
                 }
             });
 
@@ -742,6 +898,7 @@
             if (selected === 'aset') {
                 document.getElementById('id_tipe_hb').disabled = true;
                 document.getElementById('id_tipe_door').disabled = true;
+<<<<<<< HEAD
                 document.getElementById('id_tipe_hb').value = '';
                 document.getElementById('id_tipe_door').value = '';
             } else if (selected === 'hb') {
@@ -771,6 +928,16 @@
 
         // Initial check
         updateOnlineStatus();
+=======
+            } else if (selected === 'hb') {
+                document.getElementById('id_tipe_aset').disabled = true;
+                document.getElementById('id_tipe_door').disabled = true;
+            } else if (selected === 'door') {
+                document.getElementById('id_tipe_aset').disabled = true;
+                document.getElementById('id_tipe_hb').disabled = true;
+            }
+        }
+>>>>>>> 64d9b3a (repair index.js warn)
     </script>
 </body>
 </html>
