@@ -1,12 +1,82 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Meta Tags -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulir Inspeksi Aset</title>
+    <!-- Stylesheet -->
     <link rel="stylesheet" href="/stylesinspection.css">
+    <style>
+        /* Spinner Styles */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: #09f;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Button Styles */
+        button {
+            cursor: pointer;
+            padding: 8px 16px;
+            margin: 5px;
+            font-size: 16px;
+        }
+
+        /* Disabled Button Styles */
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Online/Offline Indicator Styles */
+        #statusIndicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f44336; /* Red for offline */
+            color: white;
+            text-align: center;
+            padding: 8px;
+            display: none;
+            z-index: 10000;
+        }
+
+        /* Optional: Loading Overlay Styles */
+        /*
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+        }
+        */
+    </style>
 </head>
 <body>
+    <!-- Online/Offline Status Indicator -->
+    <div id="statusIndicator">Anda sedang offline. Data akan disimpan secara lokal.</div>
+
+    <!-- Navigation Bar -->
     <nav>
         <ul>
             <li><a href="/dashboard">Dashboard</a></li>
@@ -15,15 +85,19 @@
         </ul>
     </nav>
 
+    <!-- Page Title -->
     <h1>Formulir Inspeksi Aset</h1>
 
-    <form action="/upload" method="post" enctype="multipart/form-data" id="inspectionForm">
+    <!-- Inspection Form -->
+    <form id="inspectionForm">
+        <!-- Foto Input -->
         <div>
             <label for="foto">Foto:</label>
             <input type="file" id="foto" name="foto" required onchange="previewFile()">
             <img id="previewImg" src="" alt="Image preview" height="200" style="display: none;"><br>
         </div>
 
+        <!-- Nama Petugas -->
         <div>
             <label for="id_user">Nama Petugas:</label>
             <select id="id_user" name="id_user" required>
@@ -31,68 +105,187 @@
             </select>
         </div>
 
+        <!-- Lantai Selection -->
         <div>
             <label for="id_tipe_lantai">Lantai:</label>
             <select id="id_tipe_lantai" name="id_tipe_lantai" required onchange="filterOptionsByLantai()">
                 <option value="" selected disabled>Pilih Lantai</option>
-                <% tipe_lantai.forEach(tl => { %>
+                <% tipe_lantai.forEach(function(tl) { %>
                     <option value="<%= tl.id %>"><%= tl.nama_lantai %></option>
                 <% }); %>
             </select>
         </div>
 
+        <!-- Nama Aset Selection -->
         <div>
             <label for="id_tipe_aset">Nama Aset:</label>
             <select id="id_tipe_aset" name="id_tipe_aset" required onchange="handleSelection('aset')" disabled>
                 <option value="" selected disabled>Pilih Aset</option>
-                <% tipe_aset.forEach(ta => { %>
-                    <option value="<%= ta.id %>" data-lantai="<%= ta.lantai_id %>"><%= ta.nama_tipe %> (lantai: <%= ta.lantai_id %>)</option>
+                <% tipe_aset.forEach(function(ta) { %>
+                    <option value="<%= ta.id %>" data-lantai="<%= ta.lantai_id %>"><%= ta.nama_tipe %></option>
                 <% }); %>
             </select>
         </div>
 
+        <!-- Box Hydrant Selection -->
         <div>
             <label for="id_tipe_hb">Box Hydrant:</label>
             <select id="id_tipe_hb" name="id_tipe_hb" required onchange="handleSelection('hb')" disabled>
                 <option value="" selected disabled>Pilih Box Hydrant</option>
-                <% tipe_hb.forEach(hb => { %>
-                    <option value="<%= hb.id %>" data-lantai="<%= hb.lantai_id %>"><%= hb.nama_tipe %> (lantai: <%= hb.lantai_id %>)</option>
-                <% }); %>
-            </select>
-        </div>
-        
-        <div>
-            <label for="id_tipe_door">Emergency Door:</label>
-            <select id="id_tipe_door" name="id_tipe_door" required onchange="handleSelection('door')" disabled>
-                <option value="" selected disabled>Pilih Emergency Door</option>
-                <% tipe_door.forEach(door => { %>
-                    <option value="<%= door.id %>" data-lantai="<%= door.lantai_id %>"><%= door.nama_tipe %> (lantai: <%= door.lantai_id %>)</option>
+                <% tipe_hb.forEach(function(hb) { %>
+                    <option value="<%= hb.id %>" data-lantai="<%= hb.lantai_id %>"><%= hb.nama_tipe %></option>
                 <% }); %>
             </select>
         </div>
 
+        <!-- Emergency Door Selection -->
+        <div>
+            <label for="id_tipe_door">Emergency Door:</label>
+            <select id="id_tipe_door" name="id_tipe_door" required onchange="handleSelection('door')" disabled>
+                <option value="" selected disabled>Pilih Emergency Door</option>
+                <% tipe_door.forEach(function(door) { %>
+                    <option value="<%= door.id %>" data-lantai="<%= door.lantai_id %>"><%= door.nama_tipe %></option>
+                <% }); %>
+            </select>
+        </div>
+
+        <!-- Kondisi Selection -->
         <div>
             <label for="id_kondisi">Kondisi:</label>
             <select id="id_kondisi" name="id_kondisi" required disabled>
                 <option value="" selected disabled>Pilih Kondisi</option>
-                <% tipe_kondisi.forEach(tk => { %>
+                <% tipe_kondisi.forEach(function(tk) { %>
                     <option value="<%= tk.id %>"><%= tk.nama_kondisi %></option>
                 <% }); %>
             </select>
         </div>
 
+        <!-- Catatan -->
         <div>
             <label for="catatan">Catatan:</label>
             <textarea id="catatan" name="catatan"></textarea>
         </div>
 
-        <button type="submit" id="submitButton">Kirim</button>
+        <!-- Action Buttons -->
+        <button type="button" id="saveButton">Simpan Lokally</button>
+        <!-- Note: "Kirim Semua" button is moved inside the "Data Tersimpan" section below -->
     </form>
 
+    <!-- Loading Overlay (Optional) -->
+    <!-- Uncomment if you prefer a full-screen overlay instead of inline spinner -->
+    <!--
+    <div id="loadingOverlay">
+        <div>Submitting entries, please wait...</div>
+    </div>
+    -->
+
+    <!-- Toggle Data Tersimpan Button -->
+    <button type="button" id="toggleSavedEntriesButton">Tampilkan Data Tersimpan</button>
+
+    <!-- Saved Entries Section -->
+    <div id="savedEntries" style="display: none;">
+        <h2>Data Tersimpan</h2>
+        <ul id="entryList"></ul>
+        <!-- Kirim Semua Button with Spinner -->
+        <button type="button" id="kirimSemuaButton">Kirim Semua</button>
+        <div class="spinner" id="kirimSemuaSpinner"></div>
+    </div>
+
+    <!-- Success and Error Messages -->
     <div id="successMessage" style="display: none; color: green;">Form submitted successfully!</div>
     <div id="errorMessage" style="display: none; color: red;">There was an error submitting the form.</div>
 
+    <!-- JavaScript Code -->
     <script>
+        const entryList = document.getElementById('entryList');
+        const savedEntriesDiv = document.getElementById('savedEntries');
+        const toggleSavedEntriesButton = document.getElementById('toggleSavedEntriesButton');
+        const kirimSemuaButton = document.getElementById('kirimSemuaButton');
+        const kirimSemuaSpinner = document.getElementById('kirimSemuaSpinner');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        const statusIndicator = document.getElementById('statusIndicator');
+
+        // IndexedDB variables
+        let db;
+        const dbName = 'inspectionDB';
+        const dbVersion = 1;
+        const storeName = 'inspections';
+
+        // Initialize IndexedDB
+        function initDB() {
+            const request = indexedDB.open(dbName, dbVersion);
+
+            request.onerror = function(event) {
+                console.error('Database error:', event.target.errorCode);
+                alert('Failed to open the database.');
+            };
+
+            request.onupgradeneeded = function(event) {
+                db = event.target.result;
+                const objectStore = db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+            };
+
+            request.onsuccess = function(event) {
+                db = event.target.result;
+                displaySavedEntries();
+            };
+        }
+
+        // Call initDB when the window loads
+        window.onload = function() {
+            initDB();
+
+            // Store original options for dependent selects
+            ['id_tipe_aset', 'id_tipe_hb', 'id_tipe_door'].forEach(function(selectId) {
+                const selectElement = document.getElementById(selectId);
+                originalOptions[selectId] = Array.from(selectElement.options);
+            });
+
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }, function(err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            }
+
+            // Listen to online/offline events
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+
+            updateOnlineStatus(); // Initial status
+        };
+
+        // Store original options for dependent selects
+        const originalOptions = {
+            id_tipe_aset: [],
+            id_tipe_hb: [],
+            id_tipe_door: []
+        };
+
+        // Update online/offline status indicator
+        function updateOnlineStatus() {
+            if (!navigator.onLine) {
+                statusIndicator.style.display = 'block';
+            } else {
+                statusIndicator.style.display = 'none';
+            }
+        }
+
+        // Toggle the display of the Data Tersimpan section
+        toggleSavedEntriesButton.addEventListener('click', function () {
+            if (savedEntriesDiv.style.display === 'none') {
+                savedEntriesDiv.style.display = 'block';
+                toggleSavedEntriesButton.textContent = 'Sembunyikan Data Tersimpan';
+            } else {
+                savedEntriesDiv.style.display = 'none';
+                toggleSavedEntriesButton.textContent = 'Tampilkan Data Tersimpan';
+            }
+        });
+
         function previewFile() {
             const preview = document.getElementById('previewImg');
             const file = document.getElementById('foto').files[0];
@@ -101,7 +294,7 @@
             reader.onloadend = function () {
                 preview.src = reader.result;
                 preview.style.display = 'block';
-            }
+            };
 
             if (file) {
                 reader.readAsDataURL(file);
@@ -111,59 +304,412 @@
             }
         }
 
-        document.getElementById('inspectionForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevent default form submission
+        // Save form data to IndexedDB
+        document.getElementById('saveButton').addEventListener('click', function () {
+            const formElement = document.getElementById('inspectionForm');
+            const formData = new FormData(formElement);
+            const entry = {};
 
-            const formData = new FormData(this);
-            const submitButton = document.getElementById('submitButton');
+            // Read the file
+            const fileInput = document.getElementById('foto');
+            const file = fileInput.files[0];
 
-            submitButton.textContent = 'Mengirim...'; // Change button text to indicate loading
-            submitButton.disabled = true; // Disable the button to prevent multiple submissions
+            if (file) {
+                // Optionally, resize the image before saving (improves storage and upload times)
+                // Uncomment the following lines to enable image resizing
+                /*
+                resizeImage(file, function(resizedBlob) {
+                    entry['foto'] = resizedBlob;
+                    saveEntry(formData, entry);
+                });
+                */
 
-            fetch(this.action, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success message
-                    const successMessage = document.getElementById('successMessage');
-                    successMessage.textContent = 'Form submitted successfully!';
-                    successMessage.style.display = 'block';
+                // If not resizing, store the original file
+                entry['foto'] = file;
 
-                    // Optionally reset the form
-                    document.getElementById('inspectionForm').reset();
+                // Store form data
+                formData.forEach(function(value, key) {
+                    if (key !== 'foto') {
+                        entry[key] = value;
+                    }
+                });
+
+                // Store the names directly
+                entry['nama_petugas'] = document.querySelector('#id_user option:checked').textContent;
+                entry['nama_lantai'] = document.querySelector('#id_tipe_lantai option:checked').textContent;
+                entry['nama_kondisi'] = document.querySelector('#id_kondisi option:checked').textContent;
+
+                if (entry['id_tipe_aset']) {
+                    entry['nama_aset'] = document.querySelector('#id_tipe_aset option:checked').textContent;
+                }
+                if (entry['id_tipe_hb']) {
+                    entry['nama_hb'] = document.querySelector('#id_tipe_hb option:checked').textContent;
+                }
+                if (entry['id_tipe_door']) {
+                    entry['nama_door'] = document.querySelector('#id_tipe_door option:checked').textContent;
+                }
+
+                // Save to IndexedDB
+                const transaction = db.transaction([storeName], 'readwrite');
+                const objectStore = transaction.objectStore(storeName);
+                const request = objectStore.add(entry);
+
+                request.onsuccess = function(event) {
+                    displaySavedEntries();
+                    alert('Data saved locally.');
+
+                    // Reset the form
+                    formElement.reset();
                     document.getElementById('previewImg').src = '';
                     document.getElementById('previewImg').style.display = 'none';
 
-                    // Hide the success message after a few seconds
-                    setTimeout(() => {
-                        successMessage.style.display = 'none';
-                    }, 5000);
-                } else {
-                    throw new Error(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
+                    // Reset select options
+                    resetSelectOptions('id_tipe_aset');
+                    resetSelectOptions('id_tipe_hb');
+                    resetSelectOptions('id_tipe_door');
+                    document.getElementById('id_kondisi').disabled = true;
+                };
 
-                // Show error message
-                const errorMessage = document.getElementById('errorMessage');
-                errorMessage.textContent = error.message;
-                errorMessage.style.display = 'block';
-
-                // Hide the error message after a few seconds
-                setTimeout(() => {
-                    errorMessage.style.display = 'none';
-                }, 5000);
-            })
-            .finally(() => {
-                submitButton.textContent = 'Kirim'; // Reset button text
-                submitButton.disabled = false; // Re-enable the submit button
-            });
+                request.onerror = function(event) {
+                    alert('Error saving data: ' + event.target.errorCode);
+                };
+            } else {
+                alert('Please select a file.');
+            }
         });
 
+        // Optional: Function to resize images before saving
+        /*
+        function resizeImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // Set desired dimensions
+                    const maxWidth = 800;
+                    const maxHeight = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Calculate new dimensions while maintaining aspect ratio
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width *= maxHeight / height;
+                            height = maxHeight;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(function(blob) {
+                        callback(blob);
+                    }, 'image/jpeg', 0.7); // Adjust quality as needed
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        */
+
+        // Function to reset select options to original state
+        function resetSelectOptions(selectId) {
+            const selectElement = document.getElementById(selectId);
+
+            // Clear existing options
+            selectElement.innerHTML = '<option value="" selected disabled>Pilih...</option>';
+
+            // Append original options
+            const options = originalOptions[selectId];
+
+            options.forEach(function(option) {
+                selectElement.appendChild(option.cloneNode(true));
+            });
+
+            selectElement.disabled = true;
+        }
+
+        // Display saved entries from IndexedDB
+        function displaySavedEntries() {
+            entryList.innerHTML = '';
+
+            const transaction = db.transaction([storeName], 'readonly');
+            const objectStore = transaction.objectStore(storeName);
+            const request = objectStore.getAll();
+
+            request.onsuccess = function(event) {
+                const savedData = event.target.result;
+
+                savedData.forEach(function(entry) {
+                    // Build the HTML content
+                    let entryHtml = `
+                        <strong>Nama Petugas:</strong> ${entry.nama_petugas || ''} <br>
+                        <strong>Lantai:</strong> ${entry.nama_lantai || ''} <br>
+                    `;
+
+                    if (entry.nama_aset) {
+                        entryHtml += `<strong>Nama Aset:</strong> ${entry.nama_aset} <br>`;
+                    }
+                    if (entry.nama_hb) {
+                        entryHtml += `<strong>Box Hydrant:</strong> ${entry.nama_hb} <br>`;
+                    }
+                    if (entry.nama_door) {
+                        entryHtml += `<strong>Emergency Door:</strong> ${entry.nama_door} <br>`;
+                    }
+
+                    entryHtml += `
+                        <strong>Kondisi:</strong> ${entry.nama_kondisi || ''} <br>
+                        <strong>Catatan:</strong> ${entry.catatan || ''} <br>
+                    `;
+
+                    // Include image preview
+                    if (entry.foto) {
+                        const url = URL.createObjectURL(entry.foto);
+                        entryHtml += `<img src="${url}" alt="Foto" style="max-width: 100px;"><br>`;
+                    }
+
+                    // Show error message if available and add Retry button
+                    if (entry.errorMessage) {
+                        entryHtml += `<div style="color: red;"><strong>Error:</strong> ${entry.errorMessage}</div>`;
+                        entryHtml += `<button onclick="retryEntry(${entry.id})">🔄 Retry</button>`;
+                    }
+
+                    entryHtml += `<button onclick="deleteEntry(${entry.id})">Hapus</button>`;
+
+                    const li = document.createElement('li');
+                    li.innerHTML = entryHtml;
+                    entryList.appendChild(li);
+                });
+            };
+
+            request.onerror = function(event) {
+                console.error('Error fetching data:', event.target.errorCode);
+            };
+        }
+
+        // Delete an entry from IndexedDB
+        function deleteEntry(id) {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const objectStore = transaction.objectStore(storeName);
+            const request = objectStore.delete(id);
+
+            request.onsuccess = function(event) {
+                displaySavedEntries();
+            };
+
+            request.onerror = function(event) {
+                console.error('Error deleting entry:', event.target.errorCode);
+            };
+        }
+
+        // Retry a single failed entry
+        function retryEntry(id) {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const objectStore = transaction.objectStore(storeName);
+            const getRequest = objectStore.get(id);
+
+            getRequest.onsuccess = function(event) {
+                const entry = event.target.result;
+
+                // Clear previous error message
+                delete entry.errorMessage;
+
+                const formData = new FormData();
+
+                // Append the image file
+                formData.append('foto', entry.foto);
+
+                // Append other fields
+                Object.entries(entry).forEach(function([key, value]) {
+                    if (key !== 'foto' && key !== 'errorMessage' && key !== 'id' && !key.startsWith('nama_')) {
+                        formData.append(key, value);
+                    }
+                });
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        // Remove the entry from IndexedDB
+                        deleteEntry(id);
+
+                        alert('Entry submitted successfully!');
+                    } else {
+                        console.error(`Error submitting entry ${id}:`, xhr.statusText);
+
+                        // Update the error message
+                        entry.errorMessage = xhr.statusText;
+                        const updateRequest = objectStore.put(entry);
+
+                        updateRequest.onsuccess = function(event) {
+                            displaySavedEntries();
+                            alert(`Error submitting entry: ${xhr.statusText}`);
+                        };
+
+                        updateRequest.onerror = function(event) {
+                            console.error('Error updating entry:', event.target.errorCode);
+                        };
+                    }
+                };
+
+                xhr.onerror = function () {
+                    console.error('Network error occurred during submission.');
+                    entry.errorMessage = 'Network error';
+                    const updateRequest = objectStore.put(entry);
+
+                    updateRequest.onsuccess = function(event) {
+                        displaySavedEntries();
+                        alert('Network error occurred during submission.');
+                    };
+
+                    updateRequest.onerror = function(event) {
+                        console.error('Error updating entry:', event.target.errorCode);
+                    };
+                };
+
+                xhr.send(formData);
+            };
+
+            getRequest.onerror = function(event) {
+                console.error('Error retrieving entry:', event.target.errorCode);
+            };
+        }
+
+        // Submit all saved entries to the server
+        function handleSubmitAll() {
+            // Show the spinner and disable the Kirim Semua button
+            kirimSemuaButton.disabled = true;
+            kirimSemuaSpinner.style.display = 'inline-block';
+
+            const transaction = db.transaction([storeName], 'readonly');
+            const objectStore = transaction.objectStore(storeName);
+            const request = objectStore.getAll();
+
+            request.onsuccess = function(event) {
+                const entriesToSubmit = event.target.result;
+                if (entriesToSubmit.length === 0) {
+                    kirimSemuaButton.disabled = false; // Re-enable the button
+                    kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
+                    alert('No saved entries to submit.');
+                    return;
+                }
+
+                submitEntries(entriesToSubmit);
+            };
+
+            request.onerror = function(event) {
+                kirimSemuaButton.disabled = false; // Re-enable the button
+                kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
+                console.error('Error fetching entries for submission:', event.target.errorCode);
+                alert('Error fetching entries for submission: ' + event.target.errorCode);
+            };
+        }
+
+        // Add both click and touchstart event listeners to "Kirim Semua" button
+        kirimSemuaButton.addEventListener('click', handleSubmitAll);
+        kirimSemuaButton.addEventListener('touchstart', handleSubmitAll);
+
+        // Function to submit entries
+        function submitEntries(entries) {
+            let index = 0;
+            const failedEntries = [];
+
+            function submitNextEntry() {
+                if (index >= entries.length) {
+                    kirimSemuaButton.disabled = false; // Re-enable the button
+                    kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
+                    displaySavedEntries();
+
+                    if (failedEntries.length > 0) {
+                        alert(`${failedEntries.length} entries failed to submit. You can retry submitting them individually.`);
+                    } else {
+                        alert('All entries submitted successfully!');
+                    }
+                    return;
+                }
+
+                const entry = entries[index];
+                const formData = new FormData();
+
+                // Append the image file
+                formData.append('foto', entry.foto);
+
+                // Append other fields
+                Object.entries(entry).forEach(function([key, value]) {
+                    if (key !== 'foto' && key !== 'errorMessage' && key !== 'id' && !key.startsWith('nama_')) {
+                        formData.append(key, value);
+                    }
+                });
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        // Remove the entry from IndexedDB
+                        deleteEntry(entry.id);
+
+                        index++;
+                        submitNextEntry();
+                    } else {
+                        console.error(`Error submitting entry ${entry.id}:`, xhr.statusText);
+
+                        // Update the error message
+                        entry.errorMessage = xhr.statusText;
+                        const transaction = db.transaction([storeName], 'readwrite');
+                        const objectStore = transaction.objectStore(storeName);
+                        const updateRequest = objectStore.put(entry);
+
+                        updateRequest.onsuccess = function(event) {
+                            failedEntries.push(entry);
+                            index++;
+                            submitNextEntry();
+                        };
+
+                        updateRequest.onerror = function(event) {
+                            console.error('Error updating entry:', event.target.errorCode);
+                            index++;
+                            submitNextEntry();
+                        };
+                    }
+                };
+
+                xhr.onerror = function () {
+                    console.error('Network error occurred during submission.');
+                    entry.errorMessage = 'Network error';
+                    const transaction = db.transaction([storeName], 'readwrite');
+                    const objectStore = transaction.objectStore(storeName);
+                    const updateRequest = objectStore.put(entry);
+
+                    updateRequest.onsuccess = function(event) {
+                        failedEntries.push(entry);
+                        index++;
+                        submitNextEntry();
+                    };
+
+                    updateRequest.onerror = function(event) {
+                        console.error('Error updating entry:', event.target.errorCode);
+                        index++;
+                        submitNextEntry();
+                    };
+                };
+
+                xhr.send(formData);
+            }
+
+            submitNextEntry();
+        }
+
+        // Filter options by selected lantai
         function filterOptionsByLantai() {
             const selectedLantaiId = document.getElementById('id_tipe_lantai').value;
             filterDropdownOptions('id_tipe_aset', selectedLantaiId);
@@ -173,13 +719,16 @@
 
         function filterDropdownOptions(selectId, lantaiId) {
             const selectElement = document.getElementById(selectId);
-            const options = Array.from(selectElement.options);
 
+            // Clear existing options
             selectElement.innerHTML = '<option value="" selected disabled>Pilih...</option>';
 
-            options.forEach(option => {
+            // Get the original options
+            const options = originalOptions[selectId];
+
+            options.forEach(function(option) {
                 if (option.getAttribute('data-lantai') === lantaiId) {
-                    selectElement.appendChild(option);
+                    selectElement.appendChild(option.cloneNode(true));
                 }
             });
 
@@ -193,14 +742,35 @@
             if (selected === 'aset') {
                 document.getElementById('id_tipe_hb').disabled = true;
                 document.getElementById('id_tipe_door').disabled = true;
+                document.getElementById('id_tipe_hb').value = '';
+                document.getElementById('id_tipe_door').value = '';
             } else if (selected === 'hb') {
                 document.getElementById('id_tipe_aset').disabled = true;
                 document.getElementById('id_tipe_door').disabled = true;
+                document.getElementById('id_tipe_aset').value = '';
+                document.getElementById('id_tipe_door').value = '';
             } else if (selected === 'door') {
                 document.getElementById('id_tipe_aset').disabled = true;
                 document.getElementById('id_tipe_hb').disabled = true;
+                document.getElementById('id_tipe_aset').value = '';
+                document.getElementById('id_tipe_hb').value = '';
             }
         }
+
+        // Handle online/offline status
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        function updateOnlineStatus() {
+            if (!navigator.onLine) {
+                statusIndicator.style.display = 'block';
+            } else {
+                statusIndicator.style.display = 'none';
+            }
+        }
+
+        // Initial check
+        updateOnlineStatus();
     </script>
 </body>
 </html>

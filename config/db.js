@@ -5,8 +5,8 @@ const util = require('util');
 const pool = mysql.createPool({
     connectionLimit: 15, // Maximum number of connections
     host: 'localhost',
-    user: 'web1',
-    password: 'webDelipark#01',
+    user: 'root',
+    password: '',
     database: 'web1'
 });
 
