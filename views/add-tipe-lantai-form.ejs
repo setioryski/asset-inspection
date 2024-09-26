@@ -2,16 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Tipe Lantai</title>
+    <title>Add Floor Type</title>
+    <link rel="stylesheet" href="/form-styles.css">
 </head>
 <body>
-    <h1>Add New Tipe Lantai</h1>
-    <form action="/add-tipe-lantai" method="post">
-        <label for="nama_lantai">Floor Name:</label>
-        <input type="text" id="nama_lantai" name="nama_lantai" required>
-        <button type="submit">Submit</button>
-    </form>
-    <a href="/admin">Back to Admin Dashboard</a>
+    <div class="form-container">
+        <h2>Add Floor Type</h2>
+        <form method="POST" action="/add-tipe-lantai">
+            <label for="nama_lantai">Floor Type Name:</label>
+            <input type="text" name="nama_lantai" id="nama_lantai" required>
+
+            <button type="submit">Add Floor Type</button>
+
+            <div class="back-link">
+                <a href="/admin">Back to Admin Dashboard</a>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

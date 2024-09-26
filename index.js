@@ -210,11 +210,28 @@ app.get('/api/tipe_kondisi', isAuthenticated, async (req, res) => {
 
 app.get('/admin', isAuthenticated, checkRole(['admin']), async (req, res) => {
     try {
-        let tipeAsetResults = await queryAsync('SELECT id, nama_tipe FROM tipe_aset');
+        // Fetch tipe_aset with floor names
+        let tipeAsetResults = await queryAsync(`
+            SELECT ta.id, ta.nama_tipe, ta.lantai_id, tl.nama_lantai
+            FROM tipe_aset ta
+            LEFT JOIN tipe_lantai tl ON ta.lantai_id = tl.id
+        `);
+
+        // Fetch other types (tipe_hb, tipe_door) as before
+        let tipeHbResults = await queryAsync(`
+            SELECT th.id, th.nama_tipe, th.lantai_id, tl.nama_lantai
+            FROM tipe_hb th
+            LEFT JOIN tipe_lantai tl ON th.lantai_id = tl.id
+        `);
+
+        let tipeDoorResults = await queryAsync(`
+            SELECT td.id, td.nama_tipe, td.lantai_id, tl.nama_lantai
+            FROM tipe_door td
+            LEFT JOIN tipe_lantai tl ON td.lantai_id = tl.id
+        `);
+
         let tipeLantaiResults = await queryAsync('SELECT id, nama_lantai FROM tipe_lantai');
         let userResults = await queryAsync('SELECT id, name FROM user');
-        let tipeHbResults = await queryAsync('SELECT id, nama_tipe FROM tipe_hb');
-        let tipeDoorResults = await queryAsync('SELECT id, nama_tipe FROM tipe_door');
         const userRole = req.session.user.role;
 
         res.render('admin', {
@@ -232,40 +249,12 @@ app.get('/admin', isAuthenticated, checkRole(['admin']), async (req, res) => {
 });
 
 
+
+
 // Route to display the login form
 app.get('/login', (req, res) => {
     res.render('login');
 });
-
-// Route to handle login form submission
-app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    const userQuery = 'SELECT u.*, r.role_name FROM user u INNER JOIN role r ON u.role_id = r.role_id WHERE u.name = ?';
-
-    try {
-        // Use pool.query to execute the SQL query with the username parameter
-        const [results] = await queryAsync(userQuery, [username]);
-        if (results.length > 0) {
-            const user = results[0];
-            // Compare the hashed password
-            const match = await bcrypt.compare(password, user.password);
-            if (match) {
-                // Set user information in session
-                req.session.user = { id: user.id, name: user.name, role: user.role_name };
-                req.session.isAuthenticated = true;
-                res.redirect('/dashboard');
-            } else {
-                res.send('Invalid credentials');
-            }
-        } else {
-            res.send('User not found');
-        }
-    } catch (err) {
-        console.error('Error during login process:', err);
-        res.status(500).send('Internal Server Error: ' + err.message);
-    }
-});
-
 
 app.get('/inspection', isAuthenticated, checkRole(['admin', 'petugas']), async (req, res) => {
     try {
@@ -449,17 +438,23 @@ app.post('/delete-tipe-lantai', async (req, res) => {
 });
 
 // Route to render the form for adding a new 'tipe_aset'
-app.get('/add-tipe-aset-form', (req, res) => {
-    res.render('add-tipe-aset-form');
+app.get('/add-tipe-aset-form', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    try {
+        const floorTypes = await getFloorTypes();
+        res.render('add-tipe-aset-form', { floorTypes });
+    } catch (err) {
+        console.error('Error fetching floor types:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // Route to handle adding a new 'tipe_aset'
-app.post('/add-tipe-aset', async (req, res) => {
-    const { nama_tipe } = req.body;
-    const sql = 'INSERT INTO tipe_aset (nama_tipe) VALUES (?)';
+app.post('/add-tipe-aset', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const { nama_tipe, lantai_id } = req.body;
+    const sql = 'INSERT INTO tipe_aset (nama_tipe, lantai_id) VALUES (?, ?)';
 
     try {
-        await queryAsync(sql, [nama_tipe]);
+        await queryAsync(sql, [nama_tipe, lantai_id]);
         res.redirect('/admin');
     } catch (err) {
         console.error('Error adding tipe_aset:', err);
@@ -467,16 +462,17 @@ app.post('/add-tipe-aset', async (req, res) => {
     }
 });
 
+
 // Route to render the edit form for 'tipe_aset'
-app.get('/edit-tipe-aset-form/:id', async (req, res) => {
+app.get('/edit-tipe-aset-form/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const id = req.params.id;
     const sql = 'SELECT * FROM tipe_aset WHERE id = ?';
 
     try {
         const results = await queryAsync(sql, [id]);
-
         if (results.length > 0) {
-            res.render('edit-tipe-aset-form', { tipe_aset: results[0] });
+            const floorTypes = await getFloorTypes();
+            res.render('edit-tipe-aset-form', { tipe_aset: results[0], floorTypes });
         } else {
             res.status(404).send('Asset type not found');
         }
@@ -486,12 +482,12 @@ app.get('/edit-tipe-aset-form/:id', async (req, res) => {
 });
 
 // Route to handle updating 'tipe_aset'
-app.post('/update-tipe-aset', async (req, res) => {
-    const { id, nama_tipe } = req.body;
-    const sql = 'UPDATE tipe_aset SET nama_tipe = ? WHERE id = ?';
+app.post('/update-tipe-aset', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const { id, nama_tipe, lantai_id } = req.body;
+    const sql = 'UPDATE tipe_aset SET nama_tipe = ?, lantai_id = ? WHERE id = ?';
 
     try {
-        await queryAsync(sql, [nama_tipe, id]);
+        await queryAsync(sql, [nama_tipe, lantai_id, id]);
         res.redirect('/admin');
     } catch (err) {
         res.status(500).send('Failed to update tipe_aset');
@@ -507,22 +503,27 @@ app.post('/delete-tipe-aset', async (req, res) => {
         await queryAsync(sql, [id]);
         res.redirect('/admin');
     } catch (err) {
-        console.error('Error deleting tipe_aset:', err);
+        console.error('Error deleting tipe_aset:hb', err);
         res.status(500).send('Failed to delete tipe_aset');
     }
 });
 
 // Route to render the form for adding a new 'tipe_hb'
-app.get('/add-tipe-hb-form', isAuthenticated, checkRole(['admin']), (req, res) => {
-    res.render('add-tipe-hb-form');
+app.get('/add-tipe-hb-form', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    try {
+        const floorTypes = await getFloorTypes();
+        res.render('add-tipe-hb-form', { floorTypes });
+    } catch (err) {
+        console.error('Error fetching floor types:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
-
 // Route to handle adding 'tipe_hb'
 app.post('/admin/tipe_hb/add', isAuthenticated, checkRole(['admin']), async (req, res) => {
-    const { nama_tipe } = req.body;
+    const { nama_tipe, lantai_id } = req.body;
 
     try {
-        await queryAsync('INSERT INTO tipe_hb (nama_tipe) VALUES (?)', [nama_tipe]);
+        await queryAsync('INSERT INTO tipe_hb (nama_tipe, lantai_id) VALUES (?, ?)', [nama_tipe, lantai_id]);
         res.redirect('/admin');
     } catch (err) {
         res.status(500).send('Error adding tipe_hb');
@@ -534,9 +535,10 @@ app.get('/edit-tipe-hb-form/:id', isAuthenticated, checkRole(['admin']), async (
     const id = req.params.id;
 
     try {
-        const result = await queryAsync('SELECT id, nama_tipe FROM tipe_hb WHERE id = ?', [id]);
+        const result = await queryAsync('SELECT * FROM tipe_hb WHERE id = ?', [id]);
         if (result.length > 0) {
-            res.render('edit-tipe-hb-form', { tipeHb: result[0] });
+            const floorTypes = await getFloorTypes();
+            res.render('edit-tipe-hb-form', { tipeHb: result[0], floorTypes });
         } else {
             res.status(404).send('HB type not found');
         }
@@ -548,10 +550,10 @@ app.get('/edit-tipe-hb-form/:id', isAuthenticated, checkRole(['admin']), async (
 // Route to handle updating 'tipe_hb'
 app.post('/admin/tipe_hb/update/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const id = req.params.id;
-    const { nama_tipe } = req.body;
+    const { nama_tipe, lantai_id } = req.body;
 
     try {
-        await queryAsync('UPDATE tipe_hb SET nama_tipe = ? WHERE id = ?', [nama_tipe, id]);
+        await queryAsync('UPDATE tipe_hb SET nama_tipe = ?, lantai_id = ? WHERE id = ?', [nama_tipe, lantai_id, id]);
         res.redirect('/admin');
     } catch (err) {
         res.status(500).send('Error updating tipe_hb');
@@ -571,16 +573,22 @@ app.post('/delete-tipe-hb', isAuthenticated, checkRole(['admin']), async (req, r
 });
 
 // Route to render the form for adding a new 'tipe_door'
-app.get('/add-tipe-door-form', isAuthenticated, checkRole(['admin']), (req, res) => {
-    res.render('add-tipe-door-form');
+app.get('/add-tipe-door-form', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    try {
+        const floorTypes = await getFloorTypes();
+        res.render('add-tipe-door-form', { floorTypes });
+    } catch (err) {
+        console.error('Error fetching floor types:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 // Route to handle adding 'tipe_door'
 app.post('/admin/tipe_door/add', isAuthenticated, checkRole(['admin']), async (req, res) => {
-    const { nama_tipe } = req.body;
+    const { nama_tipe, lantai_id } = req.body;
 
     try {
-        await queryAsync('INSERT INTO tipe_door (nama_tipe) VALUES (?)', [nama_tipe]);
+        await queryAsync('INSERT INTO tipe_door (nama_tipe, lantai_id) VALUES (?, ?)', [nama_tipe, lantai_id]);
         res.redirect('/admin');
     } catch (err) {
         res.status(500).send('Error adding tipe_door');
@@ -592,9 +600,10 @@ app.get('/edit-tipe-door-form/:id', isAuthenticated, checkRole(['admin']), async
     const id = req.params.id;
 
     try {
-        const result = await queryAsync('SELECT id, nama_tipe FROM tipe_door WHERE id = ?', [id]);
+        const result = await queryAsync('SELECT * FROM tipe_door WHERE id = ?', [id]);
         if (result.length > 0) {
-            res.render('edit-tipe-door-form', { tipeDoor: result[0] });
+            const floorTypes = await getFloorTypes();
+            res.render('edit-tipe-door-form', { tipeDoor: result[0], floorTypes });
         } else {
             res.status(404).send('Door type not found');
         }
@@ -603,13 +612,14 @@ app.get('/edit-tipe-door-form/:id', isAuthenticated, checkRole(['admin']), async
     }
 });
 
+
 // Route to handle updating 'tipe_door'
 app.post('/admin/tipe_door/update/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const id = req.params.id;
-    const { nama_tipe } = req.body;
+    const { nama_tipe, lantai_id } = req.body;
 
     try {
-        await queryAsync('UPDATE tipe_door SET nama_tipe = ? WHERE id = ?', [nama_tipe, id]);
+        await queryAsync('UPDATE tipe_door SET nama_tipe = ?, lantai_id = ? WHERE id = ?', [nama_tipe, lantai_id, id]);
         res.redirect('/admin');
     } catch (err) {
         res.status(500).send('Error updating tipe_door');
@@ -674,39 +684,45 @@ async function getConditions() {
 }
 
 async function getAssetTypes() {
-    return new Promise((resolve, reject) => {
-        queryAsync('SELECT id, nama_tipe, lantai_id FROM tipe_aset', (err, results) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(results);
-            }
-        });
-    });
+    try {
+        const results = await queryAsync(`
+            SELECT ta.id, ta.nama_tipe, ta.lantai_id, tl.nama_lantai
+            FROM tipe_aset ta
+            LEFT JOIN tipe_lantai tl ON ta.lantai_id = tl.id
+        `);
+        return results;
+    } catch (error) {
+        throw new Error('Error fetching asset types: ' + error.message);
+    }
 }
+
+
 
 async function getHbTypes() {
-    return new Promise((resolve, reject) => {
-        queryAsync('SELECT id, nama_tipe, lantai_id FROM tipe_hb', (err, results) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(results);
-            }
-        });
-    });
+    try {
+        const results = await queryAsync(`
+            SELECT th.id, th.nama_tipe, th.lantai_id, tl.nama_lantai
+            FROM tipe_hb th
+            LEFT JOIN tipe_lantai tl ON th.lantai_id = tl.id
+        `);
+        return results;
+    } catch (error) {
+        throw new Error('Error fetching HB types: ' + error.message);
+    }
 }
 
+
 async function getDoorTypes() {
-    return new Promise((resolve, reject) => {
-        queryAsync('SELECT id, nama_tipe, lantai_id FROM tipe_door', (err, results) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(results);
-            }
-        });
-    });
+    try {
+        const results = await queryAsync(`
+            SELECT td.id, td.nama_tipe, td.lantai_id, tl.nama_lantai
+            FROM tipe_door td
+            LEFT JOIN tipe_lantai tl ON td.lantai_id = tl.id
+        `);
+        return results;
+    } catch (error) {
+        throw new Error('Error fetching door types: ' + error.message);
+    }
 }
 
 

@@ -2,27 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Petugas</title>
+    <title>Add User</title>
+    <link rel="stylesheet" href="/form-styles.css"> <!-- Include the CSS file -->
 </head>
 <body>
-    <h1>Add New Petugas</h1>
-    <form action="/add-user" method="post">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required>
+    <div class="form-container">
+        <h2>Add User</h2>
+        <form method="POST" action="/add-user">
+            <label for="name">Username:</label>
+            <input type="text" name="name" id="name" required>
 
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password" required>
 
-        <label for="role">Role:</label>
-        <select id="role" name="role" required>
-            <option value="">Select Role</option>
-            <option value="admin">Admin</option>
-            <option value="petugas">Petugas</option>
-        </select>
+            <label for="role">Role:</label>
+            <select name="role" id="role" required>
+                <option value="admin">Admin</option>
+                <option value="petugas">Petugas</option>
+            </select>
 
-        <button type="submit">Submit</button>
-    </form>
-    <a href="/admin">Back to Admin Dashboard</a>
+            <button type="submit">Add User</button>
+
+            <div class="back-link">
+                <a href="/admin">Back to Admin Dashboard</a>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

@@ -118,6 +118,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Asset Type</th>
+                                <th>Floor</th> <!-- Added Floor column -->
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -127,6 +128,7 @@
                                     <tr>
                                         <td><%= item.id %></td>
                                         <td><%= item.nama_tipe %></td>
+                                        <td><%= item.nama_lantai %></td> <!-- Display floor name -->
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-aset-form/<%= item.id %>';">Edit</button>
@@ -140,7 +142,7 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="3">No asset types found</td>
+                                    <td colspan="4">No asset types found</td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -148,6 +150,7 @@
                 </div>
             </div>
         </div>
+        
 
         <div id="manageTipeDoor" class="tab-content">
             <div class="table-container">
@@ -159,6 +162,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Door Type</th>
+                                <th>Floor</th> <!-- Added Floor column -->
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -168,6 +172,7 @@
                                     <tr>
                                         <td><%= item.id %></td>
                                         <td><%= item.nama_tipe %></td>
+                                        <td><%= item.nama_lantai %></td> <!-- Display floor name -->
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-door-form/<%= item.id %>';">Edit</button>
@@ -181,14 +186,14 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="3">No door types found</td>
+                                    <td colspan="4">No door types found</td>
                                 </tr>
                             <% } %>
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
+        </div>        
 
         <div id="manageTipeHB" class="tab-content">
             <div class="table-container">
@@ -200,6 +205,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>HB Type</th>
+                                <th>Floor</th> <!-- Added Floor column -->
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -209,6 +215,7 @@
                                     <tr>
                                         <td><%= item.id %></td>
                                         <td><%= item.nama_tipe %></td>
+                                        <td><%= item.nama_lantai %></td> <!-- Display floor name -->
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-hb-form/<%= item.id %>';">Edit</button>
@@ -222,14 +229,14 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="3">No HB types found</td>
+                                    <td colspan="4">No HB types found</td>
                                 </tr>
                             <% } %>
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
+        </div>        
     </main>
 
     <script>

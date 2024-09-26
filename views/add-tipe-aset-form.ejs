@@ -2,16 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Tipe Aset</title>
+    <title>Add Asset Type</title>
+    <link rel="stylesheet" href="/form-styles.css"> <!-- Include the CSS file -->
 </head>
 <body>
-    <h1>Add New Tipe Aset</h1>
-    <form action="/add-tipe-aset" method="post">
-        <label for="nama_tipe">Type Name:</label>
-        <input type="text" id="nama_tipe" name="nama_tipe" required>
-        <button type="submit">Submit</button>
-    </form>
-    <a href="/admin">Back to Admin Dashboard</a>
+    <div class="form-container">
+        <h2>Add Asset Type</h2>
+        <form method="POST" action="/add-tipe-aset">
+            <label for="nama_tipe">Asset Type Name:</label>
+            <input type="text" name="nama_tipe" id="nama_tipe" required>
+
+            <label for="lantai_id">Floor:</label>
+            <select name="lantai_id" id="lantai_id" required>
+                <% floorTypes.forEach(floor => { %>
+                    <option value="<%= floor.id %>"><%= floor.nama_lantai %></option>
+                <% }) %>
+            </select>
+
+            <button type="submit">Add Asset Type</button>
+
+            <div class="back-link">
+                <a href="/admin">Back to Admin Dashboard</a>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

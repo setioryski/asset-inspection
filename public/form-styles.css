@@ -1,0 +1,95 @@
+/* General form container styles */
+.form-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border: 1px solid #dddddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Form heading */
+.form-container h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333333;
+}
+
+/* Label styles */
+.form-container label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555555;
+}
+
+/* Input and select styles */
+.form-container input[type="text"],
+.form-container input[type="password"],
+.form-container select {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 20px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.form-container input[type="text"]:focus,
+.form-container input[type="password"]:focus,
+.form-container select:focus {
+    border-color: #66afe9;
+    outline: none;
+}
+
+/* Button styles */
+.form-container button[type="submit"],
+.form-container a.button-link {
+    display: inline-block;
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff;
+    color: #ffffff;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.form-container button[type="submit"]:hover,
+.form-container a.button-link:hover {
+    background-color: #0056b3;
+}
+
+/* Back link styles */
+.form-container .back-link {
+    display: block;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.form-container .back-link a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.form-container .back-link a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+    .form-container {
+        padding: 20px;
+    }
+
+    .form-container h2 {
+        font-size: 24px;
+    }
+}

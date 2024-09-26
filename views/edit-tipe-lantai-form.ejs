@@ -2,17 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Tipe Lantai</title>
+    <title>Edit Floor Type</title>
+    <link rel="stylesheet" href="/form-styles.css">
 </head>
 <body>
-    <h1>Edit Tipe Lantai</h1>
-    <form action="/update-tipe-lantai" method="post">
-        <input type="hidden" name="id" value="<%= tipe_lantai.id %>">
-        <label for="nama_lantai">Floor Name:</label>
-        <input type="text" id="nama_lantai" name="nama_lantai" value="<%= tipe_lantai.nama_lantai %>" required>
-        <button type="submit">Update</button>
-    </form>
-    <a href="/admin">Back to Admin Dashboard</a>
+    <div class="form-container">
+        <h2>Edit Floor Type</h2>
+        <form method="POST" action="/update-tipe-lantai">
+            <input type="hidden" name="id" value="<%= tipe_lantai.id %>">
+
+            <label for="nama_lantai">Floor Type Name:</label>
+            <input type="text" name="nama_lantai" id="nama_lantai" value="<%= tipe_lantai.nama_lantai %>" required>
+
+            <button type="submit">Update Floor Type</button>
+
+            <div class="back-link">
+                <a href="/admin">Back to Admin Dashboard</a>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

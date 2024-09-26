@@ -2,17 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Tipe Aset</title>
-</body>
+    <title>Edit Asset Type</title>
+    <link rel="stylesheet" href="/form-styles.css">
+</head>
 <body>
-    <h1>Edit Tipe Aset</h1>
-    <form action="/update-tipe-aset" method="post">
-        <input type="hidden" name="id" value="<%= tipe_aset.id %>">
-        <label for="nama_tipe">Type Name:</label>
-        <input type="text" id="nama_tipe" name="nama_tipe" value="<%= tipe_aset.nama_tipe %>" required>
-        <button type="submit">Update</button>
-    </form>
-    <a href="/admin">Back to Admin Dashboard</a>
+    <div class="form-container">
+        <h2>Edit Asset Type</h2>
+        <form method="POST" action="/update-tipe-aset">
+            <input type="hidden" name="id" value="<%= tipe_aset.id %>">
+
+            <label for="nama_tipe">Asset Type Name:</label>
+            <input type="text" name="nama_tipe" id="nama_tipe" value="<%= tipe_aset.nama_tipe %>" required>
+
+            <label for="lantai_id">Floor:</label>
+            <select name="lantai_id" id="lantai_id" required>
+                <% floorTypes.forEach(floor => { %>
+                    <option value="<%= floor.id %>" <% if(floor.id === tipe_aset.lantai_id){ %>selected<% } %>><%= floor.nama_lantai %></option>
+                <% }) %>
+            </select>
+
+            <button type="submit">Update Asset Type</button>
+
+            <div class="back-link">
+                <a href="/admin">Back to Admin Dashboard</a>
+            </div>
+        </form>
+    </div>
 </body>
 </html>
