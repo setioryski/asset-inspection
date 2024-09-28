@@ -17,9 +17,11 @@ function checkRole(roles) {
         if (req.session.isAuthenticated && roles.includes(req.session.user.role)) {
             return next();
         }
-        res.status(403).send("Access Denied");
+        // Instead of sending "Access Denied", render a custom page
+        res.status(403).render('accessDenied', { returnUrl: '/inspection' });
     }
 }
+
 
 
 

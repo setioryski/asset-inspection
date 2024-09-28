@@ -52,24 +52,6 @@
             display: none;
             z-index: 10000;
         }
-
-        /* Optional: Loading Overlay Styles */
-        /*
-        #loadingOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 9999;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 24px;
-        }
-        */
     </style>
 </head>
 <body>
@@ -90,13 +72,6 @@
 
     <!-- Inspection Form -->
     <form id="inspectionForm">
-        <!-- Foto Input -->
-        <div>
-            <label for="foto">Foto:</label>
-            <input type="file" id="foto" name="foto" required onchange="previewFile()">
-            <img id="previewImg" src="" alt="Image preview" height="200" style="display: none;"><br>
-        </div>
-
         <!-- Nama Petugas -->
         <div>
             <label for="id_user">Nama Petugas:</label>
@@ -105,7 +80,7 @@
             </select>
         </div>
 
-        <!-- Lantai Selection -->
+        <!-- Step 1: Choose Floor (Lantai) -->
         <div>
             <label for="id_tipe_lantai">Lantai:</label>
             <select id="id_tipe_lantai" name="id_tipe_lantai" required onchange="filterOptionsByLantai()">
@@ -116,10 +91,10 @@
             </select>
         </div>
 
-        <!-- Nama Aset Selection -->
+        <!-- Step 2: Choose Asset or Box Hydrant or Emergency Door -->
         <div>
             <label for="id_tipe_aset">Nama Aset:</label>
-            <select id="id_tipe_aset" name="id_tipe_aset" required onchange="handleSelection('aset')" disabled>
+            <select id="id_tipe_aset" name="id_tipe_aset" onchange="handleSelection('aset')" disabled>
                 <option value="" selected disabled>Pilih Aset</option>
                 <% tipe_aset.forEach(function(ta) { %>
                     <option value="<%= ta.id %>" data-lantai="<%= ta.lantai_id %>"><%= ta.nama_tipe %></option>
@@ -127,10 +102,9 @@
             </select>
         </div>
 
-        <!-- Box Hydrant Selection -->
         <div>
             <label for="id_tipe_hb">Box Hydrant:</label>
-            <select id="id_tipe_hb" name="id_tipe_hb" required onchange="handleSelection('hb')" disabled>
+            <select id="id_tipe_hb" name="id_tipe_hb" onchange="handleSelection('hb')" disabled>
                 <option value="" selected disabled>Pilih Box Hydrant</option>
                 <% tipe_hb.forEach(function(hb) { %>
                     <option value="<%= hb.id %>" data-lantai="<%= hb.lantai_id %>"><%= hb.nama_tipe %></option>
@@ -138,10 +112,9 @@
             </select>
         </div>
 
-        <!-- Emergency Door Selection -->
         <div>
             <label for="id_tipe_door">Emergency Door:</label>
-            <select id="id_tipe_door" name="id_tipe_door" required onchange="handleSelection('door')" disabled>
+            <select id="id_tipe_door" name="id_tipe_door" onchange="handleSelection('door')" disabled>
                 <option value="" selected disabled>Pilih Emergency Door</option>
                 <% tipe_door.forEach(function(door) { %>
                     <option value="<%= door.id %>" data-lantai="<%= door.lantai_id %>"><%= door.nama_tipe %></option>
@@ -149,7 +122,14 @@
             </select>
         </div>
 
-        <!-- Kondisi Selection -->
+        <!-- Step 3: Take Picture (Foto) -->
+        <div>
+            <label for="foto">Foto:</label>
+            <input type="file" id="foto" name="foto" required onchange="previewFile()">
+            <img id="previewImg" src="" alt="Image preview" height="200" style="display: none;"><br>
+        </div>
+
+        <!-- Step 4: Choose Kondisi (Condition) -->
         <div>
             <label for="id_kondisi">Kondisi:</label>
             <select id="id_kondisi" name="id_kondisi" required disabled>
@@ -160,24 +140,15 @@
             </select>
         </div>
 
-        <!-- Catatan -->
+        <!-- Catatan (Optional) -->
         <div>
             <label for="catatan">Catatan:</label>
             <textarea id="catatan" name="catatan"></textarea>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- Step 5: Submit -->
         <button type="button" id="saveButton">Simpan Lokally</button>
-        <!-- Note: "Kirim Semua" button is moved inside the "Data Tersimpan" section below -->
     </form>
-
-    <!-- Loading Overlay (Optional) -->
-    <!-- Uncomment if you prefer a full-screen overlay instead of inline spinner -->
-    <!--
-    <div id="loadingOverlay">
-        <div>Submitting entries, please wait...</div>
-    </div>
-    -->
 
     <!-- Toggle Data Tersimpan Button -->
     <button type="button" id="toggleSavedEntriesButton">Tampilkan Data Tersimpan</button>
@@ -734,7 +705,6 @@
 
             selectElement.disabled = false;
         }
-
         function handleSelection(selected) {
             const kondisiSelect = document.getElementById('id_kondisi');
             kondisiSelect.disabled = false;
@@ -757,6 +727,22 @@
             }
         }
 
+        // Function to reset select options to original state
+        function resetSelectOptions(selectId) {
+            const selectElement = document.getElementById(selectId);
+
+            // Clear existing options
+            selectElement.innerHTML = '<option value="" selected disabled>Pilih...</option>';
+
+            // Append original options
+            const options = originalOptions[selectId];
+
+            options.forEach(function(option) {
+                selectElement.appendChild(option.cloneNode(true));
+            });
+
+            selectElement.disabled = true;
+        }
         // Handle online/offline status
         window.addEventListener('online', updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);
