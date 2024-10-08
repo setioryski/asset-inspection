@@ -325,9 +325,10 @@ app.get('/edit-user-form/:id', async (req, res) => {
     }
 });
 
+
 // Route to handle updating a user
 app.post('/update-user', async (req, res) => {
-    const { id, nama, password, role_id } = req.body;
+    const { id, name, password, role_id } = req.body;
 
     try {
         // Hash the new password
@@ -337,7 +338,7 @@ app.post('/update-user', async (req, res) => {
         const sql = 'UPDATE user SET name = ?, password = ?, role_id = ? WHERE id = ?';
         
         // Execute the SQL query using await
-        const result = await pool.query(sql, [nama, hashedPassword, role_id, id]);
+        const result = await pool.query(sql, [name, hashedPassword, role_id, id]);
 
         // Check if the update was successful
         if (result.affectedRows === 0) {
