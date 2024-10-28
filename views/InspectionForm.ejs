@@ -31,6 +31,15 @@
             padding: 8px 16px;
             margin: 5px;
             font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #09f;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #007acc;
         }
 
         /* Disabled Button Styles */
@@ -48,15 +57,192 @@
             background-color: #f44336; /* Red for offline */
             color: white;
             text-align: center;
-            padding: 8px;
+            padding: 12px 0;
             display: none;
             z-index: 10000;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Notification Styles */
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 250px;
+            max-width: 350px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: #fff;
+            display: none;
+            z-index: 10001;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        #notification.show {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #notification.success {
+            background-color: #4CAF50; /* Green */
+        }
+
+        #notification.error {
+            background-color: #f44336; /* Red */
+        }
+
+        #notification.info {
+            background-color: #2196F3; /* Blue */
+        }
+
+        #notification .icon {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        /* Icons using Unicode characters */
+        .icon-success::before {
+            content: "✔️";
+        }
+
+        .icon-error::before {
+            content: "❌";
+        }
+
+        .icon-info::before {
+            content: "ℹ️";
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 600px) {
+            #notification {
+                right: 10px;
+                left: 10px;
+            }
+        }
+
+        /* Form Styles (Optional Enhancements) */
+        form div {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        select, input[type="file"], textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            transition: border-color 0.3s ease;
+        }
+
+        select:focus, input[type="file"]:focus, textarea:focus {
+            border-color: #09f;
+            outline: none;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Navigation Bar Styles (Optional Enhancements) */
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            background-color: #333;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        nav ul li {
+            float: left;
+        }
+
+        nav ul li a {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 20px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        nav ul li a:hover {
+            background-color: #575757;
+        }
+
+        /* Page Title */
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Saved Entries Section */
+        #savedEntries {
+            margin-top: 20px;
+        }
+
+        #savedEntries h2 {
+            margin-bottom: 10px;
+        }
+
+        #entryList li {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            list-style-type: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        #entryList img {
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+
+        /* Additional Button Styles within Entries */
+        #entryList button {
+            background-color: #f44336; /* Default to red for delete */
+            margin-top: 10px;
+        }
+
+        #entryList button.retry-button {
+            background-color: #ff9800; /* Orange for retry */
+            margin-right: 5px;
+        }
+
+        #entryList button.delete-button {
+            background-color: #f44336; /* Red for delete */
+        }
+
+        /* Hover Effects for Entry Buttons */
+        #entryList button:hover:not(:disabled) {
+            filter: brightness(90%);
         }
     </style>
 </head>
 <body>
     <!-- Online/Offline Status Indicator -->
     <div id="statusIndicator">Anda sedang offline. Data akan disimpan secara lokal.</div>
+
+    <!-- Notification Element -->
+    <div id="notification" role="alert" aria-live="assertive">
+        <span class="icon"></span>
+        <span class="message"></span>
+    </div>
 
     <!-- Navigation Bar -->
     <nav>
@@ -125,9 +311,18 @@
         <!-- Step 3: Take Picture (Foto) -->
         <div>
             <label for="foto">Foto:</label>
-            <input type="file" id="foto" name="foto" required onchange="previewFile()">
+            <input 
+                type="file" 
+                id="foto" 
+                name="foto" 
+                accept="image/*" 
+                capture="environment" 
+                required 
+                onchange="previewFile()"
+            >
             <img id="previewImg" src="" alt="Image preview" height="200" style="display: none;"><br>
         </div>
+        
 
         <!-- Step 4: Choose Kondisi (Condition) -->
         <div>
@@ -147,7 +342,7 @@
         </div>
 
         <!-- Step 5: Submit -->
-        <button type="button" id="saveButton">Simpan Lokally</button>
+        <button type="button" id="saveButton">Simpan Lokal</button>
     </form>
 
     <!-- Toggle Data Tersimpan Button -->
@@ -162,9 +357,7 @@
         <div class="spinner" id="kirimSemuaSpinner"></div>
     </div>
 
-    <!-- Success and Error Messages -->
-    <div id="successMessage" style="display: none; color: green;">Form submitted successfully!</div>
-    <div id="errorMessage" style="display: none; color: red;">There was an error submitting the form.</div>
+    <!-- Success and Error Messages (Removed as we are using enhanced notifications) -->
 
     <!-- JavaScript Code -->
     <script>
@@ -173,9 +366,10 @@
         const toggleSavedEntriesButton = document.getElementById('toggleSavedEntriesButton');
         const kirimSemuaButton = document.getElementById('kirimSemuaButton');
         const kirimSemuaSpinner = document.getElementById('kirimSemuaSpinner');
-        const successMessage = document.getElementById('successMessage');
-        const errorMessage = document.getElementById('errorMessage');
         const statusIndicator = document.getElementById('statusIndicator');
+        const notification = document.getElementById('notification');
+        const notificationIcon = notification.querySelector('.icon');
+        const notificationMessage = notification.querySelector('.message');
 
         // IndexedDB variables
         let db;
@@ -189,7 +383,7 @@
 
             request.onerror = function(event) {
                 console.error('Database error:', event.target.errorCode);
-                alert('Failed to open the database.');
+                showNotification('Failed to open the database.', 'error');
             };
 
             request.onupgradeneeded = function(event) {
@@ -217,9 +411,10 @@
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/sw.js')
                     .then(function(registration) {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    }, function(err) {
-                        console.log('ServiceWorker registration failed: ', err);
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch(function(err) {
+                        console.log('Service Worker registration failed:', err);
                     });
             }
 
@@ -244,6 +439,31 @@
             } else {
                 statusIndicator.style.display = 'none';
             }
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            notificationMessage.textContent = message;
+            notification.classList.remove('success', 'error', 'info');
+            notificationIcon.classList.remove('icon-success', 'icon-error', 'icon-info');
+
+            if (type === 'success') {
+                notification.classList.add('success');
+                notificationIcon.classList.add('icon-success');
+            } else if (type === 'error') {
+                notification.classList.add('error');
+                notificationIcon.classList.add('icon-error');
+            } else if (type === 'info') {
+                notification.classList.add('info');
+                notificationIcon.classList.add('icon-info');
+            }
+
+            notification.classList.add('show');
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
         }
 
         // Toggle the display of the Data Tersimpan section
@@ -281,6 +501,13 @@
             const formData = new FormData(formElement);
             const entry = {};
 
+            // Validate Kondisi selection
+            const kondisiSelect = document.getElementById('id_kondisi');
+            if (!kondisiSelect.value) {
+                showNotification('Silakan pilih kondisi sebelum menyimpan.', 'error');
+                return; // Prevent saving
+            }
+
             // Read the file
             const fileInput = document.getElementById('foto');
             const file = fileInput.files[0];
@@ -308,7 +535,7 @@
                 // Store the names directly
                 entry['nama_petugas'] = document.querySelector('#id_user option:checked').textContent;
                 entry['nama_lantai'] = document.querySelector('#id_tipe_lantai option:checked').textContent;
-                entry['nama_kondisi'] = document.querySelector('#id_kondisi option:checked').textContent;
+                entry['nama_kondisi'] = kondisiSelect.options[kondisiSelect.selectedIndex].text;
 
                 if (entry['id_tipe_aset']) {
                     entry['nama_aset'] = document.querySelector('#id_tipe_aset option:checked').textContent;
@@ -327,7 +554,7 @@
 
                 request.onsuccess = function(event) {
                     displaySavedEntries();
-                    alert('Data saved locally.');
+                    showNotification('Data berhasil disimpan secara lokal.', 'success');
 
                     // Reset the form
                     formElement.reset();
@@ -342,10 +569,10 @@
                 };
 
                 request.onerror = function(event) {
-                    alert('Error saving data: ' + event.target.errorCode);
+                    showNotification('Error menyimpan data: ' + event.target.errorCode, 'error');
                 };
             } else {
-                alert('Please select a file.');
+                showNotification('Silakan pilih file foto terlebih dahulu.', 'error');
             }
         });
 
@@ -449,11 +676,11 @@
 
                     // Show error message if available and add Retry button
                     if (entry.errorMessage) {
-                        entryHtml += `<div style="color: red;"><strong>Error:</strong> ${entry.errorMessage}</div>`;
-                        entryHtml += `<button onclick="retryEntry(${entry.id})">🔄 Retry</button>`;
+                        entryHtml += `<div style="color: #f44336; margin-top: 10px;"><strong>Error:</strong> ${entry.errorMessage}</div>`;
+                        entryHtml += `<button class="retry-button" onclick="retryEntry(${entry.id})">🔄 Retry</button>`;
                     }
 
-                    entryHtml += `<button onclick="deleteEntry(${entry.id})">Hapus</button>`;
+                    entryHtml += `<button class="delete-button" onclick="deleteEntry(${entry.id})">🗑️ Hapus</button>`;
 
                     const li = document.createElement('li');
                     li.innerHTML = entryHtml;
@@ -463,6 +690,7 @@
 
             request.onerror = function(event) {
                 console.error('Error fetching data:', event.target.errorCode);
+                showNotification('Error fetching saved entries.', 'error');
             };
         }
 
@@ -474,10 +702,12 @@
 
             request.onsuccess = function(event) {
                 displaySavedEntries();
+                showNotification('Entry terhapus.', 'success');
             };
 
             request.onerror = function(event) {
                 console.error('Error deleting entry:', event.target.errorCode);
+                showNotification('Error menghapus entry.', 'error');
             };
         }
 
@@ -512,22 +742,20 @@
                     if (xhr.status >= 200 && xhr.status < 300) {
                         // Remove the entry from IndexedDB
                         deleteEntry(id);
-
-                        alert('Entry submitted successfully!');
+                        showNotification('File berhasil dikirim ke server.', 'success'); // Updated message
                     } else {
                         console.error(`Error submitting entry ${id}:`, xhr.statusText);
-
-                        // Update the error message
                         entry.errorMessage = xhr.statusText;
                         const updateRequest = objectStore.put(entry);
 
                         updateRequest.onsuccess = function(event) {
                             displaySavedEntries();
-                            alert(`Error submitting entry: ${xhr.statusText}`);
+                            showNotification(`Error mengirim entry: ${xhr.statusText}`, 'error');
                         };
 
                         updateRequest.onerror = function(event) {
                             console.error('Error updating entry:', event.target.errorCode);
+                            showNotification('Error memperbarui entry.', 'error');
                         };
                     }
                 };
@@ -539,11 +767,12 @@
 
                     updateRequest.onsuccess = function(event) {
                         displaySavedEntries();
-                        alert('Network error occurred during submission.');
+                        showNotification('Terjadi kesalahan jaringan saat mengirim data.', 'error');
                     };
 
                     updateRequest.onerror = function(event) {
                         console.error('Error updating entry:', event.target.errorCode);
+                        showNotification('Error memperbarui entry.', 'error');
                     };
                 };
 
@@ -552,6 +781,7 @@
 
             getRequest.onerror = function(event) {
                 console.error('Error retrieving entry:', event.target.errorCode);
+                showNotification('Error mengambil data entry.', 'error');
             };
         }
 
@@ -570,7 +800,7 @@
                 if (entriesToSubmit.length === 0) {
                     kirimSemuaButton.disabled = false; // Re-enable the button
                     kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
-                    alert('No saved entries to submit.');
+                    showNotification('Tidak ada data tersimpan untuk dikirim.', 'error');
                     return;
                 }
 
@@ -581,7 +811,7 @@
                 kirimSemuaButton.disabled = false; // Re-enable the button
                 kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
                 console.error('Error fetching entries for submission:', event.target.errorCode);
-                alert('Error fetching entries for submission: ' + event.target.errorCode);
+                showNotification('Error mengambil data untuk pengiriman.', 'error');
             };
         }
 
@@ -601,9 +831,9 @@
                     displaySavedEntries();
 
                     if (failedEntries.length > 0) {
-                        alert(`${failedEntries.length} entries failed to submit. You can retry submitting them individually.`);
+                        showNotification(`${failedEntries.length} entri gagal dikirim. Anda dapat mencoba mengirim ulang secara individu.`, 'error');
                     } else {
-                        alert('All entries submitted successfully!');
+                        showNotification('File berhasil dikirim ke server.', 'success'); // Updated message
                     }
                     return;
                 }
@@ -628,13 +858,10 @@
                     if (xhr.status >= 200 && xhr.status < 300) {
                         // Remove the entry from IndexedDB
                         deleteEntry(entry.id);
-
                         index++;
                         submitNextEntry();
                     } else {
                         console.error(`Error submitting entry ${entry.id}:`, xhr.statusText);
-
-                        // Update the error message
                         entry.errorMessage = xhr.statusText;
                         const transaction = db.transaction([storeName], 'readwrite');
                         const objectStore = transaction.objectStore(storeName);
@@ -705,6 +932,7 @@
 
             selectElement.disabled = false;
         }
+
         function handleSelection(selected) {
             const kondisiSelect = document.getElementById('id_kondisi');
             kondisiSelect.disabled = false;
@@ -743,6 +971,7 @@
 
             selectElement.disabled = true;
         }
+
         // Handle online/offline status
         window.addEventListener('online', updateOnlineStatus);
         window.addEventListener('offline', updateOnlineStatus);

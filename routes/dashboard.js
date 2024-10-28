@@ -67,32 +67,54 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
 router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const { startDate, endDate, kondisi } = req.query;
 
+    // Validate date inputs
+    if (!startDate || !endDate) {
+        return res.status(400).send('Start date and end date are required.');
+    }
+
     try {
-        const browser = await puppeteer.launch();
+        // Launch Puppeteer browser
+        const browser = await puppeteer.launch({
+            headless: true, // Run in headless mode
+            args: ['--no-sandbox', '--disable-setuid-sandbox'] // Recommended for certain environments
+        });
         const page = await browser.newPage();
 
+        // Construct the URL with query parameters
         const url = `${BASE_URL}dashboard?startDate=${startDate}&endDate=${endDate}&kondisi=${kondisi}`;
         await page.goto(url, { waitUntil: 'networkidle0' });
 
-        const pdf = await page.pdf({
+        // Inject custom CSS to hide the navbar
+        await page.addStyleTag({
+            content: `nav { display: none !important; }` // Targets the <nav> element directly
+        });
+
+        // Optionally, wait for a short duration to ensure CSS is applied
+        await page.waitForTimeout(500); // Wait for 0.5 seconds
+
+        // Generate PDF
+        const pdfBuffer = await page.pdf({
             format: 'A4',
-            printBackground: true
+            printBackground: true,
+            margin: {
+                top: '20px',
+                bottom: '20px',
+                left: '20px',
+                right: '20px'
+            }
         });
 
         await browser.close();
 
-        let filename = `assets_report`;
-        if (startDate && endDate) {
-            filename += `_from_${startDate}_to_${endDate}`;
-        }
-        if (kondisi) {
-            filename += `_condition_${kondisi}`;
-        }
-        filename += `.pdf`;
+        // Format the dates for the filename
+        const formattedStartDate = formatDate(startDate);
+        const formattedEndDate = formatDate(endDate);
+        const filename = `Monitoring SEC ${formattedStartDate} to ${formattedEndDate}.pdf`;
 
+        // Set response headers for PDF download
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Type', 'application/pdf');
-        res.send(pdf);
+        res.send(pdfBuffer);
     } catch (err) {
         console.error('Failed to export PDF:', err);
         res.status(500).send('Error generating PDF');
@@ -233,3 +255,12 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
 });
 
 module.exports = router;
+
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const day = (`0${date.getDate()}`).slice(-2); // Ensures two-digit day
+    const month = (`0${date.getMonth() + 1}`).slice(-2); // Ensures two-digit month
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+}
