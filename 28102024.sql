@@ -14,7 +14,17 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- Dumping data for table web1.aset: ~0 rows (approximately)
+-- Dumping data for table web1.aset: ~9 rows (approximately)
+INSERT INTO `aset` (`id`, `foto`, `catatan`, `tanggal_dibuat`, `id_user`, `id_tipe_aset`, `id_tipe_lantai`, `id_kondisi`, `id_tipe_hb`, `id_tipe_door`) VALUES
+	(1, 'uploads/resized-1730112074798-17301120500267298196745185680570.jpg', 'Good', '2024-10-28 10:41:14', 14, 43, 7, 1, NULL, NULL),
+	(2, 'uploads/resized-1730112298908-17301122713304078177572206598167.jpg', '', '2024-10-28 10:44:58', 14, 41, 7, 1, NULL, NULL),
+	(3, 'uploads/resized-1730112494091-17301124754884935267073815505828.jpg', '', '2024-10-28 10:48:14', 14, 87, 3, 2, NULL, NULL),
+	(4, 'uploads/resized-1730112571127-17301125553773798209714229890525.jpg', 'Gg', '2024-10-28 10:49:31', 14, 42, 7, 1, NULL, NULL),
+	(5, 'uploads/resized-1730112617903-17301125991066194655033233527614.jpg', 'Skks', '2024-10-28 10:50:17', 14, 41, 7, 1, NULL, NULL),
+	(6, 'uploads/resized-1730113143758-Untitled.png', '', '2024-10-28 10:59:03', 14, NULL, 19, 1, 87, NULL),
+	(7, 'uploads/resized-1730114369747-17301143501332301559087943251213.jpg', 'hei', '2024-10-28 11:19:29', 14, 24, 9, 1, NULL, NULL),
+	(8, 'uploads/resized-1730114735302-17301147205193114894521367418456.jpg', '', '2024-10-28 11:25:35', 14, 52, 6, 1, NULL, NULL),
+	(9, 'uploads/resized-1730115634295-1_APD-WIFI-LG_Signal_Strength.png', '', '2024-10-28 11:40:34', 14, NULL, 19, 1, 87, NULL);
 
 -- Dumping data for table web1.posisi: ~2 rows (approximately)
 INSERT INTO `posisi` (`id`, `tipe_posisi`) VALUES
@@ -399,43 +409,43 @@ INSERT INTO `tipe_kondisi` (`id`, `nama_kondisi`) VALUES
 	(3, 'Hilang');
 
 -- Dumping data for table web1.tipe_lantai: ~34 rows (approximately)
-INSERT INTO `tipe_lantai` (`id`, `nama_lantai`, `deskripsi`) VALUES
-	(3, 'B', NULL),
-	(4, 'LG', NULL),
-	(5, 'LM', NULL),
-	(6, 'GF', NULL),
-	(7, 'UG', NULL),
-	(8, '1', NULL),
-	(9, '2', NULL),
-	(10, '3', NULL),
-	(11, '3A', NULL),
-	(12, 'GF RIVAPARK', NULL),
-	(13, 'UG RIVAPARK', NULL),
-	(14, 'RIVERSIDE', NULL),
-	(15, 'MO', NULL),
-	(19, 'P9', NULL),
-	(20, 'P8A', NULL),
-	(21, 'P8', NULL),
-	(22, 'P7A', NULL),
-	(23, 'P7', NULL),
-	(24, 'P6A', NULL),
-	(25, 'P6', NULL),
-	(26, 'P5A', NULL),
-	(27, 'P5', NULL),
-	(28, 'P4A', NULL),
-	(29, 'P4', NULL),
-	(30, 'P3A', NULL),
-	(31, 'P3', NULL),
-	(32, 'P2A', NULL),
-	(33, 'P2', NULL),
-	(34, 'P1A', NULL),
-	(35, 'P1', NULL),
-	(36, 'LM1', NULL),
-	(37, 'LM2', NULL),
-	(38, 'LOADING DOCK', NULL),
-	(39, 'MO', NULL);
+INSERT INTO `tipe_lantai` (`id`, `nama_lantai`, `deskripsi`, `posisi`) VALUES
+	(3, 'B', NULL, 1),
+	(4, 'LG', NULL, 1),
+	(5, 'LM', NULL, 1),
+	(6, 'GF', NULL, 1),
+	(7, 'UG', NULL, 1),
+	(8, '1', NULL, 1),
+	(9, '2', NULL, 1),
+	(10, '3', NULL, 1),
+	(11, '3A', NULL, 1),
+	(12, 'GF RIVAPARK', NULL, 2),
+	(13, 'UG RIVAPARK', NULL, 2),
+	(14, 'RIVERSIDE', NULL, 2),
+	(15, 'MO', NULL, 1),
+	(19, 'P9', NULL, 2),
+	(20, 'P8A', NULL, 2),
+	(21, 'P8', NULL, 2),
+	(22, 'P7A', NULL, 2),
+	(23, 'P7', NULL, 2),
+	(24, 'P6A', NULL, 2),
+	(25, 'P6', NULL, 2),
+	(26, 'P5A', NULL, 2),
+	(27, 'P5', NULL, 2),
+	(28, 'P4A', NULL, 2),
+	(29, 'P4', NULL, 2),
+	(30, 'P3A', NULL, 2),
+	(31, 'P3', NULL, 2),
+	(32, 'P2A', NULL, 2),
+	(33, 'P2', NULL, 2),
+	(34, 'P1A', NULL, 2),
+	(35, 'P1', NULL, 2),
+	(36, 'LM1', NULL, 2),
+	(37, 'LM2', NULL, 2),
+	(38, 'LOADING DOCK', NULL, 2),
+	(39, 'MO', NULL, 1);
 
--- Dumping data for table web1.user: ~15 rows (approximately)
+-- Dumping data for table web1.user: ~14 rows (approximately)
 INSERT INTO `user` (`id`, `name`, `password`, `role_id`) VALUES
 	(11, 'Jane Smith', '$2b$10$vv.cI04EIsOWD0iJLGDA9.OmscqKDC6gwmIK39s9s7g4uXdyDAyTG', 2),
 	(13, 'Carlos Diaz', '$2b$10$hU6gU3jUp5fZqX7auKCLm.UfZ11kwr36dNT2vUh0rGT/c.XioffAi', 2),

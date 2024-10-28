@@ -32,6 +32,14 @@
                         <option value="<%= option.nama_kondisi %>" <%= kondisi === option.nama_kondisi ? 'selected' : '' %>><%= option.nama_kondisi %></option>
                     <% }); %>
                 </select>
+
+                <label for="posisi">Posisi:</label>
+                <select name="posisi" id="posisi">
+                    <option value="">All Posisi</option>
+                    <% posisiOptions.forEach(option => { %>
+                        <option value="<%= option.tipe_posisi %>" <%= posisi === option.tipe_posisi ? 'selected' : '' %>><%= option.tipe_posisi %></option>
+                    <% }) %>
+                </select>
             
                 <button type="submit" class="filter-button">Filter</button>
                 <button type="button" class="export-button" id="exportPDF">Export to PDF</button>

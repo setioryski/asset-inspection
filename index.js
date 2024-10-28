@@ -381,11 +381,11 @@ app.get('/add-tipe-lantai-form', (req, res) => {
 
 // Route to handle adding a new 'tipe_lantai'
 app.post('/add-tipe-lantai', async (req, res) => {
-    const { nama_lantai } = req.body;
-    const sql = 'INSERT INTO tipe_lantai (nama_lantai) VALUES (?)';
+    const { nama_lantai, posisi } = req.body;
+    const sql = 'INSERT INTO tipe_lantai (nama_lantai, posisi) VALUES (?, ?)';
 
     try {
-        await queryAsync(sql, [nama_lantai]);
+        await queryAsync(sql, [nama_lantai, posisi]);
         res.redirect('/admin');
     } catch (err) {
         console.error('Error adding tipe_lantai:', err);

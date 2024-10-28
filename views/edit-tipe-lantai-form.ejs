@@ -2,19 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Edit Floor Type</title>
+    <title>Add Floor Type</title>
     <link rel="stylesheet" href="/form-styles.css">
 </head>
 <body>
     <div class="form-container">
-        <h2>Edit Floor Type</h2>
-        <form method="POST" action="/update-tipe-lantai">
-            <input type="hidden" name="id" value="<%= tipe_lantai.id %>">
-
+        <h2>Add Floor Type</h2>
+        <form method="POST" action="/add-tipe-lantai">
             <label for="nama_lantai">Floor Type Name:</label>
-            <input type="text" name="nama_lantai" id="nama_lantai" value="<%= tipe_lantai.nama_lantai %>" required>
+            <input type="text" name="nama_lantai" id="nama_lantai" required>
 
-            <button type="submit">Update Floor Type</button>
+            <label for="posisi">Posisi:</label>
+            <select name="posisi" id="posisi" required>
+                <option value="">Select Posisi</option>
+                <% posisiOptions.forEach(option => { %>
+                    <option value="<%= option.id %>"><%= option.tipe_posisi %></option>
+                <% }) %>
+            </select>
+
+            <button type="submit">Add Floor Type</button>
 
             <div class="back-link">
                 <a href="/admin">Back to Admin Dashboard</a>

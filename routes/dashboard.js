@@ -24,17 +24,19 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
             ta.nama_tipe AS nama_tipe_aset, 
             tl.nama_lantai AS nama_lantai,
             td.nama_tipe AS nama_tipe_door,
-            th.nama_tipe AS nama_tipe_hb
+            th.nama_tipe AS nama_tipe_hb,
+            p.tipe_posisi AS posisi
         FROM aset a
         LEFT JOIN user u ON a.id_user = u.id
         LEFT JOIN tipe_aset ta ON a.id_tipe_aset = ta.id
         LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
         LEFT JOIN tipe_kondisi k ON a.id_kondisi = k.id
         LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
-        LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id`;
+        LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
+        LEFT JOIN posisi p ON tl.posisi = p.id`;  // Join with posisi table
 
     const params = [];
-    const { startDate, endDate, kondisi } = req.query;
+    const { startDate, endDate, kondisi, posisi } = req.query;
     const conditions = [];
 
     if (startDate && endDate) {
@@ -47,6 +49,11 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         params.push(kondisi);
     }
 
+    if (posisi) {
+        conditions.push(`p.tipe_posisi = ?`);
+        params.push(posisi);
+    }
+
     if (conditions.length > 0) {
         query += ` WHERE ` + conditions.join(' AND ');
     }
@@ -56,12 +63,14 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
     try {
         const results = await queryAsync(query, params);
         const kondisiResults = await queryAsync('SELECT DISTINCT nama_kondisi FROM tipe_kondisi');
-        res.render('dashboard', { assets: results, kondisiOptions: kondisiResults, startDate, endDate, kondisi });
+        const posisiResults = await queryAsync('SELECT DISTINCT tipe_posisi FROM posisi');
+        res.render('dashboard', { assets: results, kondisiOptions: kondisiResults, posisiOptions: posisiResults, startDate, endDate, kondisi, posisi });
     } catch (err) {
         console.error('Failed to retrieve assets:', err);
         res.status(500).send('Error fetching assets from database');
     }
 });
+
 
 
 router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res) => {
