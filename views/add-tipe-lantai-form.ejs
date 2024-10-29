@@ -12,6 +12,14 @@
             <label for="nama_lantai">Floor Type Name:</label>
             <input type="text" name="nama_lantai" id="nama_lantai" required>
 
+            <label for="posisi">Posisi:</label>
+            <select name="posisi" id="posisi" required>
+                <option value="">Select Posisi</option>
+                <% posisiOptions.forEach(option => { %>
+                    <option value="<%= option.id %>"><%= option.tipe_posisi %></option>
+                <% }) %>
+            </select>
+
             <button type="submit">Add Floor Type</button>
 
             <div class="back-link">

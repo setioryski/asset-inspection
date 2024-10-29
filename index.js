@@ -375,9 +375,19 @@ app.post('/delete-user', async (req, res) => {
 });
 
 // Route to render the form for adding a new 'tipe_lantai'
-app.get('/add-tipe-lantai-form', (req, res) => {
-    res.render('add-tipe-lantai-form');
+app.get('/add-tipe-lantai-form', async (req, res) => {
+    try {
+        // Fetch the list of positions from the database
+        const posisiOptions = await queryAsync('SELECT id, tipe_posisi FROM posisi');
+        
+        // Render the form with posisi options
+        res.render('add-tipe-lantai-form', { posisiOptions });
+    } catch (err) {
+        console.error('Error fetching posisi options:', err);
+        res.status(500).send('Failed to load form');
+    }
 });
+
 
 // Route to handle adding a new 'tipe_lantai'
 app.post('/add-tipe-lantai', async (req, res) => {
@@ -396,33 +406,47 @@ app.post('/add-tipe-lantai', async (req, res) => {
 // Route to render the edit form for 'tipe_lantai'
 app.get('/edit-tipe-lantai-form/:id', async (req, res) => {
     const id = req.params.id;
-    const sql = 'SELECT * FROM tipe_lantai WHERE id = ?';
+    const tipeLantaiSql = 'SELECT * FROM tipe_lantai WHERE id = ?';
+    const posisiSql = 'SELECT id, tipe_posisi FROM posisi';
 
     try {
-        const results = await queryAsync(sql, [id]);
+        // Fetch the specific 'tipe_lantai' by id
+        const tipeLantaiResults = await queryAsync(tipeLantaiSql, [id]);
+        
+        // Fetch all available 'posisi' options
+        const posisiOptions = await queryAsync(posisiSql);
 
-        if (results.length > 0) {
-            res.render('edit-tipe-lantai-form', { tipe_lantai: results[0] });
+        if (tipeLantaiResults.length > 0) {
+            // Pass 'tipeLantai' to match the EJS template variable
+            res.render('edit-tipe-lantai-form', { 
+                tipeLantai: tipeLantaiResults[0], 
+                posisiOptions 
+            });
         } else {
             res.status(404).send('Floor type not found');
         }
     } catch (err) {
+        console.error('Error retrieving tipe_lantai or posisi options:', err);
         res.status(500).send('Error retrieving tipe_lantai');
     }
 });
 
+
+
 // Route to handle updating 'tipe_lantai'
 app.post('/update-tipe-lantai', async (req, res) => {
-    const { id, nama_lantai } = req.body;
-    const sql = 'UPDATE tipe_lantai SET nama_lantai = ? WHERE id = ?';
+    const { id, nama_lantai, posisi } = req.body;
+    const sql = 'UPDATE tipe_lantai SET nama_lantai = ?, posisi = ? WHERE id = ?';
 
     try {
-        await queryAsync(sql, [nama_lantai, id]);
+        await queryAsync(sql, [nama_lantai, posisi, id]);
         res.redirect('/admin');
     } catch (err) {
+        console.error('Error updating tipe_lantai:', err);
         res.status(500).send('Error updating tipe_lantai');
     }
 });
+
 
 // Route to handle deleting 'tipe_lantai'
 app.post('/delete-tipe-lantai', async (req, res) => {

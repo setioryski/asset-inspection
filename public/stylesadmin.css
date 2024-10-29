@@ -1,94 +1,110 @@
+/* Box Sizing for Consistency */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 /* General Styling */
 body {
     display: flex;
     flex-direction: column;
     height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f2f2f7;
+    background-color: #f5f5f7; /* Lighter background */
     color: #333;
     margin: 0;
 }
 
 /* Navbar styling */
 .navbar {
-    background-color: #007bff;
+    background-color: #f0f0f5; /* Light grey similar to macOS */
     padding: 10px 20px;
-    border-radius: 12px; /* Rounded corners */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid #dcdcdc; /* Subtle border */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-shrink: 0; /* Prevent the navbar from shrinking */
+    flex-shrink: 0;
     width: 100%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 
 .navbar .logo {
-    font-size: 18px;
-    font-weight: bold;
-    margin-left: 20px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
 }
 
 .navbar .links {
     display: flex;
+    gap: 15px; /* Even spacing between links */
 }
 
 .navbar a {
-    color: white;
+    color: #007aff; /* macOS blue */
     text-decoration: none;
     font-size: 14px;
-    margin: 0 15px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
 }
 
 .navbar a:hover {
-    text-decoration: underline;
+    background-color: rgba(0, 122, 255, 0.1); /* Light blue on hover */
 }
 
 /* Main content styling */
 main {
     display: flex;
-    flex: 1; /* Main content takes up remaining space */
+    flex: 1;
     flex-direction: column;
     overflow: hidden;
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px 0;
+    padding: 20px;
 }
 
 /* Tabs container */
 .tabs {
     display: flex;
-    justify-content: center;
-    border-bottom: 2px solid #007bff;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on touch devices */
+    border-bottom: 1px solid #dcdcdc;
     margin-bottom: 20px;
+    gap: 10px;
+}
+
+.tabs::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for cleaner look */
 }
 
 .tabs button {
-    background-color: #f2f2f7;
+    background-color: transparent;
     border: none;
     padding: 10px 20px;
     cursor: pointer;
     outline: none;
     font-size: 16px;
-    color: #333;
-    transition: background-color 0.3s ease;
+    color: #555;
+    transition: color 0.3s ease, border-bottom 0.3s ease;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap; /* Prevent text wrapping */
 }
 
 .tabs button.active {
-    background-color: #007bff;
-    color: white;
+    color: #007aff;
+    border-bottom: 3px solid #007aff;
 }
 
 .tabs button:hover {
-    background-color: #ddd;
+    color: #0051a8;
 }
 
 /* Tab content styling */
 .tab-content {
-    flex: 1; /* Allow tab content to grow and fill the space */
+    flex: 1;
     display: none;
-    padding: 20px;
-    overflow-y: auto; /* Enable vertical scrolling */
+    padding: 20px 0;
+    overflow-y: auto;
 }
 
 .tab-content.active {
@@ -99,44 +115,74 @@ main {
 .data-table {
     background: white;
     padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     width: 100%;
-    overflow-x: auto; /* Enable horizontal scrolling for the table */
+    /* Remove horizontal scrolling */
+    overflow-x: hidden;
 }
 
 /* Adjust the table styling */
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
+    margin-top: 10px;
+    table-layout: fixed; /* Fixed table layout for consistent column widths */
 }
 
 th, td {
-    border: 1px solid #ccc;
-    padding: 12px;
+    border: 1px solid #e0e0e0;
+    padding: 12px 10px;
     text-align: left;
     font-size: 14px;
+    word-wrap: break-word; /* Prevent content overflow */
 }
 
 th {
-    background-color: #007bff;
-    color: white;
+    background-color: #f0f0f5;
+    color: #333;
+    font-weight: 600;
+}
+
+tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+/* Specific Styling for Actions Column */
+.actions-column {
+    width: 150px; /* Adjust as needed */
+    white-space: nowrap; /* Prevent text wrapping */
+    text-align: center; /* Center align the content */
+}
+
+.actions-column .action-buttons {
+    display: flex;
+    gap: 8px; /* Space between edit and delete buttons */
+    justify-content: center;
+    align-items: center;
+}
+
+.actions-column .action-buttons button,
+.actions-column .action-buttons form button {
+    padding: 6px 8px; /* Reduced padding for compact buttons */
+    font-size: 12px; /* Smaller font size */
+    white-space: nowrap; /* Prevent button text from wrapping */
 }
 
 /* Button styling */
 button {
-    padding: 8px 12px;
+    padding: 6px 12px;
     cursor: pointer;
-    background-color: #007bff;
+    background-color: #007aff;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 14px;
+    transition: background-color 0.3s ease;
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #0051a8;
 }
 
 /* Form styling */
@@ -144,69 +190,54 @@ form {
     display: inline;
 }
 
-/* Action buttons container */
-.action-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px; /* Add space between edit and delete buttons */
+/* Scrollbar styling for tab container (optional) */
+.tabs::-webkit-scrollbar {
+    height: 6px;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-    width: 8px; /* Width of the scrollbar */
-    height: 8px; /* Height of the scrollbar for horizontal scrolling */
+.tabs::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-::-webkit-scrollbar-track {
-    background: #f2f2f7; /* Background of the scrollbar track */
-    border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: #007bff; /* Color of the scrollbar handle */
-    border-radius: 10px; /* Rounded corners */
-    border: 2px solid #f2f2f7; /* Adds a small gap around the scrollbar handle */
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: #0056b3; /* Darker color on hover */
-}
-
-::-webkit-scrollbar-corner {
-    background-color: #f2f2f7; /* Corner color for the scrollbar intersection */
-}
-
-/* Ensures the scrollbar works across different browsers */
-.scroll-container {
-    scrollbar-width: thin; /* Firefox specific: makes the scrollbar thinner */
-    scrollbar-color: #007bff #f2f2f7; /* Firefox specific: scrollbar color */
+.tabs::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 122, 255, 0.5);
+    border-radius: 3px;
 }
 
 /* Responsive adjustments */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+    .navbar .links {
+        gap: 10px;
+    }
+
+    .tabs button {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+
     .data-table {
-        min-width: 100%;
+        padding: 15px;
     }
 
-    .data-table h2 {
-        flex-direction: column;
-        align-items: flex-start;
+    th, td {
+        padding: 10px 8px;
+        font-size: 13px;
     }
 
-    .data-table h2 button {
-        margin-top: 10px;
-        margin-left: 0;
+    button {
+        padding: 5px 10px;
+        font-size: 13px;
+    }
+
+    /* Adjust Actions Column for smaller screens */
+    .actions-column {
+        width: 120px; /* Reduced width */
+    }
+
+    .actions-column .action-buttons button,
+    .actions-column .action-buttons form button {
+        padding: 5px 6px;
+        font-size: 11px;
     }
 }
 
-/* Ensure consistent column widths */
-th, td:nth-child(1) {
-    width: 10%;
-}
-th, td:nth-child(2) {
-    width: 70%;
-}
-th, td:nth-child(3) {
-    width: 20%;
-    text-align: center;
-}
