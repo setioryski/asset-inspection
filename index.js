@@ -210,28 +210,40 @@ app.get('/api/tipe_kondisi', isAuthenticated, async (req, res) => {
 
 app.get('/admin', isAuthenticated, checkRole(['admin']), async (req, res) => {
     try {
-        // Fetch tipe_aset with floor names
+        // Fetch tipe_aset with floor names, sorted by lantai_id and id
         let tipeAsetResults = await queryAsync(`
             SELECT ta.id, ta.nama_tipe, ta.lantai_id, tl.nama_lantai
             FROM tipe_aset ta
             LEFT JOIN tipe_lantai tl ON ta.lantai_id = tl.id
+            ORDER BY ta.lantai_id ASC, ta.id ASC
         `);
 
-        // Fetch other types (tipe_hb, tipe_door) as before
+        // Fetch tipe_hb with floor names, sorted by lantai_id and id
         let tipeHbResults = await queryAsync(`
             SELECT th.id, th.nama_tipe, th.lantai_id, tl.nama_lantai
             FROM tipe_hb th
             LEFT JOIN tipe_lantai tl ON th.lantai_id = tl.id
+            ORDER BY th.lantai_id ASC, th.id ASC
         `);
 
+        // Fetch tipe_door with floor names, sorted by lantai_id and id
         let tipeDoorResults = await queryAsync(`
             SELECT td.id, td.nama_tipe, td.lantai_id, tl.nama_lantai
             FROM tipe_door td
             LEFT JOIN tipe_lantai tl ON td.lantai_id = tl.id
+            ORDER BY td.lantai_id ASC, td.id ASC
         `);
 
+        // Fetch tipe_lantai 
         let tipeLantaiResults = await queryAsync('SELECT id, nama_lantai FROM tipe_lantai');
-        let userResults = await queryAsync('SELECT id, name FROM user');
+
+        // Fetch users (no sorting needed, or add if desired)
+        let userResults = await queryAsync(`
+            SELECT id, name 
+            FROM user 
+            ORDER BY id ASC
+        `);
+
         const userRole = req.session.user.role;
 
         res.render('admin', {
@@ -247,7 +259,6 @@ app.get('/admin', isAuthenticated, checkRole(['admin']), async (req, res) => {
         res.status(500).send('Error retrieving data');
     }
 });
-
 
 
 
