@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 29, 2024 at 03:11 AM
+-- Generation Time: Oct 29, 2024 at 06:37 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -558,7 +558,6 @@ INSERT INTO `tipe_lantai` (`id`, `nama_lantai`, `deskripsi`, `posisi`) VALUES
 (12, 'GF RIVAPARK', NULL, 2),
 (13, 'UG RIVAPARK', NULL, 2),
 (14, 'RIVERSIDE', NULL, 2),
-(15, 'MO', NULL, 1),
 (19, 'P9', NULL, 2),
 (20, 'P8A', NULL, 2),
 (21, 'P8', NULL, 2),
@@ -579,7 +578,8 @@ INSERT INTO `tipe_lantai` (`id`, `nama_lantai`, `deskripsi`, `posisi`) VALUES
 (36, 'LM1', NULL, 2),
 (37, 'LM2', NULL, 2),
 (38, 'LOADING DOCK', NULL, 2),
-(39, 'MO', NULL, 1);
+(39, 'MO', NULL, 1),
+(41, 'CUSTOM', NULL, 2);
 
 -- --------------------------------------------------------
 
@@ -730,7 +730,7 @@ ALTER TABLE `tipe_kondisi`
 -- AUTO_INCREMENT for table `tipe_lantai`
 --
 ALTER TABLE `tipe_lantai`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT for table `user`

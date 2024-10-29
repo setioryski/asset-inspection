@@ -84,7 +84,13 @@
                                 No Image Available
                             <% } %>
                         </td>
-                        <td><%= asset.catatan %></td>
+                        <td>
+                            <%- asset.catatan
+                                .split(' ')
+                                .map((word, index) => ( (index + 1) % 6 === 0 ? word + '<br>' : word))
+                                .join(' ') 
+                            %>
+                        </td>
                     </tr>
                 <% }); %>
             </tbody>
