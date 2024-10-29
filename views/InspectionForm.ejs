@@ -57,10 +57,12 @@
                 <% }); %>
             </select>
         </div>
-        
-        <div class="field-note">
-            <p>Pilih salah satu dari ketiga ini, jika salah pilih mohon refresh halaman.</p>
-        </div>
+
+ <!-- Note -->
+ <div class="field-note">
+    <p>Pilih salah satu dari ketiga kategori aset ini, jika salah pilih mohon refresh halaman.</p>
+</div>
+
         <!-- Step 2: Choose Asset or Box Hydrant or Emergency Door -->
         <div>
             <label for="id_tipe_aset"><i class="fas fa-box"></i> Nama Aset:</label>
@@ -118,23 +120,34 @@
             </select>
         </div>
 
-       <!-- Step 5: Submit -->
-       <div class="button-group">
-        <!-- Save Button -->
-        <button type="button" id="saveButton"><i class="fas fa-save"></i> Simpan Lokal</button>
-        <!-- Toggle Data Tersimpan Button -->
-        <button type="button" id="toggleSavedEntriesButton"><i class="fas fa-folder-open"></i> Tampilkan Data Tersimpan</button>
-    </div>
-</form>
+        <!-- Catatan (Optional) -->
+        <div>
+            <label for="catatan">Catatan:</label>
+            <textarea id="catatan" name="catatan"></textarea>
+        </div>
 
-<!-- Saved Entries Section -->
-<div id="savedEntries" style="display: none;">
-    <h2>Data Tersimpan</h2>
-    <ul id="entryList"></ul>
-    <!-- Kirim Semua Button with Spinner -->
-    <button type="button" id="kirimSemuaButton"><i class="fas fa-paper-plane"></i> Kirim Semua</button>
-    <div class="spinner" id="kirimSemuaSpinner"></div>
+         <!-- Note -->
+ <div class="field-note">
+    <p>tombol simpan lokal hanya untuk menyimpan sementara, klik tombol "kirim semua" dalam tombol "tampilkan data tersimpan" untuk menyimpan ke database </p>
 </div>
+
+       <!-- Step 5: Submit -->
+        <div class="button-group">
+            <!-- Save Button -->
+            <button type="button" id="saveButton"><i class="fas fa-save"></i> Simpan Lokal</button>
+            <!-- Toggle Data Tersimpan Button -->
+            <button type="button" id="toggleSavedEntriesButton"><i class="fas fa-folder-open"></i> Tampilkan Data Tersimpan</button>
+        </div>
+    </form>
+
+    <!-- Saved Entries Section -->
+    <div id="savedEntries" style="display: none;">
+        <h2>Data Tersimpan</h2>
+        <ul id="entryList"></ul>
+        <!-- Kirim Semua Button with Spinner -->
+        <button type="button" id="kirimSemuaButton"><i class="fas fa-paper-plane"></i> Kirim Semua</button>
+        <div class="spinner" id="kirimSemuaSpinner"></div>
+    </div>
 
 
     <!-- JavaScript Code -->

@@ -184,13 +184,33 @@ button:disabled {
     flex: 1; /* Equal width */
 }
 
-.button-group button:first-child {
-    /* Optional: Align first button to the left */
+/* Styling untuk Select yang Dinonaktifkan */
+select:disabled {
+    background-color: #e0e0e0; /* Abu-abu terang */
+    color: #6c6c6c; /* Abu-abu tua */
+    cursor: not-allowed; /* Mengubah kursor menjadi tanda larangan */
 }
 
-.button-group button:last-child {
-    /* Optional: Align last button to the right */
+/* Styling untuk Select yang Aktif */
+select {
+    background-color: var(--input-background-color);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Tambahkan efek hover untuk Select yang Aktif */
+select:hover:not(:disabled) {
+    background-color: #f0f0f0; /* Abu-abu sangat terang saat hover */
+}
+
+/* Tambahkan gaya fokus untuk aksesibilitas */
+select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 122, 255, 0.5); /* Shadow biru saat fokus */
+}
+
 
 /* Image Preview */
 #previewImg {

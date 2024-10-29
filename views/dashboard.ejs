@@ -85,15 +85,20 @@
                             <% } %>
                         </td>
                         <td>
-                            <%- asset.catatan
-                                .split(' ')
-                                .map((word, index) => ( (index + 1) % 6 === 0 ? word + '<br>' : word))
-                                .join(' ') 
-                            %>
+                            <% if (asset.catatan) { %>
+                                <%- asset.catatan
+                                    .split(' ')
+                                    .map((word, index) => ((index + 1) % 6 === 0 ? word + '<br>' : word))
+                                    .join(' ') 
+                                %>
+                            <% } else { %>
+                                No notes available
+                            <% } %>
                         </td>
                     </tr>
                 <% }); %>
             </tbody>
+            
         </table>
 
         <script>
