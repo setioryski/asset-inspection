@@ -1,38 +1,44 @@
 /* Root Variables */
 :root {
-    --primary-color: #4CAF50;
-    --primary-color-hover: #45a049;
-    --secondary-color: #333;
-    --background-color: #fafafa;
-    --text-color: #333;
-    --nav-background-color: #333;
-    --nav-text-color: #fff;
-    --input-border-color: #ccc;
-    --input-focus-border-color: #4CAF50;
-    --error-color: #e74c3c;
-    --error-color-hover: #c0392b;
-    --success-background-color: #d4edda;
-    --success-text-color: #155724;
-    --success-border-color: #c3e6cb;
-    --error-background-color: #f8d7da;
-    --error-text-color: #721c24;
-    --error-border-color: #f5c6cb;
+    --primary-color: #007aff; /* macOS blue */
+    --primary-color-hover: #0051a8;
+    --background-color: #f5f5f5; /* Light gray background */
+    --container-background-color: #ffffff;
+    --text-color: #000000;
+    --border-color: #d1d1d1;
+    --input-background-color: #ffffff;
+    --input-border-color: #c7c7cc;
+    --input-focus-border-color: #007aff;
+    --button-text-color: #ffffff;
+    --placeholder-color: #a3a3a3;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-size: 16px;
 }
 
-/* General body styles */
+/* General Styles */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    color: var(--text-color);
     margin: 0;
     padding: 0;
-    background: var(--background-color);
+    font-size: var(--font-size);
+    -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 100px; /* Adjusted for fixed navbar */
+    font-size: 28px;
+    font-weight: 500;
     color: var(--text-color);
-    line-height: 1.6;
 }
 
 /* Navigation Bar */
 nav {
-    background-color: var(--nav-background-color);
-    color: var(--nav-text-color);
+    background-color: var(--container-background-color);
+    border-bottom: 1px solid var(--border-color);
     padding: 10px 20px;
     position: fixed;
     width: 100%;
@@ -47,60 +53,80 @@ nav ul {
     padding: 0;
     display: flex;
     justify-content: center;
-    flex-wrap: wrap;
 }
 
 nav ul li {
-    margin: 5px 15px;
+    margin: 0 15px;
 }
 
 nav ul li a {
-    color: var(--nav-text-color);
+    color: var(--text-color);
     text-decoration: none;
-    font-weight: bold;
-    transition: color 0.3s;
+    font-weight: 500;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
 }
 
 nav ul li a:hover {
     color: var(--primary-color);
-    text-decoration: underline;
 }
 
-/* Title styling */
-h1 {
-    text-align: center;
-    margin-top: 100px; /* Adjust based on navbar height */
-    color: var(--text-color);
-}
-
-/* Form styling */
+/* Form Container */
 form {
-    margin: 20px auto;
-    padding: 20px;
-    background: #ffffff;
-    width: 90%;
+    background-color: var(--container-background-color);
+    width: 95%;
     max-width: 600px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    border-radius: 8px;
+    margin: 20px auto;
+    padding: 30px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px var(--shadow-color);
 }
 
 form div {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
+/* Form Labels with Icons */
 label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    margin-bottom: 8px;
 }
 
+label i {
+    margin-right: 8px;
+    color: var(--primary-color);
+}
+
+/* Form Inputs */
 input[type="file"], select, textarea, input[type="text"] {
     width: 100%;
-    padding: 10px;
-    margin-top: 5px;
+    padding: 12px;
     border: 1px solid var(--input-border-color);
-    border-radius: 4px;
+    border-radius: 8px;
+    background-color: var(--input-background-color);
+    font-size: 16px;
+    color: var(--text-color);
     box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+input[type="file"]::file-selector-button {
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: var(--button-text-color);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-size: 16px;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background-color: var(--primary-color-hover);
 }
 
 input[type="file"]:focus, select:focus, textarea:focus, input[type="text"]:focus {
@@ -108,74 +134,91 @@ input[type="file"]:focus, select:focus, textarea:focus, input[type="text"]:focus
     outline: none;
 }
 
-button[type="submit"], button[type="button"] {
-    width: 100%;
-    padding: 12px 20px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
-    margin-bottom: 10px;
+textarea {
+    resize: vertical;
+    min-height: 120px;
 }
 
-button[type="submit"]:hover, button[type="button"]:hover {
+::placeholder {
+    color: var(--placeholder-color);
+}
+
+/* Buttons with Icons */
+button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 14px;
+    margin: 5px 0;
+    font-size: var(--button-font-size);
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary-color);
+    color: var(--button-text-color);
+    transition: background-color 0.3s ease;
+    font-family: var(--font-family);
+}
+
+button i {
+    margin-right: 8px;
+}
+
+button:hover:not(:disabled) {
     background-color: var(--primary-color-hover);
 }
 
-button[type="submit"]:disabled, button[type="button"]:disabled {
-    background-color: #ccc;
+button:disabled {
+    opacity: 0.6;
     cursor: not-allowed;
 }
 
-/* Success and Error Message Styling */
-#successMessage, #errorMessage {
-    display: none;
-    padding: 15px;
-    margin-top: 20px;
-    border-radius: 5px;
-    font-size: 16px;
-    text-align: center;
-    width: 90%;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+/* Specific Button Adjustments */
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px; /* Space between buttons */
 }
 
-#successMessage {
-    background-color: var(--success-background-color);
-    color: var(--success-text-color);
-    border: 1px solid var(--success-border-color);
+.button-group button {
+    flex: 1; /* Equal width */
 }
 
-#errorMessage {
-    background-color: var(--error-background-color);
-    color: var(--error-text-color);
-    border: 1px solid var(--error-border-color);
+.button-group button:first-child {
+    /* Optional: Align first button to the left */
+}
+
+.button-group button:last-child {
+    /* Optional: Align last button to the right */
 }
 
 /* Image Preview */
 #previewImg {
     display: block;
-    margin: 10px 0;
+    margin: 15px 0;
     max-width: 100%;
     height: auto;
-    border-radius: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
 }
 
 /* Saved Entries Section */
 #savedEntries {
-    margin: 20px auto;
-    width: 90%;
+    width: 95%;
     max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: var(--container-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px var(--shadow-color);
 }
 
 #savedEntries h2 {
+    font-size: 24px;
+    font-weight: 500;
+    margin-bottom: 20px;
     text-align: center;
-    margin-bottom: 10px;
 }
 
 #entryList {
@@ -184,67 +227,173 @@ button[type="submit"]:disabled, button[type="button"]:disabled {
 }
 
 #entryList li {
-    position: relative;
-    padding: 15px;
+    padding: 20px;
     margin-bottom: 15px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px var(--shadow-color);
 }
 
 #entryList li img {
-    margin-top: 10px;
-    border-radius: 4px;
+    margin-top: 15px;
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
 }
 
+/* Entry Buttons */
 #entryList li button {
-    position: absolute;
-    top: 15px;
-    right: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: auto;
-    padding: 8px 16px;
-    background-color: var(--error-color);
-    color: #fff;
-    font-size: 14px;
+    padding: 10px 20px;
+    margin-top: 15px;
+    margin-right: 10px;
+    border-radius: 8px;
     border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-#entryList li button:hover {
-    background-color: var(--error-color-hover);
-}
-
-/* Success and Error Message Styling */
-#successMessage, #errorMessage {
-    display: none;
-    padding: 15px;
-    margin-top: 20px;
-    border-radius: 5px;
     font-size: 16px;
-    text-align: center;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--font-family);
+}
+
+.retry-button {
+    background-color: #ffcc00; /* Amber for retry */
+    color: var(--text-color);
+}
+
+.delete-button {
+    background-color: #ff3b30; /* Red for delete */
+    color: #ffffff;
+}
+
+.retry-button:hover {
+    background-color: #e6b800;
+}
+
+.delete-button:hover {
+    background-color: #e33228;
+}
+
+/* Online/Offline Indicator */
+#statusIndicator {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: #ff3b30; /* Red for offline */
+    color: #ffffff;
+    text-align: center;
+    padding: 12px 0;
+    display: none;
+    z-index: 10000;
+    font-weight: 500;
+    box-shadow: 0 1px 3px var(--shadow-color);
 }
 
-#successMessage {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+/* Notification Styles */
+#notification {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    min-width: 280px;
+    max-width: 90%;
+    padding: 15px 20px;
+    background-color: var(--container-background-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 2px 6px var(--shadow-color);
+    display: none;
+    z-index: 10001;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    display: flex;
+    align-items: center;
 }
 
-#errorMessage {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+#notification.show {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-/* Responsive adjustments */
+#notification.success {
+    border-left: 4px solid #28a745; /* Green */
+}
+
+#notification.error {
+    border-left: 4px solid #dc3545; /* Red */
+}
+
+#notification.info {
+    border-left: 4px solid #17a2b8; /* Blue */
+}
+
+#notification .icon {
+    margin-right: 10px;
+    font-size: 24px;
+}
+
+.icon-success::before {
+    content: "";
+}
+
+.icon-error::before {
+    content: "";
+}
+
+.icon-info::before {
+    content: "";
+}
+
+/* Assign Font Awesome Icons to Notification */
+#notification.success .icon::before {
+    content: "\f058"; /* Font Awesome check-circle */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    color: #28a745;
+}
+
+#notification.error .icon::before {
+    content: "\f057"; /* Font Awesome times-circle */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    color: #dc3545;
+}
+
+#notification.info .icon::before {
+    content: "\f05a"; /* Font Awesome info-circle */
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    color: #17a2b8;
+}
+
+/* Spinner Styles */
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border-left-color: var(--primary-color);
+    animation: spin 1s linear infinite;
+    display: none;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive Adjustments */
 @media (max-width: 768px) {
+    h1 {
+        margin-top: 80px;
+        font-size: 24px;
+    }
+
     nav ul {
         flex-direction: column;
         align-items: center;
@@ -255,10 +404,60 @@ button[type="submit"]:disabled, button[type="button"]:disabled {
     }
 
     form {
-        margin-top: 140px; /* Adjust based on navbar height */
+        margin-top: 100px;
     }
 
-    button[type="submit"], button[type="button"] {
-        font-size: 18px;
+    /* Adjust notification position */
+    #notification {
+        right: 10px;
+        left: 10px;
+        top: 80px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 22px;
+    }
+
+    input[type="file"], select, textarea, input[type="text"] {
+        font-size: 15px;
+    }
+
+    button {
+        font-size: 15px;
+        padding: 12px;
+    }
+
+    /* Adjust "Tampilkan Data Tersimpan" button width for smaller screens */
+    #toggleSavedEntriesButton {
+        width: 80%; /* Increase width for very small screens if desired */
+        max-width: none; /* Remove max-width if not needed */
+    }
+
+    /* Adjust notification position */
+    #notification {
+        top: 90px;
+    }
+}
+
+/* Note Above Form Fields */
+.field-note p {
+    font-size: 14px; /* Slightly smaller font size */
+    color: #ff3b30; /* Red color to indicate caution */
+    font-style: italic; /* Italic style for emphasis */
+    margin-bottom: 10px; /* Space below the note */
+}
+
+/* Responsive Adjustments for the Note */
+@media (max-width: 768px) {
+    .field-note p {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .field-note p {
+        font-size: 12px;
     }
 }

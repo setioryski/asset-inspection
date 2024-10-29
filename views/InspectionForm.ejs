@@ -7,232 +7,13 @@
     <title>Formulir Inspeksi Aset</title>
     <!-- Stylesheet -->
     <link rel="stylesheet" href="/stylesinspection.css">
-    <style>
-        /* Spinner Styles */
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border-left-color: #09f;
-            animation: spin 1s linear infinite;
-            display: none;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Button Styles */
-        button {
-            cursor: pointer;
-            padding: 8px 16px;
-            margin: 5px;
-            font-size: 16px;
-            border: none;
-            border-radius: 4px;
-            background-color: #09f;
-            color: white;
-            transition: background-color 0.3s ease;
-        }
-
-        button:hover:not(:disabled) {
-            background-color: #007acc;
-        }
-
-        /* Disabled Button Styles */
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        /* Online/Offline Indicator Styles */
-        #statusIndicator {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background-color: #f44336; /* Red for offline */
-            color: white;
-            text-align: center;
-            padding: 12px 0;
-            display: none;
-            z-index: 10000;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Notification Styles */
-        #notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            min-width: 250px;
-            max-width: 350px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            color: #fff;
-            display: none;
-            z-index: 10001;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-            display: flex;
-            align-items: center;
-        }
-
-        #notification.show {
-            display: flex;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        #notification.success {
-            background-color: #4CAF50; /* Green */
-        }
-
-        #notification.error {
-            background-color: #f44336; /* Red */
-        }
-
-        #notification.info {
-            background-color: #2196F3; /* Blue */
-        }
-
-        #notification .icon {
-            margin-right: 10px;
-            font-size: 20px;
-        }
-
-        /* Icons using Unicode characters */
-        .icon-success::before {
-            content: "✔️";
-        }
-
-        .icon-error::before {
-            content: "❌";
-        }
-
-        .icon-info::before {
-            content: "ℹ️";
-        }
-
-        /* Responsive Adjustments */
-        @media (max-width: 600px) {
-            #notification {
-                right: 10px;
-                left: 10px;
-            }
-        }
-
-        /* Form Styles (Optional Enhancements) */
-        form div {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        select, input[type="file"], textarea {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            transition: border-color 0.3s ease;
-        }
-
-        select:focus, input[type="file"]:focus, textarea:focus {
-            border-color: #09f;
-            outline: none;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        /* Navigation Bar Styles (Optional Enhancements) */
-        nav ul {
-            list-style-type: none;
-            padding: 0;
-            background-color: #333;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        nav ul li {
-            float: left;
-        }
-
-        nav ul li a {
-            display: block;
-            color: white;
-            text-align: center;
-            padding: 14px 20px;
-            text-decoration: none;
-            transition: background-color 0.3s ease;
-        }
-
-        nav ul li a:hover {
-            background-color: #575757;
-        }
-
-        /* Page Title */
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        /* Saved Entries Section */
-        #savedEntries {
-            margin-top: 20px;
-        }
-
-        #savedEntries h2 {
-            margin-bottom: 10px;
-        }
-
-        #entryList li {
-            background-color: #f9f9f9;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            list-style-type: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        #entryList img {
-            margin-top: 10px;
-            border-radius: 4px;
-        }
-
-        /* Additional Button Styles within Entries */
-        #entryList button {
-            background-color: #f44336; /* Default to red for delete */
-            margin-top: 10px;
-        }
-
-        #entryList button.retry-button {
-            background-color: #ff9800; /* Orange for retry */
-            margin-right: 5px;
-        }
-
-        #entryList button.delete-button {
-            background-color: #f44336; /* Red for delete */
-        }
-
-        /* Hover Effects for Entry Buttons */
-        #entryList button:hover:not(:disabled) {
-            filter: brightness(90%);
-        }
-    </style>
+    <!-- Include Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
 </head>
 <body>
     <!-- Online/Offline Status Indicator -->
@@ -247,9 +28,9 @@
     <!-- Navigation Bar -->
     <nav>
         <ul>
-            <li><a href="/dashboard">Dashboard</a></li>
-            <li><a href="/admin">Admin</a></li>
-            <li><a href="/logout">Logout</a></li>
+            <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="/admin"><i class="fas fa-user-cog"></i> Admin</a></li>
+            <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
         </ul>
     </nav>
 
@@ -260,7 +41,7 @@
     <form id="inspectionForm">
         <!-- Nama Petugas -->
         <div>
-            <label for="id_user">Nama Petugas:</label>
+            <label for="id_user"><i class="fas fa-user"></i> Nama Petugas:</label>
             <select id="id_user" name="id_user" required>
                 <option value="<%= user.id %>"><%= user.name %></option>
             </select>
@@ -268,7 +49,7 @@
 
         <!-- Step 1: Choose Floor (Lantai) -->
         <div>
-            <label for="id_tipe_lantai">Lantai:</label>
+            <label for="id_tipe_lantai"><i class="fas fa-building"></i> Lantai:</label>
             <select id="id_tipe_lantai" name="id_tipe_lantai" required onchange="filterOptionsByLantai()">
                 <option value="" selected disabled>Pilih Lantai</option>
                 <% tipe_lantai.forEach(function(tl) { %>
@@ -276,10 +57,13 @@
                 <% }); %>
             </select>
         </div>
-
+        
+        <div class="field-note">
+            <p>Pilih salah satu dari ketiga ini, jika salah pilih mohon refresh halaman.</p>
+        </div>
         <!-- Step 2: Choose Asset or Box Hydrant or Emergency Door -->
         <div>
-            <label for="id_tipe_aset">Nama Aset:</label>
+            <label for="id_tipe_aset"><i class="fas fa-box"></i> Nama Aset:</label>
             <select id="id_tipe_aset" name="id_tipe_aset" onchange="handleSelection('aset')" disabled>
                 <option value="" selected disabled>Pilih Aset</option>
                 <% tipe_aset.forEach(function(ta) { %>
@@ -289,7 +73,7 @@
         </div>
 
         <div>
-            <label for="id_tipe_hb">Box Hydrant:</label>
+            <label for="id_tipe_hb"><i class="fas fa-fire-extinguisher"></i> Box Hydrant:</label>
             <select id="id_tipe_hb" name="id_tipe_hb" onchange="handleSelection('hb')" disabled>
                 <option value="" selected disabled>Pilih Box Hydrant</option>
                 <% tipe_hb.forEach(function(hb) { %>
@@ -299,7 +83,7 @@
         </div>
 
         <div>
-            <label for="id_tipe_door">Emergency Door:</label>
+            <label for="id_tipe_door"><i class="fas fa-door-open"></i> Emergency Door:</label>
             <select id="id_tipe_door" name="id_tipe_door" onchange="handleSelection('door')" disabled>
                 <option value="" selected disabled>Pilih Emergency Door</option>
                 <% tipe_door.forEach(function(door) { %>
@@ -310,7 +94,7 @@
 
         <!-- Step 3: Take Picture (Foto) -->
         <div>
-            <label for="foto">Foto:</label>
+            <label for="foto"><i class="fas fa-camera"></i> Foto:</label>
             <input 
                 type="file" 
                 id="foto" 
@@ -322,11 +106,10 @@
             >
             <img id="previewImg" src="" alt="Image preview" height="200" style="display: none;"><br>
         </div>
-        
 
         <!-- Step 4: Choose Kondisi (Condition) -->
         <div>
-            <label for="id_kondisi">Kondisi:</label>
+            <label for="id_kondisi"><i class="fas fa-clipboard-check"></i> Kondisi:</label>
             <select id="id_kondisi" name="id_kondisi" required disabled>
                 <option value="" selected disabled>Pilih Kondisi</option>
                 <% tipe_kondisi.forEach(function(tk) { %>
@@ -335,29 +118,24 @@
             </select>
         </div>
 
-        <!-- Catatan (Optional) -->
-        <div>
-            <label for="catatan">Catatan:</label>
-            <textarea id="catatan" name="catatan"></textarea>
-        </div>
-
-        <!-- Step 5: Submit -->
-        <button type="button" id="saveButton">Simpan Lokal</button>
-    </form>
-
-    <!-- Toggle Data Tersimpan Button -->
-    <button type="button" id="toggleSavedEntriesButton">Tampilkan Data Tersimpan</button>
-
-    <!-- Saved Entries Section -->
-    <div id="savedEntries" style="display: none;">
-        <h2>Data Tersimpan</h2>
-        <ul id="entryList"></ul>
-        <!-- Kirim Semua Button with Spinner -->
-        <button type="button" id="kirimSemuaButton">Kirim Semua</button>
-        <div class="spinner" id="kirimSemuaSpinner"></div>
+       <!-- Step 5: Submit -->
+       <div class="button-group">
+        <!-- Save Button -->
+        <button type="button" id="saveButton"><i class="fas fa-save"></i> Simpan Lokal</button>
+        <!-- Toggle Data Tersimpan Button -->
+        <button type="button" id="toggleSavedEntriesButton"><i class="fas fa-folder-open"></i> Tampilkan Data Tersimpan</button>
     </div>
+</form>
 
-    <!-- Success and Error Messages (Removed as we are using enhanced notifications) -->
+<!-- Saved Entries Section -->
+<div id="savedEntries" style="display: none;">
+    <h2>Data Tersimpan</h2>
+    <ul id="entryList"></ul>
+    <!-- Kirim Semua Button with Spinner -->
+    <button type="button" id="kirimSemuaButton"><i class="fas fa-paper-plane"></i> Kirim Semua</button>
+    <div class="spinner" id="kirimSemuaSpinner"></div>
+</div>
+
 
     <!-- JavaScript Code -->
     <script>
@@ -441,25 +219,29 @@
             }
         }
 
-        // Show notification
+        // Show notification with icons
         function showNotification(message, type) {
             notificationMessage.textContent = message;
+            
+            // Reset classes
             notification.classList.remove('success', 'error', 'info');
-            notificationIcon.classList.remove('icon-success', 'icon-error', 'icon-info');
-
+            notificationIcon.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-info-circle');
+            
+            // Add new classes based on type
             if (type === 'success') {
                 notification.classList.add('success');
-                notificationIcon.classList.add('icon-success');
+                notificationIcon.classList.add('fa-check-circle');
             } else if (type === 'error') {
                 notification.classList.add('error');
-                notificationIcon.classList.add('icon-error');
+                notificationIcon.classList.add('fa-times-circle');
             } else if (type === 'info') {
                 notification.classList.add('info');
-                notificationIcon.classList.add('icon-info');
+                notificationIcon.classList.add('fa-info-circle');
             }
-
+            
+            // Show the notification
             notification.classList.add('show');
-
+            
             // Hide after 3 seconds
             setTimeout(() => {
                 notification.classList.remove('show');
@@ -471,9 +253,11 @@
             if (savedEntriesDiv.style.display === 'none') {
                 savedEntriesDiv.style.display = 'block';
                 toggleSavedEntriesButton.textContent = 'Sembunyikan Data Tersimpan';
+                toggleSavedEntriesButton.innerHTML = '<i class="fas fa-folder-minus"></i> Sembunyikan Data Tersimpan';
             } else {
                 savedEntriesDiv.style.display = 'none';
                 toggleSavedEntriesButton.textContent = 'Tampilkan Data Tersimpan';
+                toggleSavedEntriesButton.innerHTML = '<i class="fas fa-folder-open"></i> Tampilkan Data Tersimpan';
             }
         });
 
@@ -677,10 +461,10 @@
                     // Show error message if available and add Retry button
                     if (entry.errorMessage) {
                         entryHtml += `<div style="color: #f44336; margin-top: 10px;"><strong>Error:</strong> ${entry.errorMessage}</div>`;
-                        entryHtml += `<button class="retry-button" onclick="retryEntry(${entry.id})">🔄 Retry</button>`;
+                        entryHtml += `<button class="retry-button" onclick="retryEntry(${entry.id})"><i class="fas fa-redo"></i> Retry</button>`;
                     }
 
-                    entryHtml += `<button class="delete-button" onclick="deleteEntry(${entry.id})">🗑️ Hapus</button>`;
+                    entryHtml += `<button class="delete-button" onclick="deleteEntry(${entry.id})"><i class="fas fa-trash-alt"></i> Hapus</button>`;
 
                     const li = document.createElement('li');
                     li.innerHTML = entryHtml;
