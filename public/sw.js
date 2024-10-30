@@ -9,7 +9,6 @@ const STATIC_ASSETS = [
     '/offline.html',
     '/stylesinspection.css',
     '/js/main.js',
-    '/index.js',
 
 ];
 

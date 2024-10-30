@@ -140,7 +140,7 @@ document.getElementById('saveButton').addEventListener('click', function () {
     // Validate Kondisi selection
     const kondisiSelect = document.getElementById('id_kondisi');
     if (!kondisiSelect.value) {
-        showNotification('Silakan pilih kondisi sebelum menyimpan.', 'error');
+        showNotification('Silakan pilih lantai, pilih aset, foto, lalu pilih kondisi sebelum menyimpan.', 'error');
         return; // Prevent saving
     }
 
@@ -208,7 +208,7 @@ document.getElementById('saveButton').addEventListener('click', function () {
             showNotification('Error menyimpan data: ' + event.target.errorCode, 'error');
         };
     } else {
-        showNotification('Silakan pilih file foto terlebih dahulu.', 'error');
+        showNotification('Silakan foto terlebih dahulu.', 'error');
     }
 });
 
