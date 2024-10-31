@@ -8,22 +8,24 @@
 <body>
     <div class="form-container">
         <h2>Edit Floor Type</h2>
-        <form method="POST" action="/update-tipe-lantai">
-            <input type="hidden" name="id" value="<%= tipe_lantai.id %>">
-            
+        
+        <form method="POST" action="/admin/tipe_lantai/update/<%= tipeLantai.id %>">
+            <!-- Floor Type Name -->
             <label for="nama_lantai">Floor Type Name:</label>
-            <input type="text" name="nama_lantai" id="nama_lantai" value="<%= tipe_lantai.nama_lantai %>" required>
+            <input type="text" name="nama_lantai" id="nama_lantai" value="<%= tipeLantai.nama_lantai %>" required>
 
+            <!-- Posisi Dropdown -->
             <label for="posisi">Posisi:</label>
             <select name="posisi" id="posisi" required>
-                <option value="">Select Posisi</option>
-                <% posisiOptions.forEach(option => { %>
-                    <option value="<%= option.id %>" <%= tipe_lantai.posisi === option.id ? 'selected' : '' %>><%= option.tipe_posisi %></option>
+                <% posisiOptions.forEach(posisi => { %>
+                    <option value="<%= posisi.id %>" <% if(posisi.id === tipeLantai.posisi){ %>selected<% } %>><%= posisi.tipe_posisi %></option>
                 <% }) %>
             </select>
 
+            <!-- Submit Button -->
             <button type="submit">Update Floor Type</button>
 
+            <!-- Back Link -->
             <div class="back-link">
                 <a href="/admin">Back to Admin Dashboard</a>
             </div>
