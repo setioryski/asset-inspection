@@ -54,6 +54,10 @@ app.use(session({
 }));
 
 
+app.head('/', (req, res) => {
+    res.set('Date', new Date().toUTCString());
+    res.status(200).end();
+});
 
 
 app.get('/user', isAuthenticated, async (req, res) => {

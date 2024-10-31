@@ -4,8 +4,9 @@
 const dbModule = (function() {
     let db;
     const dbName = 'inspectionDB';
-    const dbVersion = 1;
+    const dbVersion = 2; // Increment version to add 'appState' store
     const storeName = 'inspections';
+    const appStateStore = 'appState';
 
     /**
      * Initializes the IndexedDB database.
@@ -23,8 +24,13 @@ const dbModule = (function() {
 
             request.onupgradeneeded = function(event) {
                 db = event.target.result;
+
                 if (!db.objectStoreNames.contains(storeName)) {
                     db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+                }
+
+                if (!db.objectStoreNames.contains(appStateStore)) {
+                    db.createObjectStore(appStateStore, { keyPath: 'key' });
                 }
             };
 
@@ -104,13 +110,88 @@ const dbModule = (function() {
         });
     }
 
-    // Additional CRUD functions can be added here
+    /**
+     * Retrieves a specific entry by ID.
+     * @param {number} id - The ID of the entry to retrieve.
+     * @returns {Promise} Resolves with the entry object or undefined if not found.
+     */
+    function getEntryById(id) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readonly');
+            const objectStore = transaction.objectStore(storeName);
+            const request = objectStore.get(id);
+
+            request.onsuccess = function(event) {
+                resolve(event.target.result);
+            };
+
+            request.onerror = function(event) {
+                console.error('Error getting entry:', event.target.errorCode);
+                handleError('DB Get Error', event.target.errorCode);
+                reject(event.target.errorCode);
+            };
+        });
+    }
+
+    /**
+     * Retrieves a value from the appState store.
+     * @param {string} key - The key to retrieve.
+     * @returns {Promise} Resolves with the value or undefined if not found.
+     */
+    function getAppState(key) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([appStateStore], 'readonly');
+            const objectStore = transaction.objectStore(appStateStore);
+            const request = objectStore.get(key);
+
+            request.onsuccess = function(event) {
+                if (event.target.result) {
+                    resolve(event.target.result.value);
+                } else {
+                    resolve(undefined);
+                }
+            };
+
+            request.onerror = function(event) {
+                console.error('Error getting app state:', event.target.errorCode);
+                handleError('DB Get AppState Error', event.target.errorCode);
+                reject(event.target.errorCode);
+            };
+        });
+    }
+
+    /**
+     * Sets a value in the appState store.
+     * @param {string} key - The key to set.
+     * @param {*} value - The value to set.
+     * @returns {Promise} Resolves when the value is successfully set.
+     */
+    function setAppState(key, value) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([appStateStore], 'readwrite');
+            const objectStore = transaction.objectStore(appStateStore);
+            const request = objectStore.put({ key, value });
+
+            request.onsuccess = function() {
+                resolve();
+            };
+
+            request.onerror = function(event) {
+                console.error('Error setting app state:', event.target.errorCode);
+                handleError('DB Set AppState Error', event.target.errorCode);
+                reject(event.target.errorCode);
+            };
+        });
+    }
 
     return {
         initDB,
         addEntry,
         getAllEntries,
-        deleteEntry
+        deleteEntry,
+        getEntryById,
+        getAppState,
+        setAppState
     };
 })();
 
@@ -275,6 +356,30 @@ const uiModule = (function() {
                 entry['nama_door'] = document.querySelector('#id_tipe_door option:checked').textContent;
             }
 
+            // Add timestamp when saving the data
+            let timestamp;
+            if (navigator.onLine) {
+                // When online, use Date().toISOString()
+                timestamp = new Date().toISOString();
+            } else {
+                // When offline, calculate timestamp based on stored delta and performance.now()
+                const timeDelta = await dbModule.getAppState('timeDelta');
+                const serverTimeAtFetch = await dbModule.getAppState('serverTimeAtFetch');
+                const performanceAtFetch = await dbModule.getAppState('performanceAtFetch');
+
+                if (timeDelta !== undefined && serverTimeAtFetch !== undefined && performanceAtFetch !== undefined) {
+                    const currentPerformanceNow = performance.now();
+                    const elapsed = currentPerformanceNow - performanceAtFetch;
+                    const estimatedServerTime = new Date(serverTimeAtFetch).getTime() + elapsed;
+                    timestamp = new Date(estimatedServerTime).toISOString();
+                } else {
+                    // If no delta stored, fallback to client Date
+                    timestamp = new Date().toISOString();
+                }
+            }
+
+            entry['timestamp'] = timestamp;
+
             try {
                 await dbModule.addEntry(entry);
                 displaySavedEntries();
@@ -387,6 +492,16 @@ const uiModule = (function() {
             const savedData = await dbModule.getAllEntries();
 
             savedData.forEach(function(entry) {
+                // Format the timestamp to a more readable format
+                const formattedTimestamp = new Date(entry.timestamp).toLocaleString('id-ID', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
                 // Build the HTML content
                 let entryHtml = `
                     <strong>Nama Petugas:</strong> ${entry.nama_petugas || ''} <br>
@@ -406,6 +521,7 @@ const uiModule = (function() {
                 entryHtml += `
                     <strong>Kondisi:</strong> ${entry.nama_kondisi || ''} <br>
                     <strong>Catatan:</strong> ${entry.catatan || ''} <br>
+                    <strong>Waktu Simpan:</strong> ${formattedTimestamp} <br>
                 `;
 
                 // Include image preview
@@ -480,7 +596,7 @@ const uiModule = (function() {
 
             // Append other fields
             Object.entries(entry).forEach(function([key, value]) {
-                if (!['foto', 'errorMessage', 'id'].includes(key) && !key.startsWith('nama_')) {
+                if (!['foto', 'errorMessage', 'id', 'timestamp'].includes(key) && !key.startsWith('nama_')) {
                     formData.append(key, value);
                 }
             });
@@ -596,12 +712,34 @@ const networkModule = (function() {
         }
     }
 
+    /**
+     * Fetches the server time by making a HEAD request to the server.
+     * @returns {Promise<Date>} Resolves with the server time as a Date object.
+     */
+    function fetchServerTime() {
+        return new Promise((resolve, reject) => {
+            fetch('/', { method: 'HEAD' })
+            .then(response => {
+                const serverDate = response.headers.get('Date');
+                if (serverDate) {
+                    resolve(new Date(serverDate));
+                } else {
+                    reject('No Date header found');
+                }
+            })
+            .catch(error => {
+                console.error('Failed to fetch server time:', error);
+                reject(error);
+            });
+        });
+    }
+
     return {
-        registerServiceWorker
+        registerServiceWorker,
+        fetchServerTime
     };
 })();
 
-// Centralized Error Handling Function
 /**
  * Handles errors by displaying appropriate notifications based on error type.
  * @param {number|string} errorCode - The HTTP status code or error identifier.
@@ -633,7 +771,9 @@ function handleError(errorCode, errorMessage) {
     console.error(`Error ${errorCode}: ${errorMessage}`);
 }
 
-// Initialize the application
+/**
+ * Initializes the application.
+ */
 window.onload = async function() {
     uiModule.initUI();
     networkModule.registerServiceWorker();
@@ -652,7 +792,28 @@ window.onload = async function() {
 
     // Initial status check
     updateOnlineStatus();
-};
+
+    // If online, fetch server time and set delta
+    if (navigator.onLine) {
+        try {
+            const serverTime = await networkModule.fetchServerTime();
+            const clientTime = new Date();
+            const delta = serverTime.getTime() - clientTime.getTime();
+
+            const performanceNow = performance.now();
+
+            // Store delta and related info in appState
+            await dbModule.setAppState('timeDelta', delta);
+            await dbModule.setAppState('serverTimeAtFetch', serverTime.toISOString());
+            await dbModule.setAppState('performanceAtFetch', performanceNow);
+
+            console.log('Time delta set:', delta, 'ms');
+        } catch (error) {
+            console.error('Failed to set time delta:', error);
+            uiModule.showNotification('Failed to set time delta for timestamping.', 'error');
+        }
+    }
+}
 
 /**
  * Updates the online/offline status indicator in the UI.
@@ -664,6 +825,27 @@ function updateOnlineStatus() {
     } else {
         document.getElementById('statusIndicator').style.display = 'none';
         document.getElementById('kirimSemuaButton').disabled = false;
+
+        // When coming back online, fetch server time and update delta
+        (async function() {
+            try {
+                const serverTime = await networkModule.fetchServerTime();
+                const clientTime = new Date();
+                const delta = serverTime.getTime() - clientTime.getTime();
+
+                const performanceNow = performance.now();
+
+                // Store delta and related info in appState
+                await dbModule.setAppState('timeDelta', delta);
+                await dbModule.setAppState('serverTimeAtFetch', serverTime.toISOString());
+                await dbModule.setAppState('performanceAtFetch', performanceNow);
+
+                console.log('Time delta updated:', delta, 'ms');
+            } catch (error) {
+                console.error('Failed to update time delta:', error);
+                uiModule.showNotification('Failed to update time delta for timestamping.', 'error');
+            }
+        })();
     }
 }
 
@@ -710,7 +892,7 @@ window.retryEntry = async function(id) {
 
         // Append other fields
         Object.entries(entry).forEach(function([key, value]) {
-            if (!['foto', 'errorMessage', 'id'].includes(key) && !key.startsWith('nama_')) {
+            if (!['foto', 'errorMessage', 'id', 'timestamp'].includes(key) && !key.startsWith('nama_')) {
                 formData.append(key, value);
             }
         });
