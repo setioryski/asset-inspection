@@ -4,7 +4,7 @@
 const dbModule = (function() {
     let db;
     const dbName = 'inspectionDB';
-    const dbVersion = 2; // Increment version to add 'appState' store
+    const dbVersion = 3; // Incremented to add 'appState' store and additional fields
     const storeName = 'inspections';
     const appStateStore = 'appState';
 
@@ -380,6 +380,13 @@ const uiModule = (function() {
 
             entry['timestamp'] = timestamp;
 
+            // Additional Integrity Check
+            const isTimeManipulated = await checkTimeIntegrity();
+            if (isTimeManipulated) {
+                showNotification('Deteksi manipulasi waktu pada perangkat Anda. Silakan periksa pengaturan tanggal dan waktu Anda.', 'error');
+                return; // Prevent saving
+            }
+
             try {
                 await dbModule.addEntry(entry);
                 displaySavedEntries();
@@ -395,6 +402,9 @@ const uiModule = (function() {
                 resetSelectOptions('id_tipe_hb');
                 resetSelectOptions('id_tipe_door');
                 document.getElementById('id_kondisi').disabled = true;
+
+                // Update last known client time
+                await updateLastKnownClientTime();
             } catch (error) {
                 showNotification('Error menyimpan data: ' + error, 'error');
             }
@@ -684,6 +694,46 @@ const uiModule = (function() {
     }
     */
 
+    /**
+     * Updates the last known client time in appState.
+     * @returns {Promise}
+     */
+    async function updateLastKnownClientTime() {
+        const currentClientTime = Date.now();
+        const currentPerformanceNow = performance.now();
+
+        await dbModule.setAppState('lastClientTime', currentClientTime);
+        await dbModule.setAppState('lastPerformanceNow', currentPerformanceNow);
+    }
+
+    /**
+     * Checks the integrity of the client's system time.
+     * @returns {Promise<boolean>} Resolves to true if manipulation is detected.
+     */
+    async function checkTimeIntegrity() {
+        const lastClientTime = await dbModule.getAppState('lastClientTime');
+        const lastPerformanceNow = await dbModule.getAppState('lastPerformanceNow');
+
+        if (lastClientTime !== undefined && lastPerformanceNow !== undefined) {
+            const currentClientTime = Date.now();
+            const currentPerformanceNow = performance.now();
+            const elapsedPerformance = currentPerformanceNow - lastPerformanceNow;
+            const expectedClientTime = lastClientTime + elapsedPerformance;
+
+            const discrepancy = Math.abs(currentClientTime - expectedClientTime);
+
+            // Define a threshold (e.g., 5 seconds)
+            const threshold = 5000;
+
+            if (discrepancy > threshold) {
+                // Time manipulation detected
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     return {
         initUI,
         showNotification,
@@ -807,6 +857,10 @@ window.onload = async function() {
             await dbModule.setAppState('serverTimeAtFetch', serverTime.toISOString());
             await dbModule.setAppState('performanceAtFetch', performanceNow);
 
+            // Initialize last known client time
+            await dbModule.setAppState('lastClientTime', clientTime.getTime());
+            await dbModule.setAppState('lastPerformanceNow', performanceNow);
+
             console.log('Time delta set:', delta, 'ms');
         } catch (error) {
             console.error('Failed to set time delta:', error);
@@ -839,6 +893,10 @@ function updateOnlineStatus() {
                 await dbModule.setAppState('timeDelta', delta);
                 await dbModule.setAppState('serverTimeAtFetch', serverTime.toISOString());
                 await dbModule.setAppState('performanceAtFetch', performanceNow);
+
+                // Update last known client time
+                await dbModule.setAppState('lastClientTime', clientTime.getTime());
+                await dbModule.setAppState('lastPerformanceNow', performanceNow);
 
                 console.log('Time delta updated:', delta, 'ms');
             } catch (error) {
@@ -897,27 +955,72 @@ window.retryEntry = async function(id) {
             }
         });
 
-        const response = await fetch('/upload', {
-            method: 'POST',
-            body: formData
-        });
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
 
-        if (response.ok) {
-            console.log('Successfully retried entry id:', id);
-            await dbModule.deleteEntry(id);
-            uiModule.displaySavedEntries();
-            uiModule.showNotification('Data berhasil dikirim ke server.', 'success');
-        } else {
-            const errorText = await response.text();
-            handleError(response.status, response.statusText);
-            entry.errorMessage = response.statusText;
-            await dbModule.deleteEntry(id);
-            uiModule.displaySavedEntries();
-            uiModule.showNotification(`Error mengirim entry: ${entry.errorMessage}`, 'error');
+            if (response.ok) {
+                console.log('Successfully retried entry id:', id);
+                await dbModule.deleteEntry(id);
+                uiModule.displaySavedEntries();
+                uiModule.showNotification('Data berhasil dikirim ke server.', 'success');
+            } else {
+                const errorText = await response.text();
+                handleError(response.status, response.statusText);
+                entry.errorMessage = response.statusText;
+                await dbModule.deleteEntry(id);
+                uiModule.displaySavedEntries();
+                uiModule.showNotification(`Error mengirim entry: ${entry.errorMessage}`, 'error');
+            }
+        } catch (error) {
+            console.error('Network error during retry:', error);
+            handleError('Network Error', 'A network error occurred during retry.');
+            // Optionally, update the entry with the error message in IndexedDB
         }
     } catch (error) {
-        console.error('Network error during retry:', error);
-        handleError('Network Error', 'A network error occurred during retry.');
-        // Optionally, update the entry with the error message in IndexedDB
+        console.error('Error during retry:', error);
+        uiModule.showNotification('Error saat mencoba mengirim ulang data.', 'error');
     }
 };
+
+/**
+ * Checks the integrity of the client's system time.
+ * @returns {Promise<boolean>} Resolves to true if manipulation is detected.
+ */
+async function checkTimeIntegrity() {
+    const lastClientTime = await dbModule.getAppState('lastClientTime');
+    const lastPerformanceNow = await dbModule.getAppState('lastPerformanceNow');
+
+    if (lastClientTime !== undefined && lastPerformanceNow !== undefined) {
+        const currentClientTime = Date.now();
+        const currentPerformanceNow = performance.now();
+        const elapsedPerformance = currentPerformanceNow - lastPerformanceNow;
+        const expectedClientTime = lastClientTime + elapsedPerformance;
+
+        const discrepancy = Math.abs(currentClientTime - expectedClientTime);
+
+        // Define a threshold (e.g., 5 seconds)
+        const threshold = 5000;
+
+        if (discrepancy > threshold) {
+            // Time manipulation detected
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Updates the last known client time in appState.
+ * @returns {Promise}
+ */
+async function updateLastKnownClientTime() {
+    const currentClientTime = Date.now();
+    const currentPerformanceNow = performance.now();
+
+    await dbModule.setAppState('lastClientTime', currentClientTime);
+    await dbModule.setAppState('lastPerformanceNow', currentPerformanceNow);
+}
