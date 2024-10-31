@@ -614,6 +614,50 @@ app.post('/delete-tipe-hb', isAuthenticated, checkRole(['admin']), async (req, r
     }
 });
 
+
+// Route to handle updating tipe_lantai
+app.get('/admin/tipe_lantai/edit/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Fetch the specific floor type (`tipe_lantai`) by ID
+        const [tipeLantai] = await queryAsync(`SELECT * FROM tipe_lantai WHERE id = ?`, [id]);
+
+        // Fetch all positions for the `posisi` dropdown
+        const posisiOptions = await queryAsync(`SELECT id, tipe_posisi FROM posisi`);
+
+        if (!tipeLantai) {
+            return res.status(404).send("Floor Type not found");
+        }
+
+        // Render the edit form with floor type data and position options
+        res.render('edit-tipe-lantai-form', { tipeLantai, posisiOptions });
+    } catch (err) {
+        console.error('Error fetching floor type:', err);
+        res.status(500).send('Server error');
+    }
+});
+
+app.post('/admin/tipe_lantai/update/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nama_lantai, posisi } = req.body;
+        
+        // Update the database with the new values for `nama_lantai` and `posisi`
+        await queryAsync(`
+            UPDATE tipe_lantai
+            SET nama_lantai = ?, posisi = ?
+            WHERE id = ?
+        `, [nama_lantai, posisi, id]);
+
+        // Redirect back to a list or dashboard after updating
+        res.redirect('/admin');
+    } catch (err) {
+        console.error('Error updating floor type:', err);
+        res.status(500).send('Server error');
+    }
+});
+
 // Route to render the form for adding a new 'tipe_door'
 app.get('/add-tipe-door-form', isAuthenticated, checkRole(['admin']), async (req, res) => {
     try {
@@ -653,7 +697,6 @@ app.get('/edit-tipe-door-form/:id', isAuthenticated, checkRole(['admin']), async
         res.status(500).send('Error retrieving tipe_door for edit');
     }
 });
-
 
 // Route to handle updating 'tipe_door'
 app.post('/admin/tipe_door/update/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
