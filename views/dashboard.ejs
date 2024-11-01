@@ -50,7 +50,7 @@
         <table id="assetsTable">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>No.</th> <!-- Numbering column -->
                     <th>Date Created</th>
                     <th>User</th>
                     <th>Asset Type</th>
@@ -61,9 +61,9 @@
                 </tr>
             </thead>
             <tbody>
-                <% assets.forEach(asset => { %>
+                <% assets.forEach((asset, index) => { %>
                     <tr>
-                        <td><%= asset.id %></td>
+                        <td><%= index + 1 %></td> <!-- Row number -->
                         <td><%= new Date(asset.tanggal_dibuat).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) %></td>
                         <td><%= asset.user %></td>
                         <td>
@@ -98,7 +98,6 @@
                     </tr>
                 <% }); %>
             </tbody>
-            
         </table>
 
         <script>
@@ -152,4 +151,12 @@
         </script>
     </div>
 </body>
+<style>
+    @media print {
+        nav, .filter-container, h1 {
+            display: none !important;
+        }
+    }
+</style>
+
 </html>

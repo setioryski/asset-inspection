@@ -84,8 +84,8 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
     try {
         // Launch Puppeteer browser
         const browser = await puppeteer.launch({
-            headless: true, // Run in headless mode
-            args: ['--no-sandbox', '--disable-setuid-sandbox'] // Recommended for certain environments
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         const page = await browser.newPage();
 
@@ -93,13 +93,16 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
         const url = `${BASE_URL}dashboard?startDate=${startDate}&endDate=${endDate}&kondisi=${kondisi}`;
         await page.goto(url, { waitUntil: 'networkidle0' });
 
-        // Inject custom CSS to hide the navbar
+        // Inject custom CSS to hide the navbar and filter container
         await page.addStyleTag({
-            content: `nav { display: none !important; }` // Targets the <nav> element directly
+            content: `
+                nav { display: none !important; }
+                .filter-container { display: none !important; }
+            `
         });
 
         // Optionally, wait for a short duration to ensure CSS is applied
-        await page.waitForTimeout(500); // Wait for 0.5 seconds
+        await page.waitForTimeout(500);
 
         // Generate PDF
         const pdfBuffer = await page.pdf({
@@ -129,6 +132,7 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
         res.status(500).send('Error generating PDF');
     }
 });
+
 
 
 // Export to Excel
