@@ -12,6 +12,8 @@ const { isAuthenticated, checkRole } = require('../authMiddleware');
 const BASE_URL = 'http://localhost:3000/'; // Adjust this to match your server's base URL
 
 // Dashboard route
+// Assuming you have required necessary modules and set up your Express app
+
 router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res) => {
     let query = `
         SELECT 
@@ -33,10 +35,23 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         LEFT JOIN tipe_kondisi k ON a.id_kondisi = k.id
         LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
         LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
-        LEFT JOIN posisi p ON tl.posisi = p.id`;  // Join with posisi table
+        LEFT JOIN posisi p ON tl.posisi = p.id`;
 
     const params = [];
-    const { startDate, endDate, kondisi, posisi } = req.query;
+    let { startDate, endDate, kondisi, posisi, page = 1, limit = 50 } = req.query; // Default limit set to 50
+
+    // Parse and validate 'page' and 'limit'
+    page = parseInt(page, 10);
+    limit = parseInt(limit, 10);
+
+    if (isNaN(page) || page < 1) page = 1;
+    
+    // Define allowed limits to prevent excessive data fetching
+    const allowedLimits = [50, 100, 500, 1000];
+    if (!allowedLimits.includes(limit)) {
+        limit = 50; // Default to 50 if invalid
+    }
+
     const conditions = [];
 
     if (startDate && endDate) {
@@ -58,18 +73,56 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         query += ` WHERE ` + conditions.join(' AND ');
     }
 
-    query += ` ORDER BY a.id ASC`;
+    // Clone the query for counting total records
+    const countQuery = `
+        SELECT COUNT(*) as total 
+        FROM aset a
+        LEFT JOIN user u ON a.id_user = u.id
+        LEFT JOIN tipe_aset ta ON a.id_tipe_aset = ta.id
+        LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
+        LEFT JOIN tipe_kondisi k ON a.id_kondisi = k.id
+        LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
+        LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
+        LEFT JOIN posisi p ON tl.posisi = p.id` + 
+        (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : '');
+
+    const offset = (page - 1) * limit;
+    query += ` ORDER BY a.id ASC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
 
     try {
-        const results = await queryAsync(query, params);
-        const kondisiResults = await queryAsync('SELECT DISTINCT nama_kondisi FROM tipe_kondisi');
-        const posisiResults = await queryAsync('SELECT DISTINCT tipe_posisi FROM posisi');
-        res.render('dashboard', { assets: results, kondisiOptions: kondisiResults, posisiOptions: posisiResults, startDate, endDate, kondisi, posisi });
+        const [results, countResult, kondisiResults, posisiResults] = await Promise.all([
+            queryAsync(query, params),
+            queryAsync(countQuery, params.slice(0, params.length - 2)), // Exclude LIMIT and OFFSET
+            queryAsync('SELECT DISTINCT nama_kondisi FROM tipe_kondisi'),
+            queryAsync('SELECT DISTINCT tipe_posisi FROM posisi')
+        ]);
+
+        const total = countResult[0].total;
+        const totalPages = Math.ceil(total / limit);
+
+        // Log the variables to verify their values
+        console.log('Pagination Info:', { page, limit, totalPages });
+
+        res.render('dashboard', { 
+            assets: results, 
+            kondisiOptions: kondisiResults, 
+            posisiOptions: posisiResults, 
+            startDate, 
+            endDate, 
+            kondisi, 
+            posisi,
+            currentPage: page,
+            totalPages,
+            limit // Pass 'limit' to the template
+        });
     } catch (err) {
         console.error('Failed to retrieve assets:', err);
         res.status(500).send('Error fetching assets from database');
     }
 });
+
+
 
 
 
