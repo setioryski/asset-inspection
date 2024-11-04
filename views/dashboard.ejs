@@ -5,6 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <link rel="stylesheet" href="/stylesdashboard.css"> <!-- Ensure your CSS path is correct -->
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+
+    <!-- jQuery Library (required by DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+    <style>
+        /* Hide the Id column */
+        #assetsTable th.id-column,
+        #assetsTable td.id-column {
+            display: none;
+        }
+
+        /* Style for the No. column */
+        #assetsTable th.no-column,
+        #assetsTable td.no-column {
+            width: 50px;
+            text-align: center;
+        }
+
+        /* Optional: Adjust image size */
+        #assetsTable img {
+            width: 100px;
+            height: auto;
+        }
+
+        @media print {
+            nav, .filter-container, h1 {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <nav>
@@ -47,10 +83,10 @@
             </form>
         </div>
     
-        <table id="assetsTable">
+        <table id="assetsTable" class="display">
             <thead>
                 <tr>
-                    <th>No.</th> <!-- Numbering column -->
+                    <th class="no-column">No.</th> <!-- Numbering column -->
                     <th>Date Created</th>
                     <th>User</th>
                     <th>Asset Type</th>
@@ -58,12 +94,13 @@
                     <th>Condition</th>
                     <th>Photo</th>
                     <th>Notes</th>
+                    <th class="id-column">Id</th> <!-- Hidden Id column for sorting -->
                 </tr>
             </thead>
             <tbody>
-                <% assets.forEach((asset, index) => { %>
+                <% assets.forEach((asset) => { %>
                     <tr>
-                        <td><%= index + 1 %></td> <!-- Row number -->
+                        <td class="no-column"></td> <!-- "No." column will be filled automatically by DataTables -->
                         <td><%= new Date(asset.tanggal_dibuat).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) %></td>
                         <td><%= asset.user %></td>
                         <td>
@@ -79,7 +116,7 @@
                         <td><%= asset.nama_kondisi %></td>
                         <td>
                             <% if (asset.foto) { %>
-                                <img src="<%= asset.foto %>" alt="Asset Photo" style="width:100px;">
+                                <img src="<%= asset.foto %>" alt="Asset Photo">
                             <% } else { %>
                                 No Image Available
                             <% } %>
@@ -95,68 +132,65 @@
                                 No notes available
                             <% } %>
                         </td>
+                        <td class="id-column"><%= asset.id %></td> <!-- Hidden Id value -->
                     </tr>
                 <% }); %>
             </tbody>
         </table>
 
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const startDateInput = document.getElementById('startDate');
-                const endDateInput = document.getElementById('endDate');
-
-                const currentDate = new Date();
-                const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-                const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-
-                const formatDate = (date) => {
-                    let day = date.getDate();
-                    let month = date.getMonth() + 1; // Months are zero-based
-                    const year = date.getFullYear();
-
-                    if (day < 10) {
-                        day = '0' + day;
+            $(document).ready(function() {
+                // Initialize DataTables with auto-numbering for the "No." column
+                const table = $('#assetsTable').DataTable({
+                    "pageLength": 500, // Default number of rows per page
+                    "lengthMenu": [ [500, 1000, 2000, -1], [500, 1000, 2000, "All"] ], // Options for rows per page
+                    "order": [[8, "asc"]], // Order by the hidden "Id" column ascending (0-based index)
+                    "columnDefs": [
+                        { 
+                            "orderable": false, 
+                            "targets": [0, 6, 7] // Disable ordering on "No.", "Photo", and "Notes" columns
+                        },
+                        { 
+                            "visible": false, 
+                            "targets": 8 // Hide the "Id" column
+                        }
+                    ],
+                    "language": {
+                        "search": "Search:",
+                        "lengthMenu": "Show _MENU_ entries",
+                        "info": "Showing _START_ to _END_ of _TOTAL_ entries",
+                        "paginate": {
+                            "first": "First",
+                            "last": "Last",
+                            "next": "Next",
+                            "previous": "Previous"
+                        },
+                    },
+                    "dom": 'lrtip', // Control the table elements: l - length changing input, r - processing display element, t - table, i - table info summary, p - pagination
+                    "drawCallback": function(settings) {
+                        const api = this.api();
+                        // Update the "No." column with sequential numbers
+                        api.column(0, { page: 'current' }).nodes().each(function(cell, i) {
+                            cell.innerHTML = i + 1 + (api.page.info().page * api.page.info().length);
+                        });
                     }
-                    if (month < 10) {
-                        month = '0' + month;
-                    }
-                    return `${year}-${month}-${day}`;
-                };
+                });
 
-                startDateInput.value = formatDate(firstDayOfMonth);
-                endDateInput.value = formatDate(lastDayOfMonth);
-
-                // Validate dates
-                const validateDates = () => {
-                    const startDate = new Date(startDateInput.value);
-                    const endDate = new Date(endDateInput.value);
-                    if (startDate > endDate) {
-                        alert('End Date must be later than Start Date.');
-                        return false;
-                    }
-                    return true;
-                };
-
-                startDateInput.addEventListener('change', validateDates);
-                endDateInput.addEventListener('change', validateDates);
-
+                // Handle Export to PDF
                 document.getElementById('exportPDF').addEventListener('click', function() {
                     window.print();
                 });
 
+                // Handle Export to Excel
                 document.getElementById('exportExcel').addEventListener('click', function() {
-                    window.location.href = `/export/excel?startDate=${startDateInput.value}&endDate=${endDateInput.value}&kondisi=${document.getElementById('kondisi').value}`;
+                    const startDate = $('#startDate').val();
+                    const endDate = $('#endDate').val();
+                    const kondisi = $('#kondisi').val();
+                    const posisi = $('#posisi').val();
+                    window.location.href = `/export/excel?startDate=${startDate}&endDate=${endDate}&kondisi=${kondisi}&posisi=${posisi}`;
                 });
             });
         </script>
     </div>
 </body>
-<style>
-    @media print {
-        nav, .filter-container, h1 {
-            display: none !important;
-        }
-    }
-</style>
-
 </html>
