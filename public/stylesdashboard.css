@@ -11,11 +11,12 @@ body {
     color: #333;
     line-height: 1.6;
     padding: 10px;
+    margin: 0; /* Ensure no default margin */
 }
 
-/* Navbar styling */
+/* Navbar Styling */
 nav {
-    background-color: #333;
+    background-color: rgba(51, 51, 51, 0.9); /* Semi-transparent for glassmorphism effect */
     color: white;
     padding: 10px;
     position: fixed;
@@ -23,12 +24,12 @@ nav {
     top: 0;
     left: 0;
     z-index: 1000;
+    backdrop-filter: blur(10px); /* Apply blur */
+    -webkit-backdrop-filter: blur(10px); /* For Safari */
 }
 
 nav ul {
     list-style: none;
-    margin: 0;
-    padding: 0;
     display: flex;
     justify-content: center;
 }
@@ -41,84 +42,43 @@ nav ul li a {
     color: white;
     text-decoration: none;
     font-weight: bold;
+    transition: color 0.3s ease;
 }
 
 nav ul li a:hover {
-    text-decoration: underline;
+    color: #ddd; /* Lighter color on hover */
 }
 
-/* Title styling */
+/* Title Styling */
 h1 {
     text-align: center;
-    margin-top: 70px; /* Adjusted to account for the fixed navbar */
+    margin-top: 80px; /* Adjusted to account for the fixed navbar */
     color: #333;
+    font-size: 2em;
+    margin-bottom: 20px;
 }
 
+/* Dashboard Container */
 .dashboard-container {
     display: flex;
     flex-direction: column;
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+    padding: 20px 10px; /* Add some padding */
 }
 
+/* Filter Container */
 .filter-container {
     margin-bottom: 20px;
     overflow-x: auto;
     display: flex;
     width: 100%;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    font-size: 14px;
-}
-
-th, td {
-    padding: 12px;
-    border: 1px solid #e1e1e1;
-    text-align: left;
-    white-space: nowrap;
-}
-
-th {
-    background-color: #007BFF;
-    color: white;
-    font-weight: 600;
-}
-
-tbody tr:nth-child(odd) {
-    background-color: #f9f9f9;
-}
-
-tbody tr:hover {
-    background-color: #f1f1f1;
-}
-
-img {
-    width: 80px;
-    height: auto;
-    border-radius: 5px;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-}
-
-.date-picker-form {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    align-items: center;
     padding: 10px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     gap: 10px;
-    width: 100%;
-    overflow-x: auto;
 }
 
 .date-picker-form label {
@@ -136,64 +96,174 @@ img {
     margin-right: 10px;
     padding: 12px;
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 8px;
     font-size: 16px;
     font-family: inherit;
     white-space: nowrap;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.date-picker-form input[type="date"]:focus,
+.date-picker-form select:focus {
+    border-color: #007BFF;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
 .date-picker-form button {
     min-width: 150px;
-}
-
-.filter-button {
     background-color: #007BFF;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
     font-weight: 600;
-    text-align: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.filter-button:hover {
+.date-picker-form button:hover {
     background-color: #0056b3;
+    transform: translateY(-2px);
 }
 
 .export-button {
     background-color: #28a745;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 16px;
     font-weight: 600;
-    text-align: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .export-button:hover {
     background-color: #218838;
+    transform: translateY(-2px);
 }
 
-@media (max-width: 600px) {
-    .date-picker-form {
-        flex-direction: row;
-        flex-wrap: nowrap;
-        overflow-x: auto;
+/* Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+th, td {
+    padding: 12px;
+    border: 1px solid #e1e1e1;
+    text-align: left;
+    white-space: nowrap;
+}
+
+th {
+    background-color: #007BFF;
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+tbody tr:hover {
+    background-color: #e8f0fe; /* Light blue tint */
+}
+
+img {
+    width: 80px;
+    height: auto;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Pagination Styles */
+.pagination {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.pagination a, .pagination span {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 0 4px;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    color: #333;
+    border-radius: 8px; /* Rounded buttons */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.pagination a:hover {
+    background-color: #f0f0f0;
+}
+
+.pagination .current {
+    background-color: #007BFF;
+    color: white;
+    border: 1px solid #007BFF;
+}
+
+.pagination .disabled {
+    color: #ccc;
+    border: 1px solid #ddd;
+}
+
+/* Responsive Design */
+@media (max-width: 800px) {
+    .filter-container {
+        flex-direction: column;
+        align-items: flex-start;
     }
-    
-    .date-picker-form label {
-        margin-right: 5px;
+
+    .date-picker-form {
+        flex-direction: column;
+        width: 100%;
     }
 
     .date-picker-form input[type="date"],
     .date-picker-form select,
     .date-picker-form button {
-        margin-right: 5px;
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 10px;
     }
 
     .date-picker-form button {
-        min-width: 120px;
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .filter-container {
+        padding: 10px;
+    }
+
+    .date-picker-form label {
+        font-size: 12px;
+    }
+
+    .date-picker-form input[type="date"],
+    .date-picker-form select,
+    .date-picker-form button {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    th, td {
+        padding: 10px;
+        font-size: 12px;
+    }
+
+    img {
+        width: 60px;
     }
 }

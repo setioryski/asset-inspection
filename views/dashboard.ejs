@@ -40,13 +40,28 @@
                         <option value="<%= option.tipe_posisi %>" <%= posisi === option.tipe_posisi ? 'selected' : '' %>><%= option.tipe_posisi %></option>
                     <% }) %>
                 </select>
-            
+
+                <!-- Added Limit Dropdown -->
+                <label for="limit">Rows per page:</label>
+                <select name="limit" id="limit">
+                    <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+                    <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+                    <option value="500" <%= limit == 500 ? 'selected' : '' %>>500</option>
+                    <option value="1000" <%= limit == 1000 ? 'selected' : '' %>>1000</option>
+                </select>
+
+                <!-- Reset to first page on filter change -->
+                <input type="hidden" name="page" value="1"> 
+                
                 <button type="submit" class="filter-button">Filter</button>
                 <button type="button" class="export-button" id="exportPDF">Export to PDF</button>
                 <button type="button" class="export-button" id="exportExcel">Export to Excel</button>
             </form>
         </div>
     
+        <!-- Debugging Line: Ensure the code reaches here -->
+        <!-- <p>Table Header Section</p> -->
+
         <table id="assetsTable">
             <thead>
                 <tr>
@@ -61,49 +76,91 @@
                 </tr>
             </thead>
             <tbody>
-                <% assets.forEach((asset, index) => { %>
+                <% if (assets.length === 0) { %>
                     <tr>
-                        <td><%= index + 1 %></td> <!-- Row number -->
-                        <td><%= new Date(asset.tanggal_dibuat).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) %></td>
-                        <td><%= asset.user %></td>
-                        <td>
-                            <% if (asset.nama_tipe_door) { %>
-                                <%= asset.nama_tipe_door %>
-                            <% } else if (asset.nama_tipe_hb) { %>
-                                <%= asset.nama_tipe_hb %>
-                            <% } else { %>
-                                <%= asset.nama_tipe_aset %>
-                            <% } %>
-                        </td>
-                        <td><%= asset.nama_lantai %></td>
-                        <td><%= asset.nama_kondisi %></td>
-                        <td>
-                            <% if (asset.foto) { %>
-                                <img src="<%= asset.foto %>" alt="Asset Photo" style="width:100px;">
-                            <% } else { %>
-                                No Image Available
-                            <% } %>
-                        </td>
-                        <td>
-                            <% if (asset.catatan) { %>
-                                <%- asset.catatan
-                                    .split(' ')
-                                    .map((word, index) => ((index + 1) % 6 === 0 ? word + '<br>' : word))
-                                    .join(' ') 
-                                %>
-                            <% } else { %>
-                                No notes available
-                            <% } %>
-                        </td>
+                        <td colspan="8">No assets found for the selected criteria.</td>
                     </tr>
-                <% }); %>
+                <% } else { %>
+                    <% assets.forEach((asset, index) => { %>
+                        <tr>
+                            <td><%= (currentPage - 1) * limit + index + 1 %></td> <!-- Row number -->
+                            <td><%= new Date(asset.tanggal_dibuat).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) %></td>
+                            <td><%= asset.user %></td>
+                            <td>
+                                <% if (asset.nama_tipe_door) { %>
+                                    <%= asset.nama_tipe_door %>
+                                <% } else if (asset.nama_tipe_hb) { %>
+                                    <%= asset.nama_tipe_hb %>
+                                <% } else { %>
+                                    <%= asset.nama_tipe_aset %>
+                                <% } %>
+                            </td>
+                            <td><%= asset.nama_lantai %></td>
+                            <td><%= asset.nama_kondisi %></td>
+                            <td>
+                                <% if (asset.foto) { %>
+                                    <img src="<%= asset.foto %>" alt="Asset Photo" style="width:100px;">
+                                <% } else { %>
+                                    No Image Available
+                                <% } %>
+                            </td>
+                            <td>
+                                <% if (asset.catatan) { %>
+                                    <%- asset.catatan
+                                        .split(' ')
+                                        .map((word, idx) => ((idx + 1) % 6 === 0 ? word + '<br>' : word))
+                                        .join(' ') 
+                                    %>
+                                <% } else { %>
+                                    No notes available
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } %>
             </tbody>
         </table>
+
+        <!-- Pagination Controls -->
+        <div class="pagination">
+            <% if (currentPage > 1) { %>
+                <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&limit=<%= limit %>&page=<%= currentPage - 1 %>">« Previous</a>
+            <% } else { %>
+                <span class="disabled">« Previous</span>
+            <% } %>
+
+            <% 
+                // To prevent displaying too many page links, implement a range
+                const maxPagesToShow = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                let endPage = startPage + maxPagesToShow - 1;
+
+                if (endPage > totalPages) {
+                    endPage = totalPages;
+                    startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                }
+            %>
+
+            <% for(let i = startPage; i <= endPage; i++) { %>
+                <% if(i === currentPage) { %>
+                    <span class="current"><%= i %></span>
+                <% } else { %>
+                    <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&limit=<%= limit %>&page=<%= i %>"><%= i %></a>
+                <% } %>
+            <% } %>
+
+            <% if (currentPage < totalPages) { %>
+                <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&limit=<%= limit %>&page=<%= currentPage + 1 %>">Next »</a>
+            <% } else { %>
+                <span class="disabled">Next »</span>
+            <% } %>
+        </div>
 
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const startDateInput = document.getElementById('startDate');
                 const endDateInput = document.getElementById('endDate');
+                const limitSelect = document.getElementById('limit');
 
                 const currentDate = new Date();
                 const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -123,8 +180,13 @@
                     return `${year}-${month}-${day}`;
                 };
 
-                startDateInput.value = formatDate(firstDayOfMonth);
-                endDateInput.value = formatDate(lastDayOfMonth);
+                // Only set default dates if not already set
+                if (!startDateInput.value) {
+                    startDateInput.value = formatDate(firstDayOfMonth);
+                }
+                if (!endDateInput.value) {
+                    endDateInput.value = formatDate(lastDayOfMonth);
+                }
 
                 // Validate dates
                 const validateDates = () => {
@@ -140,23 +202,25 @@
                 startDateInput.addEventListener('change', validateDates);
                 endDateInput.addEventListener('change', validateDates);
 
+                // Handle Export to PDF
                 document.getElementById('exportPDF').addEventListener('click', function() {
                     window.print();
                 });
 
+                // Handle Export to Excel
                 document.getElementById('exportExcel').addEventListener('click', function() {
-                    window.location.href = `/export/excel?startDate=${startDateInput.value}&endDate=${endDateInput.value}&kondisi=${document.getElementById('kondisi').value}`;
+                    const kondisiValue = document.getElementById('kondisi').value;
+                    const posisiValue = document.getElementById('posisi').value;
+                    const selectedLimit = document.getElementById('limit').value;
+                    window.location.href = `/export/excel?startDate=${encodeURIComponent(startDateInput.value)}&endDate=${encodeURIComponent(endDateInput.value)}&kondisi=${encodeURIComponent(kondisiValue)}&posisi=${encodeURIComponent(posisiValue)}&limit=${encodeURIComponent(selectedLimit)}`;
+                });
+
+                // Submit form when limit is changed to reset pagination
+                limitSelect.addEventListener('change', function() {
+                    document.querySelector('form').submit();
                 });
             });
         </script>
     </div>
 </body>
-<style>
-    @media print {
-        nav, .filter-container, h1 {
-            display: none !important;
-        }
-    }
-</style>
-
 </html>
