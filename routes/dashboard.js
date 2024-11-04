@@ -115,7 +115,7 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
             currentPage: page,
             totalPages,
             limit // Pass 'limit' to the template
-        });
+        });        
     } catch (err) {
         console.error('Failed to retrieve assets:', err);
         res.status(500).send('Error fetching assets from database');
