@@ -5,17 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="/stylesadmin.css">
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
-    <div class="navbar">
-        <div class="logo">Admin</div>
-        <div class="links">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/inspection">Inspection</a>
-            <a href="/admin">Admin</a>
-            <a href="/logout">Logout</a>
-        </div>
-    </div>
+    <nav>
+        <ul>
+            <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="/inspection"><i class="fas fa-search"></i> Inspection</a></li>
+            <li><a href="/admin"><i class="fas fa-user-cog"></i> Admin</a></li>
+            <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </nav>
 
     <main>
         <div class="tabs">
