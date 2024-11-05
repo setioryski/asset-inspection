@@ -1,3 +1,29 @@
+
+ /* Hide the Id column */
+ #assetsTable th.id-column,
+ #assetsTable td.id-column {
+     display: none;
+ }
+
+ /* Style for the No. column */
+ #assetsTable th.no-column,
+ #assetsTable td.no-column {
+     width: 50px;
+     text-align: center;
+ }
+
+ /* Optional: Adjust image size */
+ #assetsTable img {
+     width: 100px;
+     height: auto;
+ }
+
+ @media print {
+     nav, .filter-container, h1 {
+         display: none !important;
+     }
+ }
+
 /* Basic Reset */
 * {
     box-sizing: border-box;
@@ -16,37 +42,62 @@ body {
 
 /* Navbar Styling */
 nav {
-    background-color: rgba(51, 51, 51, 0.9); /* Semi-transparent for glassmorphism effect */
-    color: white;
-    padding: 10px;
+    background-color: rgba(235, 235, 235, 0.9); 
+    color: black; /* Ensures the default text color is black */
+    padding: 10px 20px;
     position: fixed;
     width: 100%;
     top: 0;
     left: 0;
     z-index: 1000;
-    backdrop-filter: blur(10px); /* Apply blur */
+    backdrop-filter: blur(10px); /* Apply blur for glass effect */
     -webkit-backdrop-filter: blur(10px); /* For Safari */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
+/* Navbar List */
 nav ul {
     list-style: none;
     display: flex;
     justify-content: center;
+    align-items: center;
+    gap: 20px; /* Space between links */
+    margin: 0;
+    padding: 0;
 }
 
-nav ul li {
-    margin: 0 15px;
-}
-
+/* Navbar Links */
 nav ul li a {
-    color: white;
+    color: black; /* Set default link color to black */
     text-decoration: none;
     font-weight: bold;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 6px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Navbar Icons */
+nav ul li a i {
+    margin-right: 8px;
+    font-size: 18px;
+    color: black; /* Match icon color with link color */
     transition: color 0.3s ease;
 }
 
+/* Hover Effect for Links and Icons */
 nav ul li a:hover {
-    color: #ddd; /* Lighter color on hover */
+    background-color: #f5f5f5; /* Light blue overlay on hover */
+    color: #007aff; /* macOS blue on hover */
+}
+
+nav ul li a:hover i {
+    color: #007aff; /* macOS blue icon color on hover */
 }
 
 /* Title Styling */

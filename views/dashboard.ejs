@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <link rel="stylesheet" href="/stylesdashboard.css"> <!-- Ensure your CSS path is correct -->
+        <!-- Include Font Awesome for icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     <!-- DataTables CSS (Optional) -->
     <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"> -->
@@ -15,40 +17,17 @@
     <!-- DataTables JS (Optional) -->
     <!-- <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script> -->
 
-    <style>
-        /* Hide the Id column */
-        #assetsTable th.id-column,
-        #assetsTable td.id-column {
-            display: none;
-        }
 
-        /* Style for the No. column */
-        #assetsTable th.no-column,
-        #assetsTable td.no-column {
-            width: 50px;
-            text-align: center;
-        }
-
-        /* Optional: Adjust image size */
-        #assetsTable img {
-            width: 100px;
-            height: auto;
-        }
-
-        @media print {
-            nav, .filter-container, h1 {
-                display: none !important;
-            }
-        }
-    </style>
 </head>
 <body>
     <nav>
-        <ul>
-            <li><a href="/admin">Admin</a></li>
-            <li><a href="/inspection">Inspection</a></li>
-            <li><a href="/logOut">Log Out</a></li>
-        </ul>
+        <nav>
+            <ul>
+                <li><a href="/admin"><i class="fas fa-user-cog"></i> Admin</a></li>
+                <li><a href="/inspection"><i class="fas fa-search"></i> Inspection</a></li>
+                <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
     </nav>
 
     <h1>Dashboard</h1>
