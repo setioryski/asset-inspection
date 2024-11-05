@@ -308,9 +308,7 @@ form {
     border-radius: 3px;
 }
 
-/* =========================================================
-   Responsive Adjustments
-========================================================= */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
     nav {
         padding: 10px 15px;
@@ -364,7 +362,8 @@ form {
     nav {
         flex-direction: column;
         align-items: flex-start;
-        height: auto;
+        padding: 10px 15px;
+        height: 100px; /* Set a fixed height */
     }
 
     nav ul {
@@ -385,6 +384,7 @@ form {
 
     main {
         padding: 15px;
+        margin-top: var(--navbar-height); /* Updated via :root */
     }
 
     .tabs button {
@@ -416,7 +416,13 @@ form {
         padding: 4px 5px;
         font-size: 10px;
     }
+
+    /* Override the navbar height variable for mobile */
+    :root {
+        --navbar-height: 100px; /* Adjust as needed */
+    }
 }
+
 
 /* =========================================================
    Additional Styling (Optional Enhancements)
