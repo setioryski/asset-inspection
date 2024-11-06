@@ -63,17 +63,13 @@ nav ul {
     margin: 0;
     padding: 0;
     display: flex;
-    justify-content: space-between; /* Distribute items evenly */
-    align-items: center;
+    justify-content: center; /* Center items on larger screens */
     flex-wrap: nowrap; /* Prevent wrapping */
-    width: 100%;
-    max-width: 1200px; /* Optional: Limit max width */
-    margin: 0 auto; /* Center the navbar content */
+    overflow: hidden; /* Disable horizontal scrolling */
 }
 
 nav ul li {
-    /* Remove horizontal margins to prevent overflow */
-    margin: 0;
+    margin: 0 15px;
 }
 
 nav ul li a {
@@ -85,7 +81,6 @@ nav ul li a {
     align-items: center;
     padding: 8px 12px; /* Adjusted padding */
     white-space: nowrap; /* Prevent text from wrapping */
-    flex-shrink: 1; /* Allow items to shrink if necessary */
 }
 
 nav ul li a:hover {
@@ -425,18 +420,13 @@ select:focus {
         /* Ensure horizontal layout with increased spacing */
         flex-direction: row;
         align-items: center;
-        justify-content: space-between; /* Distribute items evenly */
+        justify-content: flex-start; /* Align items to the start */
         gap: 20px; /* Increased gap for more spacing */
         flex-wrap: nowrap; /* Prevent wrapping */
     }
 
     nav ul li {
-        margin: 0 0; /* Remove horizontal margins */
-    }
-
-    nav ul li a {
-        padding: 8px 10px; /* Adjusted padding */
-        font-size: 14px; /* Slightly reduced font size */
+        margin: 0 20px; /* Increased horizontal margin for more spacing */
     }
 
     form {
@@ -476,20 +466,34 @@ select:focus {
         top: 90px;
     }
 
-    /* Further adjust navbar for very small screens */
+    /* Further increase gap and margin for even more spacing */
     nav ul {
-        justify-content: space-evenly; /* Evenly distribute items */
-        gap: 10px; /* Reduce gap to save space */
+        gap: 25px; /* More loose spacing */
         overflow-x: hidden; /* Disable horizontal scrolling */
     }
 
     nav ul li {
-        margin: 0; /* Remove horizontal margins */
+        margin: 0 25px; /* More horizontal spacing */
     }
 
     nav ul li a {
-        padding: 6px 8px; /* Further reduce padding */
-        font-size: 13px; /* Further reduce font size */
+        padding: 6px 10px; /* Further reduce padding */
+        font-size: 14px; /* Further reduce font size */
+    }
+
+    /* Flexibly distribute space across the screen */
+    nav ul {
+        justify-content: space-between; /* Distribute items evenly */
+    }
+
+    nav ul li {
+        flex: 1; /* Allow items to grow and shrink */
+        text-align: center; /* Center text within each item */
+    }
+
+    nav ul li a {
+        padding: 6px 0; /* Adjust padding to center vertically */
+        font-size: 14px; /* Maintain smaller font size */
     }
 }
 
