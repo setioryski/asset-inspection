@@ -167,12 +167,12 @@ main {
 }
 
 .tabs button.active {
-    color: var(--primary-color);
+    color: var(#ffffff);
     border-bottom: 3px solid var(--primary-color);
 }
 
 .tabs button:hover {
-    color: var(--primary-color-hover);
+    color: var(#ffffff);
 }
 
 /* =========================================================
@@ -277,7 +277,7 @@ button {
 }
 
 button:hover {
-    background-color: var(--primary-color-hover);
+    background-color: var(--primary-color);
 }
 
 button:disabled {
@@ -316,6 +316,7 @@ form {
 
     nav ul {
         gap: 15px;
+        justify-content: center; /* Center navbar items horizontally */
     }
 
     nav ul li a {
@@ -360,20 +361,23 @@ form {
 
 @media (max-width: 480px) {
     nav {
-        flex-direction: column;
-        align-items: flex-start;
+        display: flex;
+        justify-content: center; /* Center the navbar horizontally */
+        align-items: center;
+        flex-direction: row;
         padding: 10px 15px;
         height: 100px; /* Set a fixed height */
     }
 
     nav ul {
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center; /* Center items within the navbar */
         width: 100%;
         gap: 10px;
     }
 
     nav ul li a {
-        width: 100%;
+        width: auto; /* Let links take up only necessary space */
         padding: 8px 12px;
     }
 

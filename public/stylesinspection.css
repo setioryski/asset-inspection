@@ -63,12 +63,17 @@ nav ul {
     margin: 0;
     padding: 0;
     display: flex;
-    justify-content: center;
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    justify-content: space-between; /* Distribute items evenly */
+    align-items: center;
+    flex-wrap: nowrap; /* Prevent wrapping */
+    width: 100%;
+    max-width: 1200px; /* Optional: Limit max width */
+    margin: 0 auto; /* Center the navbar content */
 }
 
 nav ul li {
-    margin: 0 15px;
+    /* Remove horizontal margins to prevent overflow */
+    margin: 0;
 }
 
 nav ul li a {
@@ -78,6 +83,9 @@ nav ul li a {
     transition: color 0.2s;
     display: flex;
     align-items: center;
+    padding: 8px 12px; /* Adjusted padding */
+    white-space: nowrap; /* Prevent text from wrapping */
+    flex-shrink: 1; /* Allow items to shrink if necessary */
 }
 
 nav ul li a:hover {
@@ -196,14 +204,14 @@ button:disabled {
     flex: 1; /* Equal width */
 }
 
-/* Styling untuk Select yang Dinonaktifkan */
+/* Styling for Disabled Select */
 select:disabled {
-    background-color: #e0e0e0; /* Abu-abu terang */
-    color: #6c6c6c; /* Abu-abu tua */
-    cursor: not-allowed; /* Mengubah kursor menjadi tanda larangan */
+    background-color: #e0e0e0; /* Light gray */
+    color: #6c6c6c; /* Dark gray */
+    cursor: not-allowed;
 }
 
-/* Styling untuk Select yang Aktif */
+/* Styling for Active Select */
 select {
     background-color: var(--input-background-color);
     color: var(--text-color);
@@ -211,16 +219,16 @@ select {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Tambahkan efek hover untuk Select yang Aktif */
+/* Hover Effect for Active Select */
 select:hover:not(:disabled) {
-    background-color: #f0f0f0; /* Abu-abu sangat terang saat hover */
+    background-color: #f0f0f0; /* Very light gray on hover */
 }
 
-/* Tambahkan gaya fokus untuk aksesibilitas */
+/* Focus Styles for Select */
 select:focus {
     border-color: var(--primary-color);
     outline: none;
-    box-shadow: 0 0 5px rgba(0, 122, 255, 0.5); /* Shadow biru saat fokus */
+    box-shadow: 0 0 5px rgba(0, 122, 255, 0.5); /* Blue shadow on focus */
 }
 
 /* Image Preview */
@@ -414,12 +422,21 @@ select:focus {
     }
 
     nav ul {
-        flex-direction: column;
+        /* Ensure horizontal layout with increased spacing */
+        flex-direction: row;
         align-items: center;
+        justify-content: space-between; /* Distribute items evenly */
+        gap: 20px; /* Increased gap for more spacing */
+        flex-wrap: nowrap; /* Prevent wrapping */
     }
 
     nav ul li {
-        margin: 10px 0;
+        margin: 0 0; /* Remove horizontal margins */
+    }
+
+    nav ul li a {
+        padding: 8px 10px; /* Adjusted padding */
+        font-size: 14px; /* Slightly reduced font size */
     }
 
     form {
@@ -457,6 +474,22 @@ select:focus {
     /* Adjust notification position */
     #notification {
         top: 90px;
+    }
+
+    /* Further adjust navbar for very small screens */
+    nav ul {
+        justify-content: space-evenly; /* Evenly distribute items */
+        gap: 10px; /* Reduce gap to save space */
+        overflow-x: hidden; /* Disable horizontal scrolling */
+    }
+
+    nav ul li {
+        margin: 0; /* Remove horizontal margins */
+    }
+
+    nav ul li a {
+        padding: 6px 8px; /* Further reduce padding */
+        font-size: 13px; /* Further reduce font size */
     }
 }
 

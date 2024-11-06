@@ -1,28 +1,27 @@
+/* Hide the Id column */
+#assetsTable th.id-column,
+#assetsTable td.id-column {
+    display: none;
+}
 
- /* Hide the Id column */
- #assetsTable th.id-column,
- #assetsTable td.id-column {
-     display: none;
- }
+/* Style for the No. column */
+#assetsTable th.no-column,
+#assetsTable td.no-column {
+    width: 50px;
+    text-align: center;
+}
 
- /* Style for the No. column */
- #assetsTable th.no-column,
- #assetsTable td.no-column {
-     width: 50px;
-     text-align: center;
- }
+/* Optional: Adjust image size */
+#assetsTable img {
+    width: 100px;
+    height: auto;
+}
 
- /* Optional: Adjust image size */
- #assetsTable img {
-     width: 100px;
-     height: auto;
- }
-
- @media print {
-     nav, .filter-container, h1 {
-         display: none !important;
-     }
- }
+@media print {
+    nav, .filter-container, h1 {
+        display: none !important;
+    }
+}
 
 /* Basic Reset */
 * {
@@ -54,7 +53,7 @@ nav {
     -webkit-backdrop-filter: blur(10px); /* For Safari */
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
     display: flex;
-    justify-content: center;
+    justify-content: center; /* Center items horizontally on large screens */
     align-items: center;
 }
 
@@ -62,11 +61,13 @@ nav {
 nav ul {
     list-style: none;
     display: flex;
-    justify-content: center;
+    justify-content: center; /* Center items horizontally on large screens */
     align-items: center;
     gap: 20px; /* Space between links */
     margin: 0;
     padding: 0;
+    flex-wrap: nowrap; /* Prevent wrapping */
+    width: auto;
 }
 
 /* Navbar Links */
@@ -92,7 +93,7 @@ nav ul li a i {
 
 /* Hover Effect for Links and Icons */
 nav ul li a:hover {
-    background-color: #f5f5f5; /* Light blue overlay on hover */
+    background-color: #f5f5f5; /* Light gray overlay on hover */
     color: #007aff; /* macOS blue on hover */
 }
 
@@ -304,6 +305,29 @@ img {
 }
 
 @media (max-width: 600px) {
+    /* Maintain horizontal layout for navbar and align items to start */
+    nav {
+        justify-content: flex-start; /* Align items to the start */
+        padding: 10px 15px; /* Adjust padding for better fit */
+    }
+
+    nav ul {
+        flex-direction: row; /* Ensure horizontal layout */
+        align-items: center; /* Vertically center items */
+        justify-content: flex-start; /* Align items to the start (left) */
+        width: 100%;
+        gap: 10px; /* Reduce gap for smaller screens */
+        overflow-x: auto; /* Enable horizontal scrolling if needed */
+    }
+
+    /* Optional: Hide text labels and show icons only if needed */
+    /*
+    nav ul li a {
+        padding: 5px;
+    }
+    */
+
+    /* Adjust filter container padding and layout */
     .filter-container {
         padding: 10px;
     }
@@ -326,5 +350,17 @@ img {
 
     img {
         width: 60px;
+    }
+
+    /* Adjust title alignment */
+    h1 {
+        text-align: left;
+        margin-top: 100px; /* Adjust if needed for navbar height */
+        padding-left: 10px;
+    }
+
+    /* Adjust dashboard container padding */
+    .dashboard-container {
+        padding: 10px 5px;
     }
 }

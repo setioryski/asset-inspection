@@ -8,6 +8,7 @@ body {
     align-items: center;
     height: 100vh;
     margin: 0;
+    overflow: hidden; /* Prevents scrolling */
 }
 
 /* Container for Login Form */
@@ -17,13 +18,14 @@ body {
     border-radius: 8px;
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Subtle shadow */
     text-align: center;
-    width: 300px;
+    width: 320px; /* Fixed width for desktop */
     max-width: 90%; /* Ensures responsiveness */
 }
 
+/* Heading Styles */
 .login-container h1 {
     color: #333;
-    font-size: 24px; /* Simplified font sizing */
+    font-size: 24px;
     margin-bottom: 30px;
 }
 
@@ -39,7 +41,7 @@ input[type="password"] {
     border: 2px solid #ccc; /* Slightly thicker border for focus */
     border-radius: 4px;
     box-sizing: border-box;
-    background: none; /* No background */
+    background: none;
     color: #333; /* Text color similar to the body for consistency */
 }
 
@@ -68,4 +70,42 @@ input[type="password"]:focus {
 #login-logo {
     width: 50%; /* Smaller logo for less visual dominance */
     margin-bottom: 30px;
+}
+
+/* =========================================================
+   Mobile View Adjustments
+========================================================= */
+@media (max-width: 600px) {
+    /* Center the login container in the middle on mobile */
+    body {
+        justify-content: center;
+        align-items: center;
+        overflow: hidden; /* Prevent scrolling */
+        height: 100vh; /* Full viewport height */
+    }
+
+    .login-container {
+        width: 85%; /* Narrower width on mobile */
+        max-width: 300px; /* Maximum width constraint */
+        padding: 30px;
+        position: relative; /* Remove any positioning adjustments */
+    }
+
+    /* Input fields and button sizing for mobile */
+    input[type="text"],
+    input[type="password"] {
+        padding: 12px;
+        font-size: 14px; /* Slightly smaller font for compactness */
+    }
+
+    button {
+        padding: 10px;
+        font-size: 15px;
+    }
+
+    /* Adjust logo size on mobile */
+    #login-logo {
+        width: 40%; /* Smaller logo for better spacing */
+        margin-bottom: 20px;
+    }
 }
