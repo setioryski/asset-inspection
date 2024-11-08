@@ -1,3 +1,33 @@
+// main.js
+
+// ===========================
+// Configuration and Constants
+// ===========================
+
+// IndexedDB variables
+const DB_NAME = 'inspectionDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'aset';
+
+// Time synchronization variables
+let timeOffset = 0; // Difference between server and client time in ms
+let lastSyncPerformanceTime = 0;
+let lastSyncServerTime = 0;
+
+// Monotonic timestamp variables
+const LAST_TIMESTAMP_KEY = 'lastTimestamp'; // Key to store last timestamp in localStorage
+
+// Store original options for dependent selects
+const originalOptions = {
+    id_tipe_aset: [],
+    id_tipe_hb: [],
+    id_tipe_door: []
+};
+
+// ===========================
+// DOM Elements
+// ===========================
+
 const entryList = document.getElementById('entryList');
 const savedEntriesDiv = document.getElementById('savedEntries');
 const toggleSavedEntriesButton = document.getElementById('toggleSavedEntriesButton');
@@ -7,16 +37,18 @@ const statusIndicator = document.getElementById('statusIndicator');
 const notification = document.getElementById('notification');
 const notificationIcon = notification.querySelector('.icon');
 const notificationMessage = notification.querySelector('.message');
+const saveButton = document.getElementById('saveButton');
+const inspectionForm = document.getElementById('inspectionForm');
+const previewImg = document.getElementById('previewImg');
 
-// IndexedDB variables
+// ===========================
+// IndexedDB Initialization
+// ===========================
+
 let db;
-const dbName = 'inspectionDB';
-const dbVersion = 1;
-const storeName = 'inspections';
 
-// Initialize IndexedDB
 function initDB() {
-    const request = indexedDB.open(dbName, dbVersion);
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = function(event) {
         console.error('Database error:', event.target.errorCode);
@@ -25,7 +57,11 @@ function initDB() {
 
     request.onupgradeneeded = function(event) {
         db = event.target.result;
-        const objectStore = db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+            const objectStore = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            // Define indexes if needed
+            objectStore.createIndex('client_timestamp', 'client_timestamp', { unique: false });
+        }
     };
 
     request.onsuccess = function(event) {
@@ -34,51 +70,152 @@ function initDB() {
     };
 }
 
-// Call initDB when the window loads
-window.onload = function() {
-    initDB();
+// ===========================
+// Time Synchronization
+// ===========================
 
-    // Store original options for dependent selects
-    ['id_tipe_aset', 'id_tipe_hb', 'id_tipe_door'].forEach(function(selectId) {
-        const selectElement = document.getElementById(selectId);
-        originalOptions[selectId] = Array.from(selectElement.options);
-    });
+/**
+ * Synchronize client time with server time.
+ */
+async function synchronizeTime() {
+    try {
+        const serverTimeStr = await fetchServerTime();
+        const serverTime = new Date(serverTimeStr).getTime();
+        const clientTime = Date.now();
+        timeOffset = serverTime - clientTime;
 
+        // Retrieve previous synchronization reference points
+        const storedLastSyncServerTime = parseInt(localStorage.getItem('lastSyncServerTime'), 10);
+        const storedLastSyncPerformanceTime = parseFloat(localStorage.getItem('lastSyncPerformanceTime'));
 
-    // Listen to online/offline events
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
+        if (!isNaN(storedLastSyncServerTime) && !isNaN(storedLastSyncPerformanceTime)) {
+            lastSyncServerTime = storedLastSyncServerTime;
+            lastSyncPerformanceTime = storedLastSyncPerformanceTime;
+        } else {
+            // Initialize if not present
+            lastSyncServerTime = serverTime;
+            lastSyncPerformanceTime = performance.now();
+        }
 
-    updateOnlineStatus(); // Initial status
-};
+        // Update reference points
+        lastSyncServerTime = serverTime;
+        lastSyncPerformanceTime = performance.now();
 
-// Store original options for dependent selects
-const originalOptions = {
-    id_tipe_aset: [],
-    id_tipe_hb: [],
-    id_tipe_door: []
-};
+        // Store updated reference points
+        localStorage.setItem('lastSyncServerTime', lastSyncServerTime);
+        localStorage.setItem('lastSyncPerformanceTime', lastSyncPerformanceTime);
 
-// Update online/offline status indicator
-function updateOnlineStatus() {
-if (!navigator.onLine) {
-statusIndicator.style.display = 'block';
-kirimSemuaButton.disabled = true; // Disable the button
-} else {
-statusIndicator.style.display = 'none';
-kirimSemuaButton.disabled = false; // Enable the button
+        console.log(`Time synchronized. Offset: ${timeOffset} ms`);
+
+        // Update lastTimestamp to ensure monotonicity
+        let lastTimestamp = parseInt(localStorage.getItem(LAST_TIMESTAMP_KEY), 10) || serverTime;
+        const adjustedLastTimestamp = Math.max(lastTimestamp, serverTime);
+        localStorage.setItem(LAST_TIMESTAMP_KEY, adjustedLastTimestamp);
+    } catch (error) {
+        console.error('Failed to synchronize time:', error);
+        showNotification('Failed to synchronize time with server.', 'error');
+    }
 }
+
+/**
+ * Fetches the current server time from the server.
+ * @returns {Promise<string>} A promise that resolves to the server time in ISO 8601 format.
+ */
+async function fetchServerTime() {
+    try {
+        const response = await fetch('/api/server-time', { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`Server responded with status ${response.status}`);
+        }
+        const data = await response.json();
+        if (!data.serverTime) {
+            throw new Error('Server time not found in response');
+        }
+        return data.serverTime; // Expected format: '2024-04-25T12:34:56Z'
+    } catch (error) {
+        console.error('Error fetching server time:', error);
+        throw error;
+    }
 }
 
+/**
+ * Get the estimated current server time based on performance.now()
+ * @returns {number} Estimated server time in ms since epoch.
+ */
+function getCurrentServerTime() {
+    const storedLastSyncServerTime = parseInt(localStorage.getItem('lastSyncServerTime'), 10);
+    const storedLastSyncPerformanceTime = parseFloat(localStorage.getItem('lastSyncPerformanceTime'));
 
-// Show notification with icons
+    if (isNaN(storedLastSyncServerTime) || isNaN(storedLastSyncPerformanceTime)) {
+        // Fallback if not available
+        return Date.now() + timeOffset;
+    }
+
+    const elapsed = performance.now() - storedLastSyncPerformanceTime;
+    return storedLastSyncServerTime + elapsed + timeOffset;
+}
+
+/**
+ * Detect significant time drift.
+ * @returns {boolean} True if drift is significant, else false.
+ */
+function isTimeDrifted() {
+    const expectedServerTime = getCurrentServerTime();
+    const actualServerTime = Date.now() + timeOffset; // Approximation
+
+    // Allow a small margin of error (e.g., 2 minutes)
+    const drift = Math.abs(actualServerTime - expectedServerTime);
+    return drift > 2 * 60 * 1000; // 2 minutes in ms
+}
+
+// ===========================
+// Monotonic Timestamp Functions
+// ===========================
+
+/**
+ * Generates a reliable and monotonic timestamp.
+ * @returns {string} An ISO 8601 formatted timestamp.
+ */
+function getReliableTimestamp() {
+    // Retrieve the time offset
+    let offset = parseInt(localStorage.getItem('serverTimeOffset'), 10);
+    if (isNaN(offset)) offset = timeOffset || 0;
+
+    // Calculate the current server-aligned time
+    const currentTime = getCurrentServerTime();
+
+    // Retrieve the last timestamp used
+    let lastTimestamp = parseInt(localStorage.getItem(LAST_TIMESTAMP_KEY), 10);
+    if (isNaN(lastTimestamp)) {
+        lastTimestamp = currentTime;
+    }
+
+    // Ensure the new timestamp is greater than the last timestamp
+    const newTimestamp = Math.max(currentTime, lastTimestamp + 1);
+
+    // Update the lastTimestamp in storage
+    localStorage.setItem(LAST_TIMESTAMP_KEY, newTimestamp);
+
+    // Return the new timestamp in ISO format
+    return new Date(newTimestamp).toISOString();
+}
+
+// ===========================
+// User Interface Functions
+// ===========================
+
+/**
+ * Display notifications to the user.
+ * @param {string} message - The notification message.
+ * @param {string} type - Type of notification: 'success', 'error', 'info'.
+ */
 function showNotification(message, type) {
     notificationMessage.textContent = message;
-    
+
     // Reset classes
     notification.classList.remove('success', 'error', 'info');
     notificationIcon.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-info-circle');
-    
+
     // Add new classes based on type
     if (type === 'success') {
         notification.classList.add('success');
@@ -90,51 +227,168 @@ function showNotification(message, type) {
         notification.classList.add('info');
         notificationIcon.classList.add('fa-info-circle');
     }
-    
+
     // Show the notification
     notification.classList.add('show');
-    
+
     // Hide after 3 seconds
     setTimeout(() => {
         notification.classList.remove('show');
     }, 3000);
 }
 
-// Toggle the display of the Data Tersimpan section
-toggleSavedEntriesButton.addEventListener('click', function () {
-    if (savedEntriesDiv.style.display === 'none') {
-        savedEntriesDiv.style.display = 'block';
-        toggleSavedEntriesButton.textContent = 'Sembunyikan Data Tersimpan';
-        toggleSavedEntriesButton.innerHTML = '<i class="fas fa-folder-minus"></i> Sembunyikan Data Tersimpan';
+/**
+ * Update online/offline status indicator.
+ */
+function updateOnlineStatus() {
+    if (!navigator.onLine) {
+        statusIndicator.textContent = 'Anda offline. Data akan disimpan secara lokal.';
+        statusIndicator.style.display = 'block';
+        kirimSemuaButton.disabled = true; // Disable the button
     } else {
-        savedEntriesDiv.style.display = 'none';
-        toggleSavedEntriesButton.textContent = 'Tampilkan Data Tersimpan';
-        toggleSavedEntriesButton.innerHTML = '<i class="fas fa-folder-open"></i> Tampilkan Data Tersimpan';
+        statusIndicator.textContent = 'Anda online.';
+        statusIndicator.style.display = 'block';
+        setTimeout(() => {
+            statusIndicator.style.display = 'none';
+        }, 3000); // Hide after 3 seconds
+        kirimSemuaButton.disabled = false; // Enable the button
+        synchronizeTime().then(() => {
+            // Automatically submit any pending entries upon reconnection
+            synchronizeLocalAssets();
+        });
     }
-});
+}
 
+/**
+ * Preview the selected image file.
+ */
 function previewFile() {
-    const preview = document.getElementById('previewImg');
     const file = document.getElementById('foto').files[0];
     const reader = new FileReader();
 
     reader.onloadend = function () {
-        preview.src = reader.result;
-        preview.style.display = 'block';
+        previewImg.src = reader.result;
+        previewImg.style.display = 'block';
     };
 
     if (file) {
         reader.readAsDataURL(file);
     } else {
-        preview.src = "";
-        preview.style.display = 'none';
+        previewImg.src = "";
+        previewImg.style.display = 'none';
     }
 }
 
-// Save form data to IndexedDB
-document.getElementById('saveButton').addEventListener('click', function () {
-    const formElement = document.getElementById('inspectionForm');
-    const formData = new FormData(formElement);
+/**
+ * Toggle the display of the saved entries section.
+ */
+toggleSavedEntriesButton.addEventListener('click', function () {
+    if (savedEntriesDiv.style.display === 'none' || savedEntriesDiv.style.display === '') {
+        savedEntriesDiv.style.display = 'block';
+        toggleSavedEntriesButton.innerHTML = '<i class="fas fa-folder-minus"></i> Sembunyikan Data Tersimpan';
+    } else {
+        savedEntriesDiv.style.display = 'none';
+        toggleSavedEntriesButton.innerHTML = '<i class="fas fa-folder-open"></i> Tampilkan Data Tersimpan';
+    }
+});
+
+// Attach the event listener for the "Kirim Semua" button
+kirimSemuaButton.addEventListener('click', handleSubmitAll);
+
+// Attach the event listener for the file input to preview images
+document.getElementById('foto').addEventListener('change', previewFile);
+
+// ===========================
+// Data Handling Functions
+// ===========================
+
+/**
+ * Display saved entries from IndexedDB.
+ */
+function displaySavedEntries() {
+    entryList.innerHTML = '';
+
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const request = objectStore.getAll();
+
+    request.onsuccess = function(event) {
+        const savedData = event.target.result;
+
+        savedData.forEach(function(entry) {
+            // Convert timestamp to readable date
+            const date = new Date(entry.client_timestamp);
+            const formattedDate = date.toLocaleString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
+            // Build the HTML content
+            let entryHtml = `
+                <strong>Nama Petugas:</strong> ${entry.nama_petugas || ''} <br>
+                <strong>Lantai:</strong> ${entry.nama_lantai || ''} <br>
+                <!-- <strong>Waktu:</strong> ${formattedDate} <br> -->
+            `;
+
+            if (entry.nama_aset) {
+                entryHtml += `<strong>Nama Aset:</strong> ${entry.nama_aset} <br>`;
+            }
+            if (entry.nama_hb) {
+                entryHtml += `<strong>Box Hydrant:</strong> ${entry.nama_hb} <br>`;
+            }
+            if (entry.nama_door) {
+                entryHtml += `<strong>Emergency Door:</strong> ${entry.nama_door} <br>`;
+            }
+
+            entryHtml += `
+                <strong>Kondisi:</strong> ${entry.nama_kondisi || ''} <br>
+                <strong>Catatan:</strong> ${entry.catatan || ''} <br>
+            `;
+
+            // Include image preview
+            if (entry.foto) {
+                const url = URL.createObjectURL(entry.foto);
+                entryHtml += `<img src="${url}" alt="Foto" style="max-width: 100px;" onload="URL.revokeObjectURL(this.src)"><br>`;
+            }
+
+            // Show error message if available and add Retry button
+            if (entry.errorMessage) {
+                entryHtml += `<div style="color: #f44336; margin-top: 10px;"><strong>Error:</strong> ${entry.errorMessage}</div>`;
+                entryHtml += `<button class="retry-button" onclick="retryEntry(${entry.id})"><i class="fas fa-redo"></i> Retry</button>`;
+            }
+
+            entryHtml += `<button class="delete-button" onclick="deleteEntry(${entry.id})"><i class="fas fa-trash-alt"></i> Hapus</button>`;
+
+            const li = document.createElement('li');
+            li.innerHTML = entryHtml;
+            entryList.appendChild(li);
+        });
+    };
+
+    request.onerror = function(event) {
+        console.error('Error fetching data:', event.target.errorCode);
+        showNotification('Error fetching saved entries.', 'error');
+    };
+}
+
+/**
+ * Save form data to IndexedDB with appropriate timestamp.
+ */
+saveButton.addEventListener('click', async function () {
+    // Check for time drift before saving
+    if (isTimeDrifted()) {
+        showNotification('Waktu perangkat Anda telah berubah. Silakan resinkronkan waktu.', 'error');
+        synchronizeTime(); // Attempt to resynchronize
+        return; // Prevent saving until synchronization
+    }
+
+    const formData = new FormData(inspectionForm);
     const entry = {};
 
     // Validate Kondisi selection
@@ -149,16 +403,7 @@ document.getElementById('saveButton').addEventListener('click', function () {
     const file = fileInput.files[0];
 
     if (file) {
-        // Optionally, resize the image before saving (improves storage and upload times)
-        // Uncomment the following lines to enable image resizing
-        /*
-        resizeImage(file, function(resizedBlob) {
-            entry['foto'] = resizedBlob;
-            saveEntry(formData, entry);
-        });
-        */
-
-        // If not resizing, store the original file
+        // Store the original file
         entry['foto'] = file;
 
         // Store form data
@@ -183,9 +428,13 @@ document.getElementById('saveButton').addEventListener('click', function () {
             entry['nama_door'] = document.querySelector('#id_tipe_door option:checked').textContent;
         }
 
+        // Generate a reliable timestamp
+        const reliableTimestamp = getReliableTimestamp();
+        entry['client_timestamp'] = reliableTimestamp;
+
         // Save to IndexedDB
-        const transaction = db.transaction([storeName], 'readwrite');
-        const objectStore = transaction.objectStore(storeName);
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const objectStore = transaction.objectStore(STORE_NAME);
         const request = objectStore.add(entry);
 
         request.onsuccess = function(event) {
@@ -193,9 +442,9 @@ document.getElementById('saveButton').addEventListener('click', function () {
             showNotification('Data berhasil disimpan secara lokal.', 'success');
 
             // Reset the form
-            formElement.reset();
-            document.getElementById('previewImg').src = '';
-            document.getElementById('previewImg').style.display = 'none';
+            inspectionForm.reset();
+            previewImg.src = '';
+            previewImg.style.display = 'none';
 
             // Reset select options
             resetSelectOptions('id_tipe_aset');
@@ -212,49 +461,10 @@ document.getElementById('saveButton').addEventListener('click', function () {
     }
 });
 
-// Optional: Function to resize images before saving
-/*
-function resizeImage(file, callback) {
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            // Set desired dimensions
-            const maxWidth = 800;
-            const maxHeight = 800;
-            let width = img.width;
-            let height = img.height;
-
-            // Calculate new dimensions while maintaining aspect ratio
-            if (width > height) {
-                if (width > maxWidth) {
-                    height *= maxWidth / width;
-                    width = maxWidth;
-                }
-            } else {
-                if (height > maxHeight) {
-                    width *= maxHeight / height;
-                    height = maxHeight;
-                }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            canvas.toBlob(function(blob) {
-                callback(blob);
-            }, 'image/jpeg', 0.7); // Adjust quality as needed
-        };
-        img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-*/
-
-// Function to reset select options to original state
+/**
+ * Reset select options to original state.
+ * @param {string} selectId - The ID of the select element.
+ */
 function resetSelectOptions(selectId) {
     const selectElement = document.getElementById(selectId);
 
@@ -271,390 +481,35 @@ function resetSelectOptions(selectId) {
     selectElement.disabled = true;
 }
 
-// Display saved entries from IndexedDB
-function displaySavedEntries() {
-    entryList.innerHTML = '';
+/**
+ * Handle selection changes and enable Kondisi.
+ * @param {string} selected - The selected category ('aset', 'hb', 'door').
+ */
+function handleSelection(selected) {
+    const kondisiSelect = document.getElementById('id_kondisi');
+    kondisiSelect.disabled = false;
 
-    const transaction = db.transaction([storeName], 'readonly');
-    const objectStore = transaction.objectStore(storeName);
-    const request = objectStore.getAll();
-
-    request.onsuccess = function(event) {
-        const savedData = event.target.result;
-
-        savedData.forEach(function(entry) {
-            // Build the HTML content
-            let entryHtml = `
-                <strong>Nama Petugas:</strong> ${entry.nama_petugas || ''} <br>
-                <strong>Lantai:</strong> ${entry.nama_lantai || ''} <br>
-            `;
-
-            if (entry.nama_aset) {
-                entryHtml += `<strong>Nama Aset:</strong> ${entry.nama_aset} <br>`;
-            }
-            if (entry.nama_hb) {
-                entryHtml += `<strong>Box Hydrant:</strong> ${entry.nama_hb} <br>`;
-            }
-            if (entry.nama_door) {
-                entryHtml += `<strong>Emergency Door:</strong> ${entry.nama_door} <br>`;
-            }
-
-            entryHtml += `
-                <strong>Kondisi:</strong> ${entry.nama_kondisi || ''} <br>
-                <strong>Catatan:</strong> ${entry.catatan || ''} <br>
-            `;
-
-            // Include image preview
-            if (entry.foto) {
-                const url = URL.createObjectURL(entry.foto);
-                entryHtml += `<img src="${url}" alt="Foto" style="max-width: 100px;"><br>`;
-            }
-
-            // Show error message if available and add Retry button
-            if (entry.errorMessage) {
-                entryHtml += `<div style="color: #f44336; margin-top: 10px;"><strong>Error:</strong> ${entry.errorMessage}</div>`;
-                entryHtml += `<button class="retry-button" onclick="retryEntry(${entry.id})"><i class="fas fa-redo"></i> Retry</button>`;
-            }
-
-            entryHtml += `<button class="delete-button" onclick="deleteEntry(${entry.id})"><i class="fas fa-trash-alt"></i> Hapus</button>`;
-
-            const li = document.createElement('li');
-            li.innerHTML = entryHtml;
-            entryList.appendChild(li);
-        });
-    };
-
-    request.onerror = function(event) {
-        console.error('Error fetching data:', event.target.errorCode);
-        showNotification('Error fetching saved entries.', 'error');
-    };
-}
-
-// Delete an entry from IndexedDB
-function deleteEntry(id, showNotif = true) {
-console.log('deleteEntry called with id:', id, 'showNotif:', showNotif);
-const transaction = db.transaction([storeName], 'readwrite');
-const objectStore = transaction.objectStore(storeName);
-const request = objectStore.delete(id);
-
-request.onsuccess = function(event) {
-displaySavedEntries();
-if (showNotif) {
-    showNotification('Entry terhapus.', 'success');
-}
-};
-
-request.onerror = function(event) {
-console.error('Error deleting entry:', event.target.errorCode);
-if (showNotif) {
-    showNotification('Error menghapus entry.', 'error');
-}
-};
-}
-
-// Retry a single failed entry
-function retryEntry(id) {
-if (!navigator.onLine) {
-showNotification('Anda sedang offline. Tidak dapat mengirim data.', 'error');
-return;
-}
-const transaction = db.transaction([storeName], 'readwrite');
-const objectStore = transaction.objectStore(storeName);
-const getRequest = objectStore.get(id);
-
-getRequest.onsuccess = function(event) {
-const entry = event.target.result;
-
-// Clear previous error message
-delete entry.errorMessage;
-
-const formData = new FormData();
-
-// Append the image file
-formData.append('foto', entry.foto);
-
-// Append other fields
-Object.entries(entry).forEach(([key, value]) => {
-    if (!['foto', 'errorMessage', 'id'].includes(key) && !key.startsWith('nama_')) {
-        formData.append(key, value);
+    if (selected === 'aset') {
+        document.getElementById('id_tipe_hb').disabled = true;
+        document.getElementById('id_tipe_door').disabled = true;
+        document.getElementById('id_tipe_hb').value = '';
+        document.getElementById('id_tipe_door').value = '';
+    } else if (selected === 'hb') {
+        document.getElementById('id_tipe_aset').disabled = true;
+        document.getElementById('id_tipe_door').disabled = true;
+        document.getElementById('id_tipe_aset').value = '';
+        document.getElementById('id_tipe_door').value = '';
+    } else if (selected === 'door') {
+        document.getElementById('id_tipe_aset').disabled = true;
+        document.getElementById('id_tipe_hb').disabled = true;
+        document.getElementById('id_tipe_aset').value = '';
+        document.getElementById('id_tipe_hb').value = '';
     }
-});
-
-const xhr = new XMLHttpRequest();
-xhr.open('POST', '/upload', true);
-
-xhr.onload = function () {
-    if (xhr.status >= 200 && xhr.status < 300) {
-        console.log('Successfully retried entry id:', id); // Debugging line
-        // Remove the entry from IndexedDB without showing notification
-        deleteEntry(id, false);
-        displaySavedEntries();
-        showNotification('Data berhasil dikirim ke server.', 'success');
-    } else {
-        // Handle errors
-        entry.errorMessage = xhr.statusText;
-        updateFailedEntry(entry);
-    }
-};
-
-xhr.onerror = function () {
-    console.error('Network error during retry.');
-    entry.errorMessage = 'Network error';
-    updateFailedEntry(entry);
-};
-
-xhr.send(formData);
-};
-
-getRequest.onerror = function(event) {
-console.error('Error retrieving entry:', event.target.errorCode);
-showNotification('Error mengambil data entry.', 'error');
-};
 }
 
-function updateFailedEntry(entry) {
-const transaction = db.transaction([storeName], 'readwrite');
-const objectStore = transaction.objectStore(storeName);
-const updateRequest = objectStore.put(entry);
-
-updateRequest.onsuccess = function() {
-displaySavedEntries();
-showNotification(`Error mengirim entry: ${entry.errorMessage}`, 'error');
-};
-
-updateRequest.onerror = function(event) {
-console.error('Error updating entry:', event.target.errorCode);
-showNotification('Error memperbarui entry.', 'error');
-};
-}
-
-function updateFailedEntry(entry) {
-const transaction = db.transaction([storeName], 'readwrite');
-const objectStore = transaction.objectStore(storeName);
-const updateRequest = objectStore.put(entry);
-
-updateRequest.onsuccess = function() {
-displaySavedEntries();
-showNotification(`Error mengirim entry: ${entry.errorMessage}`, 'error');
-};
-
-updateRequest.onerror = function(event) {
-console.error('Error updating entry:', event.target.errorCode);
-showNotification('Error memperbarui entry.', 'error');
-};
-}
-
-// Submit all saved entries to the server
-function handleSubmitAll() {
-if (!navigator.onLine) {
-showNotification('Anda sedang offline. Tidak dapat mengirim data.', 'error');
-return;
-}
-
-// Show the spinner and disable the Kirim Semua button
-kirimSemuaButton.disabled = true;
-kirimSemuaSpinner.style.display = 'inline-block';
-
-const transaction = db.transaction([storeName], 'readonly');
-const objectStore = transaction.objectStore(storeName);
-const request = objectStore.getAll();
-
-request.onsuccess = function(event) {
-const entriesToSubmit = event.target.result;
-if (entriesToSubmit.length === 0) {
-    kirimSemuaButton.disabled = false; // Re-enable the button
-    kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
-    showNotification('Tidak ada data tersimpan untuk dikirim.', 'info');
-    return;
-}
-
-submitEntries(entriesToSubmit);
-};
-
-request.onerror = function(event) {
-kirimSemuaButton.disabled = false; // Re-enable the button
-kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
-console.error('Error fetching entries for submission:', event.target.errorCode);
-showNotification('Error mengambil data untuk pengiriman.', 'error');
-};
-}
-
-// Function to submit entries
-function submitEntries(entries) {
-let index = 0;
-const failedEntries = [];
-
-function submitNextEntry() {
-if (index >= entries.length) {
-    kirimSemuaButton.disabled = false; // Re-enable the button
-    kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
-    displaySavedEntries();
-
-    if (failedEntries.length > 0) {
-        showNotification(`${failedEntries.length} entri gagal dikirim. Anda dapat mencoba mengirim ulang secara individu.`, 'error');
-    } else {
-        showNotification('Data berhasil dikirim ke server.', 'success');
-    }
-    return;
-}
-
-const entry = entries[index];
-const formData = new FormData();
-
-// Append the image file
-formData.append('foto', entry.foto);
-
-// Append other fields
-Object.entries(entry).forEach(function([key, value]) {
-    if (key !== 'foto' && key !== 'errorMessage' && key !== 'id' && !key.startsWith('nama_')) {
-        formData.append(key, value);
-    }
-});
-
-const xhr = new XMLHttpRequest();
-xhr.open('POST', '/upload', true);
-
-xhr.onload = function () {
-    if (xhr.status >= 200 && xhr.status < 300) {
-        // Remove the entry from IndexedDB without showing notification
-        deleteEntry(entry.id, false);
-        index++;
-        submitNextEntry();
-    } else {
-        console.error(`Error submitting entry ${entry.id}:`, xhr.statusText);
-        entry.errorMessage = xhr.statusText;
-        const transaction = db.transaction([storeName], 'readwrite');
-        const objectStore = transaction.objectStore(storeName);
-        const updateRequest = objectStore.put(entry);
-
-        updateRequest.onsuccess = function(event) {
-            failedEntries.push(entry);
-            index++;
-            submitNextEntry();
-        };
-
-        updateRequest.onerror = function(event) {
-            console.error('Error updating entry:', event.target.errorCode);
-            failedEntries.push(entry);
-            index++;
-            submitNextEntry();
-        };
-    }
-};
-
-xhr.onerror = function () {
-    console.error('Network error occurred during submission.');
-    entry.errorMessage = 'Network error';
-    const transaction = db.transaction([storeName], 'readwrite');
-    const objectStore = transaction.objectStore(storeName);
-    const updateRequest = objectStore.put(entry);
-
-    updateRequest.onsuccess = function(event) {
-        failedEntries.push(entry);
-        index++;
-        submitNextEntry();
-    };
-
-    updateRequest.onerror = function(event) {
-        console.error('Error updating entry:', event.target.errorCode);
-        failedEntries.push(entry);
-        index++;
-        submitNextEntry();
-    };
-};
-
-xhr.send(formData);
-}
-
-submitNextEntry();
-}
-
-// Add both click and touchstart event listeners to "Kirim Semua" button
-kirimSemuaButton.addEventListener('click', handleSubmitAll);
-kirimSemuaButton.addEventListener('touchstart', handleSubmitAll);
-
-
-// Function to submit entries
-function submitEntries(entries) {
-let index = 0;
-const failedEntries = [];
-
-function submitNextEntry() {
-if (index >= entries.length) {
-    kirimSemuaButton.disabled = false;
-    kirimSemuaSpinner.style.display = 'none';
-    displaySavedEntries();
-
-    if (failedEntries.length > 0) {
-        showNotification(`${failedEntries.length} entri gagal dikirim. Anda dapat mencoba mengirim ulang secara individu.`, 'error');
-    } else {
-        showNotification('Data berhasil dikirim ke server.', 'success');
-    }
-    return;
-}
-
-const entry = entries[index];
-const formData = new FormData();
-
-// Append the image file
-formData.append('foto', entry.foto);
-
-// Append other fields
-Object.entries(entry).forEach(([key, value]) => {
-    if (!['foto', 'errorMessage', 'id'].includes(key) && !key.startsWith('nama_')) {
-        formData.append(key, value);
-    }
-});
-
-const xhr = new XMLHttpRequest();
-xhr.open('POST', '/upload', true);
-
-xhr.onload = function () {
-    if (xhr.status >= 200 && xhr.status < 300) {
-        console.log('Successfully submitted entry id:', entry.id); // Debugging line
-        // Remove the entry from IndexedDB without showing notification
-        deleteEntry(entry.id, false);
-        index++;
-        submitNextEntry();
-    } else {
-        // Handle errors
-        entry.errorMessage = xhr.statusText;
-        saveFailedEntry(entry, failedEntries, index, submitNextEntry);
-    }
-};
-
-xhr.onerror = function () {
-    console.error('Network error during submission.');
-    entry.errorMessage = 'Network error';
-    saveFailedEntry(entry, failedEntries, index, submitNextEntry);
-};
-
-xhr.send(formData);
-}
-
-submitNextEntry();
-}
-
-function saveFailedEntry(entry, failedEntries, index, callback) {
-const transaction = db.transaction([storeName], 'readwrite');
-const objectStore = transaction.objectStore(storeName);
-const updateRequest = objectStore.put(entry);
-
-updateRequest.onsuccess = function () {
-failedEntries.push(entry);
-index++;
-callback();
-};
-
-updateRequest.onerror = function (event) {
-console.error('Error updating entry:', event.target.errorCode);
-failedEntries.push(entry);
-index++;
-callback();
-};
-}
-
-// Filter options by selected lantai
+/**
+ * Filter dropdown options based on selected lantai.
+ */
 function filterOptionsByLantai() {
     const selectedLantaiId = document.getElementById('id_tipe_lantai').value;
     filterDropdownOptions('id_tipe_aset', selectedLantaiId);
@@ -680,56 +535,382 @@ function filterDropdownOptions(selectId, lantaiId) {
     selectElement.disabled = false;
 }
 
-function handleSelection(selected) {
-    const kondisiSelect = document.getElementById('id_kondisi');
-    kondisiSelect.disabled = false;
+// ===========================
+// Data Submission Functions
+// ===========================
 
-    if (selected === 'aset') {
-        document.getElementById('id_tipe_hb').disabled = true;
-        document.getElementById('id_tipe_door').disabled = true;
-        document.getElementById('id_tipe_hb').value = '';
-        document.getElementById('id_tipe_door').value = '';
-    } else if (selected === 'hb') {
-        document.getElementById('id_tipe_aset').disabled = true;
-        document.getElementById('id_tipe_door').disabled = true;
-        document.getElementById('id_tipe_aset').value = '';
-        document.getElementById('id_tipe_door').value = '';
-    } else if (selected === 'door') {
-        document.getElementById('id_tipe_aset').disabled = true;
-        document.getElementById('id_tipe_hb').disabled = true;
-        document.getElementById('id_tipe_aset').value = '';
-        document.getElementById('id_tipe_hb').value = '';
+/**
+ * Submit all saved entries to the server.
+ */
+function handleSubmitAll() {
+    if (!navigator.onLine) {
+        showNotification('Anda sedang offline. Tidak dapat mengirim data.', 'error');
+        return;
     }
+
+    // Show the spinner and disable the Kirim Semua button
+    kirimSemuaButton.disabled = true;
+    kirimSemuaSpinner.style.display = 'inline-block';
+
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const request = objectStore.getAll();
+
+    request.onsuccess = function(event) {
+        const entriesToSubmit = event.target.result;
+        if (entriesToSubmit.length === 0) {
+            kirimSemuaButton.disabled = false; // Re-enable the button
+            kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
+            showNotification('Tidak ada data tersimpan untuk dikirim.', 'info');
+            return;
+        }
+
+        submitEntries(entriesToSubmit);
+    };
+
+    request.onerror = function(event) {
+        kirimSemuaButton.disabled = false; // Re-enable the button
+        kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
+        console.error('Error fetching entries for submission:', event.target.errorCode);
+        showNotification('Error mengambil data untuk pengiriman.', 'error');
+    };
 }
 
-// Function to reset select options to original state
-function resetSelectOptions(selectId) {
-    const selectElement = document.getElementById(selectId);
+/**
+ * Submit entries one by one to the server.
+ * @param {Array} entries - Array of entries to submit.
+ */
+function submitEntries(entries) {
+    let index = 0;
+    const failedEntries = [];
 
-    // Clear existing options
-    selectElement.innerHTML = '<option value="" selected disabled>Pilih...</option>';
+    function submitNextEntry() {
+        if (index >= entries.length) {
+            kirimSemuaButton.disabled = false; // Re-enable the button
+            kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
+            displaySavedEntries();
 
-    // Append original options
-    const options = originalOptions[selectId];
+            if (failedEntries.length > 0) {
+                showNotification(`${failedEntries.length} entri gagal dikirim. Anda dapat mencoba mengirim ulang secara individu.`, 'error');
+            } else {
+                showNotification('Data berhasil dikirim ke server.', 'success');
+            }
+            return;
+        }
 
-    options.forEach(function(option) {
-        selectElement.appendChild(option.cloneNode(true));
-    });
+        const entry = entries[index];
+        const formData = new FormData();
 
-    selectElement.disabled = true;
+        // Append the image file
+        formData.append('foto', entry.foto);
+
+        // Append other fields
+        Object.entries(entry).forEach(function([key, value]) {
+            if (!['foto', 'errorMessage', 'id'].includes(key) && !key.startsWith('nama_') && key !== 'client_timestamp') {
+                formData.append(key, value);
+            }
+        });
+
+        // Append the client-assigned timestamp as ISO string
+        formData.append('clientTimestamp', entry.client_timestamp);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload', true); // Replace '/upload' with your actual endpoint
+
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    // Remove the entry from IndexedDB
+                    deleteEntry(entry.id, false);
+                    index++;
+                    submitNextEntry();
+                } else {
+                    // Handle server-side validation errors
+                    entry.errorMessage = response.message || 'Unknown error';
+                    updateFailedEntry(entry);
+                    index++;
+                    submitNextEntry();
+                }
+            } else {
+                // Handle HTTP errors
+                entry.errorMessage = xhr.statusText;
+                updateFailedEntry(entry);
+                index++;
+                submitNextEntry();
+            }
+        };
+
+        xhr.onerror = function () {
+            console.error('Network error during submission.');
+            entry.errorMessage = 'Network error';
+            updateFailedEntry(entry);
+            index++;
+            submitNextEntry();
+        };
+
+        xhr.send(formData);
+    }
+
+    submitNextEntry();
 }
 
-// Handle online/offline status
-window.addEventListener('online', updateOnlineStatus);
+/**
+ * Retry submitting a single failed entry.
+ * @param {number} id - The ID of the entry to retry.
+ */
+function retryEntry(id) {
+    if (!navigator.onLine) {
+        showNotification('Anda sedang offline. Tidak dapat mengirim data.', 'error');
+        return;
+    }
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const getRequest = objectStore.get(id);
+
+    getRequest.onsuccess = function(event) {
+        const entry = event.target.result;
+
+        // Clear previous error message
+        delete entry.errorMessage;
+
+        const formData = new FormData();
+
+        // Append the image file
+        formData.append('foto', entry.foto);
+
+        // Append other fields
+        Object.entries(entry).forEach(function([key, value]) {
+            if (!['foto', 'errorMessage', 'id'].includes(key) && !key.startsWith('nama_') && key !== 'client_timestamp') {
+                formData.append(key, value);
+            }
+        });
+
+        // Append the client-assigned timestamp as ISO string
+        formData.append('clientTimestamp', entry.client_timestamp);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload', true); // Replace '/upload' with your actual endpoint
+
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    // Remove the entry from IndexedDB
+                    deleteEntry(id, false);
+                    displaySavedEntries();
+                    showNotification('Data berhasil dikirim ke server.', 'success');
+                } else {
+                    // Handle server-side validation errors
+                    entry.errorMessage = response.message || 'Unknown error';
+                    updateFailedEntry(entry);
+                }
+            } else {
+                // Handle errors
+                entry.errorMessage = xhr.statusText;
+                updateFailedEntry(entry);
+            }
+        };
+
+        xhr.onerror = function () {
+            console.error('Network error during retry.');
+            entry.errorMessage = 'Network error';
+            updateFailedEntry(entry);
+        };
+
+        xhr.send(formData);
+    };
+
+    getRequest.onerror = function(event) {
+        console.error('Error retrieving entry:', event.target.errorCode);
+        showNotification('Error mengambil data entry.', 'error');
+    };
+}
+
+/**
+ * Delete an entry from IndexedDB.
+ * @param {number} id - The ID of the entry to delete.
+ * @param {boolean} showNotif - Whether to show a notification after deletion.
+ */
+function deleteEntry(id, showNotif = true) {
+    console.log('deleteEntry called with id:', id, 'showNotif:', showNotif);
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const request = objectStore.delete(id);
+
+    request.onsuccess = function(event) {
+        displaySavedEntries();
+        if (showNotif) {
+            showNotification('Entry terhapus.', 'success');
+        }
+    };
+
+    request.onerror = function(event) {
+        console.error('Error deleting entry:', event.target.errorCode);
+        if (showNotif) {
+            showNotification('Error menghapus entry.', 'error');
+        }
+    };
+}
+
+/**
+ * Update a failed entry with an error message.
+ * @param {Object} entry - The entry object to update.
+ */
+function updateFailedEntry(entry) {
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const updateRequest = objectStore.put(entry);
+
+    updateRequest.onsuccess = function() {
+        displaySavedEntries();
+        showNotification(`Error mengirim entry: ${entry.errorMessage}`, 'error');
+    };
+
+    updateRequest.onerror = function(event) {
+        console.error('Error updating entry:', event.target.errorCode);
+        showNotification('Error memperbarui entry.', 'error');
+    };
+}
+
+// ===========================
+// Event Listeners for Online/Offline
+// ===========================
+
+window.addEventListener('online', () => {
+    updateOnlineStatus();
+    synchronizeTime(); // Re-synchronize when back online
+});
+
 window.addEventListener('offline', updateOnlineStatus);
 
-function updateOnlineStatus() {
-    if (!navigator.onLine) {
-        statusIndicator.style.display = 'block';
+// ===========================
+// Service Worker Registration
+// ===========================
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+    .then(function(registration) {
+        console.log('Service Worker registered with scope:', registration.scope);
+    })
+    .catch(function(err) {
+        console.log('Service Worker registration failed:', err);
+    });
+}
+
+// ===========================
+// Initial Load and Periodic Synchronization
+// ===========================
+
+window.onload = function() {
+    initDB();
+    initializeTimeSync();
+
+    // Store original options for dependent selects
+    ['id_tipe_aset', 'id_tipe_hb', 'id_tipe_door'].forEach(function(selectId) {
+        const selectElement = document.getElementById(selectId);
+        originalOptions[selectId] = Array.from(selectElement.options);
+    });
+
+    updateOnlineStatus(); // Initial status
+
+    // Periodic synchronization every hour
+    setInterval(() => {
+        if (navigator.onLine) {
+            synchronizeTime();
+        }
+    }, 60 * 60 * 1000); // Every hour
+};
+
+/**
+ * Initialize time synchronization based on online status.
+ */
+async function initializeTimeSync() {
+    if (navigator.onLine) {
+        await synchronizeTime();
     } else {
-        statusIndicator.style.display = 'none';
+        // Attempt to use previously stored offset and reference points
+        const storedOffset = parseInt(localStorage.getItem('serverTimeOffset'), 10);
+        if (!isNaN(storedOffset)) {
+            timeOffset = storedOffset;
+            const storedLastSyncServerTime = parseInt(localStorage.getItem('lastSyncServerTime'), 10);
+            const storedLastSyncPerformanceTime = parseFloat(localStorage.getItem('lastSyncPerformanceTime'));
+    
+            if (!isNaN(storedLastSyncServerTime) && !isNaN(storedLastSyncPerformanceTime)) {
+                lastSyncServerTime = storedLastSyncServerTime;
+                lastSyncPerformanceTime = storedLastSyncPerformanceTime;
+            }
+        } else {
+            // Default to zero offset if no synchronization has occurred
+            timeOffset = 0;
+            lastSyncServerTime = Date.now();
+            lastSyncPerformanceTime = performance.now();
+            localStorage.setItem('lastSyncServerTime', lastSyncServerTime);
+            localStorage.setItem('lastSyncPerformanceTime', lastSyncPerformanceTime);
+        }
+
+        // Initialize lastTimestamp if not set
+        if (!localStorage.getItem(LAST_TIMESTAMP_KEY)) {
+            localStorage.setItem(LAST_TIMESTAMP_KEY, lastSyncServerTime);
+        }
     }
 }
 
-// Initial check
-updateOnlineStatus();
+/**
+ * Synchronize locally saved assets with the server.
+ * This function is called after successful time synchronization.
+ */
+async function synchronizeLocalAssets() {
+    const localAssets = JSON.parse(localStorage.getItem('localAssets')) || [];
+    if (localAssets.length === 0) {
+        console.log('No local assets to synchronize.');
+        return;
+    }
+
+    console.log(`Synchronizing ${localAssets.length} local assets with the server...`);
+
+    for (const asset of localAssets) {
+        try {
+            const formData = new FormData();
+            formData.append('foto', asset.foto);
+
+            // Append other fields
+            Object.entries(asset).forEach(([key, value]) => {
+                if (!['foto', 'errorMessage', 'id'].includes(key) && !key.startsWith('nama_') && key !== 'client_timestamp') {
+                    formData.append(key, value);
+                }
+            });
+
+            // Append the client-assigned timestamp as ISO string
+            formData.append('clientTimestamp', asset.client_timestamp);
+
+            const response = await fetch('/upload', { // Replace '/upload' with your actual endpoint
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server responded with status ${response.status}`);
+            }
+
+            const responseData = await response.json();
+            if (responseData.success) {
+                // Remove the entry from IndexedDB
+                deleteEntry(asset.id, false);
+                console.log('Asset synchronized:', asset);
+            } else {
+                // Handle server-side validation errors
+                asset.errorMessage = responseData.message || 'Unknown error';
+                updateFailedEntry(asset);
+            }
+        } catch (error) {
+            console.error('Error synchronizing asset:', asset, error);
+            asset.errorMessage = error.message || 'Unknown error';
+            updateFailedEntry(asset);
+        }
+    }
+
+    // Clear local assets after successful synchronization
+    localStorage.removeItem('localAssets');
+    console.log('All local assets have been synchronized and cleared from local storage.');
+}

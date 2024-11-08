@@ -3,7 +3,7 @@ const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
 const path = require('path');
 const puppeteer = require('puppeteer');
-const { queryAsync } = require('../config/db'); // Updated to use queryAsync
+const { queryAsync } = require('../config/db');
 const authMiddleware = require('../authMiddleware');
 const router = express.Router();
 const { isAuthenticated, checkRole } = require('../authMiddleware');
@@ -12,8 +12,6 @@ const { isAuthenticated, checkRole } = require('../authMiddleware');
 const BASE_URL = 'http://localhost:3000/'; // Adjust this to match your server's base URL
 
 // Dashboard route
-// Assuming you have required necessary modules and set up your Express app
-
 router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res) => {
     let query = `
         SELECT 
@@ -21,7 +19,7 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
             a.foto, 
             k.nama_kondisi, 
             a.catatan, 
-            a.tanggal_dibuat, 
+            a.client_timestamp, 
             u.name AS user, 
             ta.nama_tipe AS nama_tipe_aset, 
             tl.nama_lantai AS nama_lantai,
@@ -38,7 +36,7 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         LEFT JOIN posisi p ON tl.posisi = p.id`;
 
     const params = [];
-    let { startDate, endDate, kondisi, posisi, page = 1, limit = 50 } = req.query; // Default limit set to 50
+    let { startDate, endDate, kondisi, posisi, page = 1, limit = 50 } = req.query;
 
     // Parse and validate 'page' and 'limit'
     page = parseInt(page, 10);
@@ -55,7 +53,7 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
     const conditions = [];
 
     if (startDate && endDate) {
-        conditions.push(`a.tanggal_dibuat BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)`);
+        conditions.push(`a.client_timestamp BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)`);
         params.push(startDate, endDate);
     }
 
@@ -101,9 +99,6 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         const total = countResult[0].total;
         const totalPages = Math.ceil(total / limit);
 
-        // Log the variables to verify their values
-        console.log('Pagination Info:', { page, limit, totalPages });
-
         res.render('dashboard', { 
             assets: results, 
             kondisiOptions: kondisiResults, 
@@ -114,17 +109,13 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
             posisi,
             currentPage: page,
             totalPages,
-            limit // Pass 'limit' to the template
+            limit
         });        
     } catch (err) {
         console.error('Failed to retrieve assets:', err);
         res.status(500).send('Error fetching assets from database');
     }
 });
-
-
-
-
 
 router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const { startDate, endDate, kondisi } = req.query;
@@ -186,8 +177,6 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
     }
 });
 
-
-
 // Export to Excel
 router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const fetch = (await import('node-fetch')).default;
@@ -198,7 +187,7 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
             a.foto, 
             k.nama_kondisi, 
             a.catatan, 
-            a.tanggal_dibuat, 
+            a.client_timestamp, 
             u.name AS user, 
             ta.nama_tipe AS nama_tipe_aset, 
             tl.nama_lantai AS nama_lantai,
@@ -216,7 +205,7 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
     const conditions = [];
 
     if (startDate && endDate) {
-        conditions.push(`a.tanggal_dibuat BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)`);
+        conditions.push(`a.client_timestamp BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)`);
         params.push(startDate, endDate);
     }
 
@@ -262,7 +251,7 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
         for (const asset of results) {
             const row = {
                 id: asset.id,
-                date: new Date(asset.tanggal_dibuat).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+                date: new Date(asset.client_timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
                 user: asset.user,
                 assetType: asset.nama_tipe_door || asset.nama_tipe_hb || asset.nama_tipe_aset,
                 floor: asset.nama_lantai,
@@ -321,7 +310,6 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
 });
 
 module.exports = router;
-
 
 function formatDate(dateString) {
     const date = new Date(dateString);

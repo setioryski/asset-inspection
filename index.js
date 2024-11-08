@@ -131,12 +131,28 @@ app.get('/logout', (req, res) => {
 
 
 
+// Server-side: Handling the upload route
+// server.js or your server file
+
+// Upload route
 app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.single('foto'), async (req, res) => {
-    const { catatan, id_user, id_tipe_aset, id_tipe_lantai, id_kondisi, id_tipe_hb, id_tipe_door } = req.body;
+    const {
+        catatan, id_user, id_tipe_aset, id_tipe_lantai,
+        id_kondisi, id_tipe_hb, id_tipe_door, clientTimestamp
+    } = req.body;
 
     // Validate required fields
-    if (!req.file || !id_kondisi || !id_user || !id_tipe_lantai || (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)) {
+    if (
+        !req.file || !id_kondisi || !id_user || !id_tipe_lantai ||
+        (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)
+    ) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
+    }
+
+    // Validate clientTimestamp format
+    const timestamp = new Date(clientTimestamp);
+    if (!clientTimestamp || isNaN(timestamp.getTime())) {
+        return res.status(400).json({ success: false, message: 'Invalid client timestamp.' });
     }
 
     // Define the path for the resized image
@@ -155,9 +171,13 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
             // Database insertion
             queryAsync(`
                 INSERT INTO aset (
-                    foto, id_kondisi, catatan, id_user, id_tipe_aset, id_tipe_lantai, id_tipe_hb, id_tipe_door
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `, [resizedImagePath, id_kondisi, catatan, id_user, id_tipe_aset, id_tipe_lantai, id_tipe_hb, id_tipe_door])
+                    foto, id_kondisi, catatan, id_user, id_tipe_aset,
+                    id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                resizedImagePath, id_kondisi, catatan, id_user, id_tipe_aset,
+                id_tipe_lantai, id_tipe_hb, id_tipe_door, timestamp
+            ])
         ]);
 
         // Return success response
@@ -174,6 +194,13 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
 });
 
 
+
+
+
+// Time sync endpoint
+app.get('/api/server-time', (req, res) => {
+    res.json({ serverTime: Date.now() });
+});
 
 
 // Function to delete a file with retries on EPERM errors
