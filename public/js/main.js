@@ -333,7 +333,7 @@ function displaySavedEntries() {
             let entryHtml = `
                 <strong>Nama Petugas:</strong> ${entry.nama_petugas || ''} <br>
                 <strong>Lantai:</strong> ${entry.nama_lantai || ''} <br>
-                <!-- <strong>Waktu:</strong> ${formattedDate} <br> -->
+                <!-- <strong>Waktu:</strong> ${formattedDate} <br> --> <!-- waktu di datasave -->
             `;
 
             if (entry.nama_aset) {
