@@ -21,6 +21,13 @@ function checkRole(roles) {
     }
 }
 
+// Middleware to log user action with timestamp
+app.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${req.method} request to ${req.url} by user: ${req.session?.user?.name || 'Guest'}`);
+    next();
+});
+
 
 
 // Export the middleware functions so they can be used in other parts of the application

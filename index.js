@@ -90,6 +90,7 @@ app.use('/', dashboardRoutes);
 
 // Login route
 app.post('/login', loginLimiter, async (req, res) => {
+    console.log(`Attempting login for user: ${req.body.username}`);
     const { username, password } = req.body;
     const query = 'SELECT u.*, r.role_name FROM user u INNER JOIN role r ON u.role_id = r.role_id WHERE u.name = ?';
     
@@ -101,22 +102,27 @@ app.post('/login', loginLimiter, async (req, res) => {
             if (match) {
                 req.session.user = { id: user.id, name: user.name, role: user.role_name };
                 req.session.isAuthenticated = true;
+                console.log(`User ${username} logged in successfully`);
                 res.redirect('/inspection');
             } else {
+                console.log(`Invalid password for user: ${username}`);
                 res.send('Invalid credentials');
             }
         } else {
+            console.log(`Login failed: User ${username} not found`);
             res.send('User not found');
         }
     } catch (err) {
-        console.error('Database error:', err);
+        console.error(`Database error during login for user ${username}:`, err);
         res.status(500).send('Internal Server Error');
     }
 });
 
 
-// Route to handle user logout
+
+// Logout route
 app.get('/logout', (req, res) => {
+    console.log(`User ${req.session?.user?.name || 'Unknown'} logging out`);
     req.session.destroy(err => {
         if (err) {
             console.error('Failed to destroy session:', err);
@@ -301,28 +307,29 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/inspection', isAuthenticated, checkRole(['admin', 'petugas']), async (req, res) => {
+    console.log(`User ${req.session.user.name} accessed inspection form`);
     try {
-        // Assuming req.session.user contains the logged-in user's info
         const currentUser = {
-            id: req.session.user.id,   // ID of the logged-in user
-            name: req.session.user.name // Name of the logged-in user
+            id: req.session.user.id,
+            name: req.session.user.name
         };
         const assetTypes = await getAssetTypes();
         const floorTypes = await getFloorTypes();
         const conditions = await getConditions();
-        const hbTypes = await getHbTypes(); // Fetch the HB types data
-        const doorTypes = await getDoorTypes(); // Fetch the door types data
+        const hbTypes = await getHbTypes();
+        const doorTypes = await getDoorTypes();
 
+        console.log(`Data fetched successfully for inspection form by user ${currentUser.name}`);
         res.render('InspectionForm', {
-            user: currentUser, // Pass only the logged-in user's data
+            user: currentUser,
             tipe_aset: assetTypes,
             tipe_lantai: floorTypes,
             tipe_kondisi: conditions,
-            tipe_hb: hbTypes, // Pass the HB types data to the template
-            tipe_door: doorTypes // Pass the door types data to the template
+            tipe_hb: hbTypes,
+            tipe_door: doorTypes
         });
     } catch (error) {
-        console.error('Failed to fetch data for inspection form:', error);
+        console.error(`Failed to fetch data for inspection form for user ${req.session.user.name}:`, error);
         res.status(500).send('Error fetching data');
     }
 });
@@ -336,7 +343,9 @@ app.get('/add-user-form', (req, res) => {
 });
 
 // Route to handle adding a new user
+// CRUD operations logging
 app.post('/add-user', async (req, res) => {
+    console.log(`Adding new user: ${req.body.name}`);
     try {
         const { name, password, role } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -344,12 +353,14 @@ app.post('/add-user', async (req, res) => {
         const roleId = roleIds[role.toLowerCase()];
 
         await queryAsync('INSERT INTO user (name, password, role_id) VALUES (?, ?, ?)', [name, hashedPassword, roleId]);
+        console.log(`User ${name} added successfully`);
         res.redirect('/admin');
     } catch (error) {
         console.error('Error adding user:', error);
         res.status(500).send('Server error: ' + error.message);
     }
 });
+
 
 // Route to display the edit form for a user
 app.get('/edit-user-form/:id', async (req, res) => {
@@ -372,45 +383,37 @@ app.get('/edit-user-form/:id', async (req, res) => {
 
 // Route to handle updating a user
 app.post('/update-user', async (req, res) => {
-    const { id, name, password, role_id } = req.body;
-
+    console.log(`Updating user with ID: ${req.body.id}`);
     try {
-        // Hash the new password
+        const { id, name, password, role_id } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Update the user's name, password, and role_id
         const sql = 'UPDATE user SET name = ?, password = ?, role_id = ? WHERE id = ?';
         
-        // Execute the SQL query using await
         const result = await pool.query(sql, [name, hashedPassword, role_id, id]);
-
-        // Check if the update was successful
         if (result.affectedRows === 0) {
+            console.log(`No update performed for user with ID: ${id}`);
             return res.status(404).send('User not found or no changes made');
         }
-
-        // Redirect to the admin page if successful
+        console.log(`User with ID: ${id} updated successfully`);
         res.redirect('/admin');
     } catch (error) {
-        // Log the error and send a 500 status
         console.error('Error updating user:', error);
         res.status(500).send('Internal Server Error');
     }
 });
 
 
+
 // Route to handle deleting a user
 app.post('/delete-user', async (req, res) => {
-    const { id } = req.body;
-    const sql = 'DELETE FROM user WHERE id = ?';
-
+    console.log(`Deleting user with ID: ${req.body.id}`);
     try {
-        const result = await queryAsync(sql, [id]);
-
+        const result = await queryAsync('DELETE FROM user WHERE id = ?', [req.body.id]);
         if (result.affectedRows === 0) {
+            console.log(`User with ID: ${req.body.id} not found`);
             return res.status(404).send('User not found');
         }
-
+        console.log(`User with ID: ${req.body.id} deleted successfully`);
         res.redirect('/admin');
     } catch (err) {
         console.error('Error deleting user:', err);
