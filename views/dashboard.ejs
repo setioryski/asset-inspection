@@ -110,7 +110,7 @@
                         %>
                         <td>
                             <% if (dateObj && !isNaN(dateObj.getTime())) { %>
-                                <%= dateObj.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) %>
+                                <%= dateObj.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' }).replace(/\./g, ':') %>
                             <% } else { %>
                                 <span class="invalid-date">Tanggal tidak valid</span>
                             <% } %>
