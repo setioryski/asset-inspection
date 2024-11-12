@@ -348,6 +348,15 @@ app.post('/add-user', async (req, res) => {
     console.log(`Adding new user: ${req.body.name}`);
     try {
         const { name, password, role } = req.body;
+
+        // Check if the user already exists
+        const checkQuery = 'SELECT * FROM user WHERE name = ?';
+        const existingUser = await queryAsync(checkQuery, [name]);
+        if (existingUser.length > 0) {
+            console.log(`User ${name} already exists`);
+            return res.status(400).send('User already exists');
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const roleIds = { admin: 1, petugas: 2 };
         const roleId = roleIds[role.toLowerCase()];
@@ -360,6 +369,7 @@ app.post('/add-user', async (req, res) => {
         res.status(500).send('Server error: ' + error.message);
     }
 });
+
 
 
 // Route to display the edit form for a user
@@ -386,6 +396,15 @@ app.post('/update-user', async (req, res) => {
     console.log(`Updating user with ID: ${req.body.id}`);
     try {
         const { id, name, password, role_id } = req.body;
+
+        // Check if the new username already exists for a different user
+        const checkQuery = 'SELECT * FROM user WHERE name = ? AND id != ?';
+        const existingUser = await queryAsync(checkQuery, [name, id]);
+        if (existingUser.length > 0) {
+            console.log(`Username ${name} is already taken by another user`);
+            return res.status(400).send('Username already exists');
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const sql = 'UPDATE user SET name = ?, password = ?, role_id = ? WHERE id = ?';
         
@@ -401,6 +420,7 @@ app.post('/update-user', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
 
 
 
