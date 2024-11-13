@@ -1,0 +1,30 @@
+<!-- views/subscription.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/styleslogin.css"> <!-- Ensure the path is correct -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscribe to Notifications</title>
+    <meta name="csrf-token" content="<%= csrfToken %>"> <!-- Include CSRF token as meta tag -->
+</head>
+<body>
+    <div class="subscription-container">
+        <h1>Subscribe to Push Notifications</h1>
+        
+        <% if (isSubscribed) { %>
+            <p>You are already subscribed to notifications.</p>
+            <a href="/inspection">Proceed to Inspection</a>
+        <% } else { %>
+            <p>Enable push notifications to receive updates from the admin.</p>
+            <button id="subscribeButton">Subscribe</button>
+        <% } %>
+    </div>
+
+    <script nonce="<%= nonce %>">
+        document.getElementById('subscribeButton')?.addEventListener('click', async () => {
+            // Your inline JavaScript logic here
+        });
+    </script>
+</body>
+</html>

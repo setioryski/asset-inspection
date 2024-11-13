@@ -7,6 +7,7 @@ const { queryAsync } = require('../config/db');
 const authMiddleware = require('../authMiddleware');
 const router = express.Router();
 const { isAuthenticated, checkRole } = require('../authMiddleware');
+const ejs = require('ejs');
 
 // Base URL for constructing absolute URLs
 const BASE_URL = 'http://localhost:3000/'; // Adjust this to match your server's base URL
@@ -117,8 +118,9 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
     }
 });
 
+// Export to PDF route
 router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res) => {
-    const { startDate, endDate, kondisi } = req.query;
+    const { startDate, endDate, kondisi, posisi, limit } = req.query;
 
     // Validate date inputs
     if (!startDate || !endDate) {
@@ -126,6 +128,65 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
     }
 
     try {
+        // Build the database query with filters
+        let query = `
+            SELECT 
+                a.id, 
+                a.foto, 
+                k.nama_kondisi, 
+                a.catatan, 
+                a.client_timestamp, 
+                u.name AS user, 
+                ta.nama_tipe AS nama_tipe_aset, 
+                tl.nama_lantai AS nama_lantai,
+                td.nama_tipe AS nama_tipe_door,
+                th.nama_tipe AS nama_tipe_hb,
+                p.tipe_posisi AS posisi
+            FROM aset a
+            LEFT JOIN user u ON a.id_user = u.id
+            LEFT JOIN tipe_aset ta ON a.id_tipe_aset = ta.id
+            LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
+            LEFT JOIN tipe_kondisi k ON a.id_kondisi = k.id
+            LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
+            LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
+            LEFT JOIN posisi p ON tl.posisi = p.id`;
+
+        const params = [];
+        const conditions = [];
+
+        if (startDate && endDate) {
+            conditions.push(`a.client_timestamp BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)`);
+            params.push(startDate, endDate);
+        }
+
+        if (kondisi) {
+            conditions.push(`k.nama_kondisi = ?`);
+            params.push(kondisi);
+        }
+
+        if (posisi) {
+            conditions.push(`p.tipe_posisi = ?`);
+            params.push(posisi);
+        }
+
+        if (conditions.length > 0) {
+            query += ` WHERE ` + conditions.join(' AND ');
+        }
+
+        query += ` ORDER BY a.id ASC`;
+
+        const results = await queryAsync(query, params);
+
+        // Modify the results to include absolute URLs for images
+        const assets = results.map(asset => ({
+            ...asset,
+            fotoAbsoluteUrl: asset.foto ? (asset.foto.startsWith('http') ? asset.foto : `${BASE_URL}${asset.foto}`) : null
+        }));
+
+        // Render the PDF EJS template to HTML
+        const templatePath = path.join(__dirname, '..', 'views', 'dashboard_pdf.ejs');
+        const html = await ejs.renderFile(templatePath, { assets });
+
         // Launch Puppeteer browser
         const browser = await puppeteer.launch({
             headless: true,
@@ -133,25 +194,25 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
         });
         const page = await browser.newPage();
 
-        // Construct the URL with query parameters
-        const url = `${BASE_URL}dashboard?startDate=${startDate}&endDate=${endDate}&kondisi=${kondisi}`;
-        await page.goto(url, { waitUntil: 'networkidle0' });
+        // Set the HTML content
+        await page.setContent(html, { waitUntil: 'networkidle0' });
 
-        // Inject custom CSS to hide the navbar and filter container
-        await page.addStyleTag({
-            content: `
-                nav { display: none !important; }
-                .filter-container { display: none !important; }
-            `
+        // Wait for all images to load
+        await page.evaluate(async () => {
+            const images = Array.from(document.images);
+            await Promise.all(images.map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.onload = img.onerror = resolve;
+                });
+            }));
         });
 
-        // Optionally, wait for a short duration to ensure CSS is applied
-        await page.waitForTimeout(500);
-
-        // Generate PDF
+        // Generate PDF without headers and footers
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
+            displayHeaderFooter: false,
             margin: {
                 top: '20px',
                 bottom: '20px',
@@ -165,7 +226,7 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
         // Format the dates for the filename
         const formattedStartDate = formatDate(startDate);
         const formattedEndDate = formatDate(endDate);
-        const filename = `Monitoring SEC ${formattedStartDate} to ${formattedEndDate}.pdf`;
+        const filename = `Monitoring_SEC_${formattedStartDate}_to_${formattedEndDate}.pdf`;
 
         // Set response headers for PDF download
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -176,6 +237,7 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
         res.status(500).send('Error generating PDF');
     }
 });
+
 
 // Export to Excel
 router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, res) => {

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard PDF Export</title>
+    <!-- Include your existing CSS for styling the table -->
+    <link rel="stylesheet" href="/stylesdashboard.css">
+    <style>
+        /* Additional styles specific to the PDF */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .asset-photo {
+            width: 50px;
+            height: auto;
+        }
+        .no-image, .invalid-date, .no-notes {
+            color: #888;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dashboard Report</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Tanggal/Waktu</th>
+                <th>User</th>
+                <th>Jenis Aset</th>
+                <th>Lantai</th>
+                <th>Kondisi</th>
+                <th>Foto</th>
+                <th>Catatan</th>
+                <th>Id</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% assets.forEach((asset, index) => { %>
+                <tr>
+                    <td><%= (index + 1) %></td>
+                    
+                    <% 
+                        let dateCreated = asset.client_timestamp;
+                        let dateObj = null;
+
+                        if (typeof dateCreated === 'string') {
+                            // Replace space with 'T' to make ISO format
+                            let dateISO = dateCreated.replace(' ', 'T');
+                            dateObj = new Date(dateISO);
+                        } else if (dateCreated instanceof Date) {
+                            dateObj = dateCreated;
+                        }
+                    %>
+                    <td>
+                        <% if (dateObj && !isNaN(dateObj.getTime())) { %>
+                            <%= dateObj.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' }).replace(/\./g, ':') %>
+                        <% } else { %>
+                            <span class="invalid-date">Tanggal tidak valid</span>
+                        <% } %>
+                    </td>
+
+                    <td><%= asset.user %></td>
+
+                    <td>
+                        <% if (asset.nama_tipe_door) { %>
+                            <%= asset.nama_tipe_door %>
+                        <% } else if (asset.nama_tipe_hb) { %>
+                            <%= asset.nama_tipe_hb %>
+                        <% } else { %>
+                            <%= asset.nama_tipe_aset %>
+                        <% } %>
+                    </td>
+
+                    <td><%= asset.nama_lantai %></td>
+
+                    <td><%= asset.nama_kondisi %></td>
+
+                    <td>
+                        <% if (asset.foto) { %>
+                            <img src="<%= asset.fotoAbsoluteUrl %>" alt="Foto Aset" class="asset-photo">
+                        <% } else { %>
+                            <span class="no-image">Tidak Ada Foto</span>
+                        <% } %>
+                    </td>
+
+                    <td>
+                        <% if (asset.catatan) { %>
+                            <%- asset.catatan
+                                .split(' ')
+                                .map((word, idx) => ((idx + 1) % 6 === 0 ? word + '<br>' : word))
+                                .join(' ') 
+                            %>
+                        <% } else { %>
+                            <span class="no-notes">Tidak ada catatan</span>
+                        <% } %>
+                    </td>
+
+                    <td><%= asset.id %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table>
+</body>
+</html>
