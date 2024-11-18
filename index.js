@@ -13,6 +13,17 @@ const rateLimit = require('express-rate-limit');
 const dashboardRoutes = require('./routes/dashboard');
 const { pool,queryAsync } = require('./config/db'); // Updated to use queryAsync
 const { isAuthenticated, checkRole } = require('./authMiddleware'); // Authentication and role-check middleware
+const crypto = require('crypto'); // For generating unique file names
+const { uploadQueue } = require('./queue');
+
+app.set('trust proxy', 1);
+
+// Define rate limit rule
+const uploadLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10,              // Limit each IP to 10 uploads per windowMs
+    message: 'Too many uploads from this IP, please try again after a minute.'
+});
 
 // Reading the SSL certificate files
 // const privateKey = fs.readFileSync('/home/web1/public_html/server.key', 'utf8');
@@ -141,7 +152,7 @@ app.get('/logout', (req, res) => {
 // server.js or your server file
 
 // Upload route
-app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.single('foto'), async (req, res) => {
+app.post('/upload', isAuthenticated, uploadLimiter, checkRole(['admin', 'petugas']), upload.array('foto'), async (req, res) => {
     const {
         catatan, id_user, id_tipe_aset, id_tipe_lantai,
         id_kondisi, id_tipe_hb, id_tipe_door, clientTimestamp
@@ -149,7 +160,7 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
 
     // Validate required fields
     if (
-        !req.file || !id_kondisi || !id_user || !id_tipe_lantai ||
+        !req.files || req.files.length === 0 || !id_kondisi || !id_user || !id_tipe_lantai ||
         (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)
     ) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
@@ -161,41 +172,53 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
         return res.status(400).json({ success: false, message: 'Invalid client timestamp.' });
     }
 
-    // Define the path for the resized image
-    const resizedImagePath = `uploads/resized-${Date.now()}-${req.file.originalname}`;
+    // Prepare job data for each file
+    const filesData = req.files.map(file => ({
+        originalImagePath: path.join(__dirname, 'uploads', `${Date.now()}-${crypto.randomBytes(8).toString('hex')}-${file.originalname}`),
+        resizedImagePath: path.join(__dirname, 'uploads', `resized-${Date.now()}-${crypto.randomBytes(8).toString('hex')}-${file.originalname}`),
+        fileBuffer: file.buffer,
+        catatan,
+        id_user,
+        id_tipe_aset,
+        id_tipe_lantai,
+        id_kondisi,
+        id_tipe_hb,
+        id_tipe_door,
+        timestamp
+    }));
 
     try {
-        // Process image resizing and database insert in parallel
-        await Promise.all([
-            // Image processing: Resize and save the image
-            sharp(req.file.buffer)
-                .rotate() // Rotate based on EXIF data
-                .resize(800) // Resize to 800px width
-                .jpeg({ quality: 70 }) // Convert to JPEG with 70% quality
-                .toFile(resizedImagePath), // Save the resized image directly to disk
+        // Save all files temporarily to disk
+        filesData.forEach(fileData => {
+            fs.writeFileSync(fileData.originalImagePath, fileData.fileBuffer);
+        });
 
-            // Database insertion
-            queryAsync(`
-                INSERT INTO aset (
-                    foto, id_kondisi, catatan, id_user, id_tipe_aset,
-                    id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
-                resizedImagePath, id_kondisi, catatan, id_user, id_tipe_aset,
-                id_tipe_lantai, id_tipe_hb, id_tipe_door, timestamp
-            ])
-        ]);
+        // Enqueue a job for each file
+        const enqueuePromises = filesData.map(fileData =>
+            uploadQueue.add({
+                originalImagePath: fileData.originalImagePath,
+                resizedImagePath: fileData.resizedImagePath,
+                catatan: fileData.catatan,
+                id_user: fileData.id_user,
+                id_tipe_aset: fileData.id_tipe_aset,
+                id_tipe_lantai: fileData.id_tipe_lantai,
+                id_kondisi: fileData.id_kondisi,
+                id_tipe_hb: fileData.id_tipe_hb,
+                id_tipe_door: fileData.id_tipe_door,
+                timestamp: fileData.timestamp
+            }, {
+                attempts: 3,       // Retry up to 3 times on failure
+                backoff: 5000      // Wait 5 seconds between retries
+            })
+        );
 
-        // Return success response
-        res.status(200).json({ success: true, message: 'Form submitted successfully!' });
+        await Promise.all(enqueuePromises);
+
+        // Respond immediately to the client
+        res.status(200).json({ success: true, message: 'Form submitted successfully! Processing in the background.' });
     } catch (error) {
-        console.error('Error during processing:', error);
-
-        // Attempt to delete the resized file with retries on error
-        deleteFileWithRetry(resizedImagePath);
-
-        // Return error response
-        return res.status(500).json({ success: false, message: error.message });
+        console.error('Error enqueuing jobs:', error);
+        res.status(500).json({ success: false, message: 'Failed to enqueue the tasks.' });
     }
 });
 

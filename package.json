@@ -4,27 +4,34 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start:local": "cross-env NODE_ENV=local node index.js",
-    "start:deploy": "cross-env NODE_ENV=deploy node index.js"
+    "start:local": "cross-env NODE_ENV=local pm2 start index.js --name server-local",
+    "start:deploy": "cross-env NODE_ENV=deploy pm2 start index.js --name server-deploy && pm2 start worker.js --name worker-deploy",
+    "restart:deploy": "pm2 restart server-deploy worker-deploy",
+    "status": "pm2 status",
+    "test:upload": "node test/upload_test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
+    "bull": "^4.16.4",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "exceljs": "^4.4.0",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
     "express-session": "^1.18.0",
+    "form-data": "^4.0.1",
     "multer": "^1.4.5-lts.1",
     "mysql": "^2.18.1",
     "node-fetch": "^3.3.2",
     "pdfkit": "^0.15.0",
     "puppeteer": "^22.15.0",
-    "sharp": "^0.33.3",
+    "redis": "^4.7.0",
+    "sharp": "^0.33.5",
     "streamifier": "^0.1.1"
   },
   "devDependencies": {
