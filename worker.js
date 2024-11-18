@@ -2,7 +2,7 @@
 const { uploadQueue } = require('./queue');
 const sharp = require('sharp');
 const fs = require('fs');
-const { queryAsync } = require('./db'); // Your database utility
+const { queryAsync } = require('.config/db'); // Your database utility
 
 // Process jobs with limited concurrency to manage resources
 uploadQueue.process(3, async (job) => { // Adjust concurrency as needed
