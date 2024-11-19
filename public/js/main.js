@@ -28,18 +28,19 @@ const originalOptions = {
 // DOM Elements
 // ===========================
 
-const entryList = document.getElementById('entryList');
-const savedEntriesDiv = document.getElementById('savedEntries');
-const toggleSavedEntriesButton = document.getElementById('toggleSavedEntriesButton');
-const kirimSemuaButton = document.getElementById('kirimSemuaButton');
-const kirimSemuaSpinner = document.getElementById('kirimSemuaSpinner');
-const statusIndicator = document.getElementById('statusIndicator');
-const notification = document.getElementById('notification');
-const notificationIcon = notification.querySelector('.icon');
-const notificationMessage = notification.querySelector('.message');
-const saveButton = document.getElementById('saveButton');
-const inspectionForm = document.getElementById('inspectionForm');
-const previewImg = document.getElementById('previewImg');
+// Declare DOM elements with 'let' to initialize them later
+let entryList;
+let savedEntriesDiv;
+let toggleSavedEntriesButton;
+let kirimSemuaButton;
+let kirimSemuaSpinner;
+let statusIndicator;
+let notification;
+let notificationIcon;
+let notificationMessage;
+let saveButton;
+let inspectionForm;
+let previewImg;
 
 // ===========================
 // IndexedDB Initialization
@@ -260,29 +261,104 @@ function updateOnlineStatus() {
 }
 
 /**
- * Preview the selected image file.
+ * Resize image using Canvas API
+ * @param {HTMLImageElement} img - The image element to resize
+ * @param {number} maxWidth - The maximum width of the resized image
+ * @returns {Promise<Blob>} - A promise that resolves to the resized image blob
+ */
+function resizeImageWithCanvas(img, maxWidth) {
+    return new Promise((resolve, reject) => {
+        try {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            // Calculate new dimensions while maintaining aspect ratio
+            if (width > maxWidth) {
+                height = height * (maxWidth / width);
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+
+            // Draw the image onto the canvas
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert the canvas to a Blob (JPEG format with 70% quality)
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    resolve(blob);
+                } else {
+                    reject(new Error('Canvas is empty'));
+                }
+            }, 'image/jpeg', 0.7);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+/**
+ * Preview the selected image file with client-side processing using Canvas API.
  */
 function previewFile() {
-    const file = document.getElementById('foto').files[0];
-    const reader = new FileReader();
-
-    reader.onloadend = function () {
-        previewImg.src = reader.result;
-        previewImg.style.display = 'block';
-    };
+    const fileInput = document.getElementById('foto');
+    const file = fileInput.files[0];
+    const previewImg = document.getElementById('previewImg');
 
     if (file) {
+        const reader = new FileReader();
+
+        reader.onloadend = function () {
+            const img = new Image();
+            img.src = reader.result;
+
+            img.onload = async function () {
+                try {
+                    console.log('Image loaded successfully.');
+
+                    // Resize the image using Canvas API
+                    const resizedBlob = await resizeImageWithCanvas(img, 800);
+
+                    console.log('Image resized successfully:', resizedBlob);
+
+                    // Display the resized image in the preview
+                    previewImg.src = URL.createObjectURL(resizedBlob);
+                    previewImg.style.display = 'block';
+
+                    // Store the resized image blob for later use
+                    fileInput.processedBlob = resizedBlob;
+                    console.log('Resized blob stored in fileInput.processedBlob');
+                } catch (error) {
+                    console.error('Error processing image:', error);
+                    showNotification('Error processing image: ' + error.message, 'error');
+                }
+            };
+
+            img.onerror = function () {
+                console.error('Error loading image.');
+                showNotification('Error loading image.', 'error');
+            };
+        };
+
         reader.readAsDataURL(file);
     } else {
-        previewImg.src = "";
-        previewImg.style.display = 'none';
+        if (previewImg) {
+            previewImg.src = '';
+            previewImg.style.display = 'none';
+        } else {
+            console.error('previewImg is not initialized.');
+        }
     }
 }
 
 /**
  * Toggle the display of the saved entries section.
  */
-toggleSavedEntriesButton.addEventListener('click', function () {
+function toggleSavedEntries() {
     if (savedEntriesDiv.style.display === 'none' || savedEntriesDiv.style.display === '') {
         savedEntriesDiv.style.display = 'block';
         toggleSavedEntriesButton.innerHTML = '<i class="fas fa-folder-minus"></i> Sembunyikan Data Tersimpan';
@@ -290,13 +366,7 @@ toggleSavedEntriesButton.addEventListener('click', function () {
         savedEntriesDiv.style.display = 'none';
         toggleSavedEntriesButton.innerHTML = '<i class="fas fa-folder-open"></i> Tampilkan Data Tersimpan';
     }
-});
-
-// Attach the event listener for the "Kirim Semua" button
-kirimSemuaButton.addEventListener('click', handleSubmitAll);
-
-// Attach the event listener for the file input to preview images
-document.getElementById('foto').addEventListener('change', previewFile);
+}
 
 // ===========================
 // Data Handling Functions
@@ -380,7 +450,7 @@ function displaySavedEntries() {
 /**
  * Save form data to IndexedDB with appropriate timestamp.
  */
-saveButton.addEventListener('click', async function () {
+async function saveData() {
     // Check for time drift before saving
     if (isTimeDrifted()) {
         showNotification('Waktu perangkat Anda telah berubah. Silakan resinkronkan waktu.', 'error');
@@ -398,13 +468,12 @@ saveButton.addEventListener('click', async function () {
         return; // Prevent saving
     }
 
-    // Read the file
     const fileInput = document.getElementById('foto');
-    const file = fileInput.files[0];
+    const processedBlob = fileInput.processedBlob;
 
-    if (file) {
-        // Store the original file
-        entry['foto'] = file;
+    if (processedBlob) {
+        // Store the processed image blob
+        entry['foto'] = processedBlob;
 
         // Store form data
         formData.forEach(function(value, key) {
@@ -443,8 +512,10 @@ saveButton.addEventListener('click', async function () {
 
             // Reset the form
             inspectionForm.reset();
-            previewImg.src = '';
-            previewImg.style.display = 'none';
+            if (previewImg) { // Check if previewImg exists
+                previewImg.src = '';
+                previewImg.style.display = 'none';
+            }
 
             // Reset select options
             resetSelectOptions('id_tipe_aset');
@@ -459,7 +530,7 @@ saveButton.addEventListener('click', async function () {
     } else {
         showNotification('Silakan foto terlebih dahulu.', 'error');
     }
-});
+}
 
 /**
  * Reset select options to original state.
@@ -602,7 +673,7 @@ function submitEntries(entries) {
         const formData = new FormData();
 
         // Append the image file
-        formData.append('foto', entry.foto);
+        formData.append('foto', entry.foto, 'image.jpg');
 
         // Append other fields
         Object.entries(entry).forEach(function([key, value]) {
@@ -677,7 +748,7 @@ function retryEntry(id) {
         const formData = new FormData();
 
         // Append the image file
-        formData.append('foto', entry.foto);
+        formData.append('foto', entry.foto, 'image.jpg');
 
         // Append other fields
         Object.entries(entry).forEach(function([key, value]) {
@@ -803,7 +874,24 @@ if ('serviceWorker' in navigator) {
 // ===========================
 
 window.onload = function() {
+    // Initialize DOM elements
+    entryList = document.getElementById('entryList');
+    savedEntriesDiv = document.getElementById('savedEntries');
+    toggleSavedEntriesButton = document.getElementById('toggleSavedEntriesButton');
+    kirimSemuaButton = document.getElementById('kirimSemuaButton');
+    kirimSemuaSpinner = document.getElementById('kirimSemuaSpinner');
+    statusIndicator = document.getElementById('statusIndicator');
+    notification = document.getElementById('notification');
+    notificationIcon = notification.querySelector('.icon');
+    notificationMessage = notification.querySelector('.message');
+    saveButton = document.getElementById('saveButton');
+    inspectionForm = document.getElementById('inspectionForm');
+    previewImg = document.getElementById('previewImg');
+
+    // Initialize IndexedDB
     initDB();
+
+    // Initialize Time Synchronization
     initializeTimeSync();
 
     // Store original options for dependent selects
@@ -812,7 +900,8 @@ window.onload = function() {
         originalOptions[selectId] = Array.from(selectElement.options);
     });
 
-    updateOnlineStatus(); // Initial status
+    // Initial online status update
+    updateOnlineStatus();
 
     // Periodic synchronization every hour
     setInterval(() => {
@@ -820,6 +909,18 @@ window.onload = function() {
             synchronizeTime();
         }
     }, 60 * 60 * 1000); // Every hour
+
+    // Set up event listeners inside window.onload to ensure elements are available
+    toggleSavedEntriesButton.addEventListener('click', toggleSavedEntries);
+    kirimSemuaButton.addEventListener('click', handleSubmitAll);
+    saveButton.addEventListener('click', saveData);
+    document.getElementById('foto').addEventListener('change', previewFile);
+
+    // Attach event listeners for selects
+    document.getElementById('id_tipe_lantai').addEventListener('change', filterOptionsByLantai);
+    document.getElementById('id_tipe_aset').addEventListener('change', function() { handleSelection('aset'); });
+    document.getElementById('id_tipe_hb').addEventListener('change', function() { handleSelection('hb'); });
+    document.getElementById('id_tipe_door').addEventListener('change', function() { handleSelection('door'); });
 };
 
 /**
@@ -835,7 +936,7 @@ async function initializeTimeSync() {
             timeOffset = storedOffset;
             const storedLastSyncServerTime = parseInt(localStorage.getItem('lastSyncServerTime'), 10);
             const storedLastSyncPerformanceTime = parseFloat(localStorage.getItem('lastSyncPerformanceTime'));
-    
+
             if (!isNaN(storedLastSyncServerTime) && !isNaN(storedLastSyncPerformanceTime)) {
                 lastSyncServerTime = storedLastSyncServerTime;
                 lastSyncPerformanceTime = storedLastSyncPerformanceTime;
@@ -872,7 +973,7 @@ async function synchronizeLocalAssets() {
     for (const asset of localAssets) {
         try {
             const formData = new FormData();
-            formData.append('foto', asset.foto);
+            formData.append('foto', asset.foto, 'image.jpg'); // Ensure a filename is provided
 
             // Append other fields
             Object.entries(asset).forEach(([key, value]) => {

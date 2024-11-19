@@ -50,7 +50,7 @@
         <!-- Step 1: Choose Floor (Lantai) -->
         <div>
             <label for="id_tipe_lantai"><i class="fas fa-building"></i> Lantai:</label>
-            <select id="id_tipe_lantai" name="id_tipe_lantai" required onchange="filterOptionsByLantai()">
+            <select id="id_tipe_lantai" name="id_tipe_lantai" required>
                 <option value="" selected disabled>Pilih Lantai</option>
                 <% tipe_lantai.forEach(function(tl) { %>
                     <option value="<%= tl.id %>"><%= tl.nama_lantai %></option>
@@ -66,7 +66,7 @@
         <!-- Step 2: Choose Asset or Box Hydrant or Emergency Door -->
         <div>
             <label for="id_tipe_aset"><i class="fas fa-box"></i> Nama Aset:</label>
-            <select id="id_tipe_aset" name="id_tipe_aset" onchange="handleSelection('aset')" disabled>
+            <select id="id_tipe_aset" name="id_tipe_aset" disabled>
                 <option value="" selected disabled>Pilih Aset</option>
                 <% tipe_aset.forEach(function(ta) { %>
                     <option value="<%= ta.id %>" data-lantai="<%= ta.lantai_id %>"><%= ta.nama_tipe %></option>
@@ -76,7 +76,7 @@
 
         <div>
             <label for="id_tipe_hb"><i class="fas fa-fire-extinguisher"></i> Box Hydrant:</label>
-            <select id="id_tipe_hb" name="id_tipe_hb" onchange="handleSelection('hb')" disabled>
+            <select id="id_tipe_hb" name="id_tipe_hb" disabled>
                 <option value="" selected disabled>Pilih Box Hydrant</option>
                 <% tipe_hb.forEach(function(hb) { %>
                     <option value="<%= hb.id %>" data-lantai="<%= hb.lantai_id %>"><%= hb.nama_tipe %></option>
@@ -86,7 +86,7 @@
 
         <div>
             <label for="id_tipe_door"><i class="fas fa-door-open"></i> Emergency Door:</label>
-            <select id="id_tipe_door" name="id_tipe_door" onchange="handleSelection('door')" disabled>
+            <select id="id_tipe_door" name="id_tipe_door" disabled>
                 <option value="" selected disabled>Pilih Emergency Door</option>
                 <% tipe_door.forEach(function(door) { %>
                     <option value="<%= door.id %>" data-lantai="<%= door.lantai_id %>"><%= door.nama_tipe %></option>
@@ -104,9 +104,8 @@
                 accept="image/*" 
                 capture="environment" 
                 required 
-                onchange="previewFile()"
             >
-            <img id="previewImg" src="" alt="Image preview" height="200" style="display: none;"><br>
+            <img id="previewImg" src="" style="display: none;" alt="Image Preview">
         </div>
 
         <!-- Step 4: Choose Kondisi (Condition) -->
@@ -146,23 +145,24 @@
         <ul id="entryList"></ul>
         <!-- Kirim Semua Button with Spinner -->
         <button type="button" id="kirimSemuaButton"><i class="fas fa-paper-plane"></i> Kirim Semua</button>
-        <div class="spinner" id="kirimSemuaSpinner"></div>
+        <div class="spinner" id="kirimSemuaSpinner" style="display: none;"></div>
     </div>
 
-    <!-- Reference to main.js -->
-    <script src="/js/main.js"></script>
+<!-- Reference to main.js -->
+<script src="/js/main.js"></script>
 
-<script>
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('/sw.js')
-.then(function(registration) {
-console.log('Service Worker registered with scope:', registration.scope);
-})
-.catch(function(err) {
-console.log('Service Worker registration failed:', err);
-});
-}
-</script>
+
+    <script>
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+                console.log('Service Worker registered with scope:', registration.scope);
+            })
+            .catch(function(err) {
+                console.log('Service Worker registration failed:', err);
+            });
+        }
+    </script>
 </body>
 </html>

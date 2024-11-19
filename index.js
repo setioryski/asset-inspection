@@ -161,29 +161,22 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
         return res.status(400).json({ success: false, message: 'Invalid client timestamp.' });
     }
 
-    // Define the path for the resized image
-    const resizedImagePath = `uploads/resized-${Date.now()}-${req.file.originalname}`;
+    // Define the path for the uploaded image
+    const imagePath = `uploads/${Date.now()}-${req.file.originalname}`;
 
     try {
-        // Process image resizing and database insert in parallel
-        await Promise.all([
-            // Image processing: Resize and save the image
-            sharp(req.file.buffer)
-                .rotate() // Rotate based on EXIF data
-                .resize(800) // Resize to 800px width
-                .jpeg({ quality: 70 }) // Convert to JPEG with 70% quality
-                .toFile(resizedImagePath), // Save the resized image directly to disk
+        // Save the uploaded image directly
+        fs.writeFileSync(imagePath, req.file.buffer);
 
-            // Database insertion
-            queryAsync(`
-                INSERT INTO aset (
-                    foto, id_kondisi, catatan, id_user, id_tipe_aset,
-                    id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
-                resizedImagePath, id_kondisi, catatan, id_user, id_tipe_aset,
-                id_tipe_lantai, id_tipe_hb, id_tipe_door, timestamp
-            ])
+        // Insert into the database
+        await queryAsync(`
+            INSERT INTO aset (
+                foto, id_kondisi, catatan, id_user, id_tipe_aset,
+                id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            imagePath, id_kondisi, catatan, id_user, id_tipe_aset,
+            id_tipe_lantai, id_tipe_hb, id_tipe_door, timestamp
         ]);
 
         // Return success response
@@ -191,8 +184,8 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
     } catch (error) {
         console.error('Error during processing:', error);
 
-        // Attempt to delete the resized file with retries on error
-        deleteFileWithRetry(resizedImagePath);
+        // Attempt to delete the saved file if error occurs
+        deleteFileWithRetry(imagePath);
 
         // Return error response
         return res.status(500).json({ success: false, message: error.message });
