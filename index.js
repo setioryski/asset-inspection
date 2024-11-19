@@ -13,14 +13,32 @@ const rateLimit = require('express-rate-limit');
 const dashboardRoutes = require('./routes/dashboard');
 const { pool,queryAsync } = require('./config/db'); // Updated to use queryAsync
 const { isAuthenticated, checkRole } = require('./authMiddleware'); // Authentication and role-check middleware
+const RedisStore = require('connect-redis')(session);
+const redisClient = require('./config/redis'); // Ensure the path is correct
+const compression = require('compression');
+const asyncLib = require('async'); // Renamed to avoid conflict with async keyword
 
-// Reading the SSL certificate files
-// const privateKey = fs.readFileSync('/home/web1/public_html/server.key', 'utf8');
-// const certificate = fs.readFileSync('/home/web1/public_html/server.cert', 'utf8');
-// const credentials = { key: privateKey, cert: certificate };
+// Trust Proxy Configuration
+app.set('trust proxy', 1); // Trust the first proxy. Adjust as needed.
 
-// Creating HTTPS server
-// const httpsServer = https.createServer(credentials, app);
+const imageProcessingQueue = asyncLib.queue(async (task, callback) => {
+    try {
+        // Perform the image processing task
+        await sharp(task.filePath)
+            .resize({ width: 800, withoutEnlargement: true })
+            .jpeg({ quality: 70 })
+            .toFile(`processed/${path.basename(task.filePath)}`);
+
+        // Call the callback to indicate success
+        callback(null); // Pass `null` as the first argument to indicate no error
+    } catch (error) {
+        console.error('Image processing error:', error);
+
+        // Call the callback with the error to indicate failure
+        callback(error);
+    }
+}, 2); // Limit to 2 concurrent image processing tasks
+
 
 //login limiter
 const loginLimiter = rateLimit({
@@ -30,9 +48,49 @@ const loginLimiter = rateLimit({
 });
 // MySQL connection pool setup
 
-// Multer configuration for file uploads
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+//multer
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: function (req, file, cb) {
+        if (!file.mimetype.startsWith('image/')) {
+            return cb(new Error('Only image files are allowed!'), false);
+        }
+        cb(null, true);
+    }
+});
+
+// Rate Limiter for Uploads
+const uploadLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 20, // Limit each IP to 20 upload requests per windowMs
+    message: "Too many uploads from this IP, please try again after a minute"
+});
+
+const generalLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: "Too many requests from this IP, please try again after a minute"
+});
+app.use(generalLimiter);
+
+// Ensure directories exist
+const ensureDirectoryExists = (dirPath) => {
+    if (!fs.existsSync(dirPath)){
+        fs.mkdirSync(dirPath, { recursive: true });
+    }
+};
+ensureDirectoryExists('uploads/');
+ensureDirectoryExists('processed/');
 
 // Set up views directory and view engine
 app.use(express.static(path.join(__dirname, 'public')));
@@ -47,10 +105,15 @@ app.use(express.json());
 
 // Session configuration
 app.use(session({
-    secret: 'your_secret_key',
+    store: new RedisStore({ client: redisClient }),
+    secret: 'your_session_secret_key', // Replace with your actual session secret
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, httpOnly: true, maxAge: 4000000 } // Should be set to true in a production environment using HTTPS
+    cookie: { 
+        secure: false,    // Set to true if using HTTPS
+        httpOnly: true, 
+        maxAge: 4000000 
+    }
 }));
 
 
@@ -137,11 +200,9 @@ app.get('/logout', (req, res) => {
 
 
 
-// Server-side: Handling the upload route
-// server.js or your server file
 
 // Upload route
-app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.single('foto'), async (req, res) => {
+app.post('/upload', uploadLimiter, isAuthenticated, checkRole(['admin', 'petugas']), upload.single('foto'), async (req, res) => {
     const {
         catatan, id_user, id_tipe_aset, id_tipe_lantai,
         id_kondisi, id_tipe_hb, id_tipe_door, clientTimestamp
@@ -152,44 +213,62 @@ app.post('/upload', isAuthenticated, checkRole(['admin', 'petugas']), upload.sin
         !req.file || !id_kondisi || !id_user || !id_tipe_lantai ||
         (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)
     ) {
+        // Delete the uploaded file if validation fails
+        fs.unlink(req.file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+        });
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
 
     // Validate clientTimestamp format
     const timestamp = new Date(clientTimestamp);
     if (!clientTimestamp || isNaN(timestamp.getTime())) {
+        fs.unlink(req.file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+        });
         return res.status(400).json({ success: false, message: 'Invalid client timestamp.' });
     }
 
     // Define the path for the uploaded image
-    const imagePath = `uploads/${Date.now()}-${req.file.originalname}`;
+    const filePath = req.file.path;
+    const processedPath = `processed/${path.basename(filePath)}`;
 
-    try {
-        // Save the uploaded image directly
-        fs.writeFileSync(imagePath, req.file.buffer);
+    // Push the image processing task to the queue
+    imageProcessingQueue.push({ filePath }, async (err) => {
+        if (err) {
+            console.error('Image processing failed:', err);
+            // Delete the original file if processing fails
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) console.error('Error deleting file:', unlinkErr);
+            });
+            return res.status(500).json({ success: false, message: 'Image processing failed.' });
+        }
 
-        // Insert into the database
-        await queryAsync(`
-            INSERT INTO aset (
-                foto, id_kondisi, catatan, id_user, id_tipe_aset,
-                id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            imagePath, id_kondisi, catatan, id_user, id_tipe_aset,
-            id_tipe_lantai, id_tipe_hb, id_tipe_door, timestamp
-        ]);
+        try {
+            // Insert into the database using processedPath
+            await queryAsync(`
+                INSERT INTO aset (
+                    foto, id_kondisi, catatan, id_user, id_tipe_aset,
+                    id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                processedPath, id_kondisi, catatan, id_user, id_tipe_aset,
+                id_tipe_lantai, id_tipe_hb, id_tipe_door, timestamp
+            ]);
 
-        // Return success response
-        res.status(200).json({ success: true, message: 'Form submitted successfully!' });
-    } catch (error) {
-        console.error('Error during processing:', error);
-
-        // Attempt to delete the saved file if error occurs
-        deleteFileWithRetry(imagePath);
-
-        // Return error response
-        return res.status(500).json({ success: false, message: error.message });
-    }
+            res.status(200).json({ success: true, message: 'Form submitted successfully!' });
+        } catch (error) {
+            console.error('Database error during upload:', error);
+            // Delete both original and processed files if database insertion fails
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) console.error('Error deleting original file:', unlinkErr);
+            });
+            fs.unlink(processedPath, (unlinkErr) => {
+                if (unlinkErr) console.error('Error deleting processed file:', unlinkErr);
+            });
+            res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+    });
 });
 
 
