@@ -21,23 +21,31 @@ const asyncLib = require('async'); // Renamed to avoid conflict with async keywo
 // Trust Proxy Configuration
 app.set('trust proxy', 1); // Trust the first proxy. Adjust as needed.
 
-const imageProcessingQueue = asyncLib.queue(async (task, callback) => {
-    try {
-        // Perform the image processing task
-        await sharp(task.filePath)
-            .resize({ width: 800, withoutEnlargement: true })
-            .jpeg({ quality: 70 })
-            .toFile(`processed/${path.basename(task.filePath)}`);
-
-        // Call the callback to indicate success
-        callback(null); // Pass `null` as the first argument to indicate no error
-    } catch (error) {
-        console.error('Image processing error:', error);
-
-        // Call the callback with the error to indicate failure
-        callback(error);
-    }
+const imageProcessingQueue = asyncLib.queue((task, callback) => {
+    sharp(task.filePath)
+        .resize({ width: 800, withoutEnlargement: true })
+        .jpeg({ quality: 70 })
+        .toFile(`processed/${path.basename(task.filePath)}`)
+        .then(() => {
+            // Delete the original file from 'uploads/' directory
+            fs.unlink(task.filePath, (unlinkErr) => {
+                if (unlinkErr) {
+                    console.error('Error deleting original file:', unlinkErr);
+                    // Optionally handle the error (e.g., log it)
+                }
+                // Call the callback with no error to indicate success
+                callback(null);
+            });
+        })
+        .catch((error) => {
+            console.error('Image processing error:', error);
+            // Call the callback with the error to indicate failure
+            callback(error);
+        });
 }, 2); // Limit to 2 concurrent image processing tasks
+
+
+
 
 
 //login limiter
@@ -229,7 +237,6 @@ app.post('/upload', uploadLimiter, isAuthenticated, checkRole(['admin', 'petugas
         return res.status(400).json({ success: false, message: 'Invalid client timestamp.' });
     }
 
-    // Define the path for the uploaded image
     const filePath = req.file.path;
     const processedPath = `processed/${path.basename(filePath)}`;
 
@@ -259,10 +266,7 @@ app.post('/upload', uploadLimiter, isAuthenticated, checkRole(['admin', 'petugas
             res.status(200).json({ success: true, message: 'Form submitted successfully!' });
         } catch (error) {
             console.error('Database error during upload:', error);
-            // Delete both original and processed files if database insertion fails
-            fs.unlink(filePath, (unlinkErr) => {
-                if (unlinkErr) console.error('Error deleting original file:', unlinkErr);
-            });
+            // Delete the processed file if database insertion fails
             fs.unlink(processedPath, (unlinkErr) => {
                 if (unlinkErr) console.error('Error deleting processed file:', unlinkErr);
             });
@@ -270,7 +274,6 @@ app.post('/upload', uploadLimiter, isAuthenticated, checkRole(['admin', 'petugas
         }
     });
 });
-
 
 
 
