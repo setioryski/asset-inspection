@@ -8,6 +8,7 @@ const authMiddleware = require('../authMiddleware');
 const router = express.Router();
 const { isAuthenticated, checkRole } = require('../authMiddleware');
 const ejs = require('ejs');
+const fs = require('fs');
 
 // Base URL for constructing absolute URLs
 const BASE_URL = 'http://localhost:3000/'; // Adjust this to match your server's base URL
@@ -110,7 +111,8 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
             posisi,
             currentPage: page,
             totalPages,
-            limit
+            limit,
+            BASE_URL // Pass BASE_URL to the template
         });        
     } catch (err) {
         console.error('Failed to retrieve assets:', err);
@@ -118,6 +120,7 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
     }
 });
 
+// Export to PDF route
 // Export to PDF route
 router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const { startDate, endDate, kondisi, posisi, limit } = req.query;
@@ -177,10 +180,22 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
 
         const results = await queryAsync(query, params);
 
-        // Modify the results to include absolute URLs for images
+        // Function to convert image path to Base64
+        const getBase64Image = (relativeFilePath) => {
+            try {
+                const absoluteFilePath = path.join(__dirname, '..', relativeFilePath);
+                const file = fs.readFileSync(absoluteFilePath);
+                return Buffer.from(file).toString('base64');
+            } catch (error) {
+                console.error(`Error reading file ${relativeFilePath}:`, error);
+                return null;
+            }
+        };
+
+        // Modify the results to include Base64 images
         const assets = results.map(asset => ({
             ...asset,
-            fotoAbsoluteUrl: asset.foto ? (asset.foto.startsWith('http') ? asset.foto : `${BASE_URL}${asset.foto}`) : null
+            fotoBase64: asset.foto ? getBase64Image(asset.foto) : null
         }));
 
         // Render the PDF EJS template to HTML
@@ -196,17 +211,6 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
 
         // Set the HTML content
         await page.setContent(html, { waitUntil: 'networkidle0' });
-
-        // Wait for all images to load
-        await page.evaluate(async () => {
-            const images = Array.from(document.images);
-            await Promise.all(images.map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise(resolve => {
-                    img.onload = img.onerror = resolve;
-                });
-            }));
-        });
 
         // Generate PDF without headers and footers
         const pdfBuffer = await page.pdf({
@@ -237,6 +241,7 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
         res.status(500).send('Error generating PDF');
     }
 });
+
 
 
 // Export to Excel

@@ -97,8 +97,8 @@
                     <td><%= asset.nama_kondisi %></td>
 
                     <td>
-                        <% if (asset.foto) { %>
-                            <img src="<%= asset.fotoAbsoluteUrl %>" alt="Foto Aset" class="asset-photo">
+                        <% if (asset.fotoBase64) { %>
+                            <img src="data:image/jpeg;base64,<%= asset.fotoBase64 %>" alt="Foto Aset" class="asset-photo">
                         <% } else { %>
                             <span class="no-image">Tidak Ada Foto</span>
                         <% } %>

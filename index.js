@@ -108,6 +108,7 @@ app.set('view engine', 'ejs');
 // Middleware for serving static files and handling form data
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/processed', express.static(path.join(__dirname, 'processed')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
