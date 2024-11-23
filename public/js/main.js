@@ -859,6 +859,7 @@ window.addEventListener('offline', updateOnlineStatus);
 // Service Worker Registration
 // ===========================
 
+
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
     .then(function(registration) {
@@ -869,11 +870,12 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+
 // ===========================
 // Initial Load and Periodic Synchronization
 // ===========================
 
-window.onload = function() {
+document.addEventListener('DOMContentLoaded', function() {
     // Initialize DOM elements
     entryList = document.getElementById('entryList');
     savedEntriesDiv = document.getElementById('savedEntries');
@@ -921,7 +923,7 @@ window.onload = function() {
     document.getElementById('id_tipe_aset').addEventListener('change', function() { handleSelection('aset'); });
     document.getElementById('id_tipe_hb').addEventListener('change', function() { handleSelection('hb'); });
     document.getElementById('id_tipe_door').addEventListener('change', function() { handleSelection('door'); });
-};
+});
 
 /**
  * Initialize time synchronization based on online status.
