@@ -1,14 +1,16 @@
 const express = require('express');
-const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
 const path = require('path');
-const puppeteer = require('puppeteer');
 const { queryAsync } = require('../config/db');
 const authMiddleware = require('../authMiddleware');
 const router = express.Router();
 const { isAuthenticated, checkRole } = require('../authMiddleware');
 const ejs = require('ejs');
 const fs = require('fs');
+const { jsPDF } = require('jspdf');
+require('jspdf-autotable'); // Import the autoTable plugin
+const fetch = require('node-fetch');
+
 
 // Base URL for constructing absolute URLs
 const BASE_URL = 'http://localhost:3000/'; // Adjust this to match your server's base URL
@@ -120,18 +122,14 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
     }
 });
 
-// Export to PDF route
-// Export to PDF route
 router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res) => {
-    const { startDate, endDate, kondisi, posisi, limit } = req.query;
+    const { startDate, endDate, kondisi, posisi } = req.query;
 
-    // Validate date inputs
     if (!startDate || !endDate) {
         return res.status(400).send('Start date and end date are required.');
     }
 
     try {
-        // Build the database query with filters
         let query = `
             SELECT 
                 a.id, 
@@ -180,67 +178,118 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
 
         const results = await queryAsync(query, params);
 
-        // Function to convert image path to Base64
-        const getBase64Image = (relativeFilePath) => {
-            try {
-                const absoluteFilePath = path.join(__dirname, '..', relativeFilePath);
-                const file = fs.readFileSync(absoluteFilePath);
-                return Buffer.from(file).toString('base64');
-            } catch (error) {
-                console.error(`Error reading file ${relativeFilePath}:`, error);
-                return null;
+        // Pre-fetch images
+        const imageCache = {};
+        for (const asset of results) {
+            if (asset.foto) {
+                try {
+                    const imageUrl = new URL(asset.foto, BASE_URL).href;
+                    const imageBuffer = await fetch(imageUrl).then(res => res.buffer());
+                    const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+                    imageCache[asset.id] = base64Image;
+                } catch (err) {
+                    console.error('Error fetching image for asset', asset.id, err);
+                }
             }
-        };
+        }
 
-        // Modify the results to include Base64 images
-        const assets = results.map(asset => ({
-            ...asset,
-            fotoBase64: asset.foto ? getBase64Image(asset.foto) : null
-        }));
+        // Initialize jsPDF document
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-        // Render the PDF EJS template to HTML
-        const templatePath = path.join(__dirname, '..', 'views', 'dashboard_pdf.ejs');
-        const html = await ejs.renderFile(templatePath, { assets });
+        // Table header
+        const tableHeaders = ['No.', 'Tanggal/Waktu', 'User', 'Jenis Aset', 'Lantai', 'Kondisi', 'Foto', 'Catatan'];
 
-        // Launch Puppeteer browser
-        const browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        // Prepare table rows
+        const tableRows = [];
+        results.forEach((asset, index) => {
+            const rowNumber = index + 1;
+            const date = new Date(asset.client_timestamp).toLocaleDateString('id-ID');
+            const time = new Date(asset.client_timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateTime = `${date} ${time}`;
+            const user = asset.user || '-';
+            const jenisAset = asset.nama_tipe_aset || '-';
+            const lantai = asset.nama_lantai || '-';
+            const kondisi = asset.nama_kondisi || '-';
+
+            // Use splitTextToSize for "Catatan"
+            const catatanText = asset.catatan || '-';
+            const catatanLines = doc.splitTextToSize(catatanText, 60); // 60mm for "Catatan" column width
+            const fotoPlaceholder = asset.foto ? 'Foto' : '-'; // Placeholder for the "Foto" column
+
+            // Create table rows dynamically
+            catatanLines.forEach((line, lineIndex) => {
+                if (lineIndex === 0) {
+                    // First line of "Catatan" goes into the main row
+                    tableRows.push([
+                        rowNumber.toString(),
+                        dateTime,
+                        user,
+                        jenisAset,
+                        lantai,
+                        kondisi,
+                        fotoPlaceholder,
+                        line,
+                    ]);
+                } else {
+                    // Overflow lines create new rows (indent others with empty cells)
+                    tableRows.push(['', '', '', '', '', '', '', line]);
+                }
+            });
         });
-        const page = await browser.newPage();
 
-        // Set the HTML content
-        await page.setContent(html, { waitUntil: 'networkidle0' });
+        // Generate table with autoTable
+        doc.autoTable({
+            head: [tableHeaders],
+            body: tableRows,
+            startY: 20,
+            styles: {
+                fontSize: 9,
+                cellPadding: 3,
+                overflow: 'linebreak',
+                valign: 'middle',
+            },
+            columnStyles: {
+                0: { cellWidth: 10 }, // No.
+                1: { cellWidth: 30 }, // Tanggal/Waktu
+                2: { cellWidth: 25 }, // User
+                3: { cellWidth: 30 }, // Jenis Aset
+                4: { cellWidth: 15 }, // Lantai
+                5: { cellWidth: 20 }, // Kondisi
+                6: { cellWidth: 20 }, // Foto (placeholder, actual images require advanced handling)
+                7: { cellWidth: 60 }, // Catatan
+            },
+            didDrawCell: (data) => {
+                // Check if this is the "Foto" column
+                if (data.column.index === 6 && data.row.index > -1) {
+                    const asset = results[data.row.index];
+                    const image = imageCache[asset.id]; // Retrieve the cached image
 
-        // Generate PDF without headers and footers
-        const pdfBuffer = await page.pdf({
-            format: 'A4',
-            printBackground: true,
-            displayHeaderFooter: false,
-            margin: {
-                top: '20px',
-                bottom: '20px',
-                left: '20px',
-                right: '20px'
-            }
+                    // Ensure the image exists and add it to the cell
+                    if (image) {
+                        const widthInPoints = 2.5 * 28.35;  // 2.5 cm width
+                        const heightInPoints = 4 * 28.35;  // 4 cm height
+                        const xOffset = data.cell.x + 1;  // Adjust position as needed
+                        const yOffset = data.cell.y + 1;  // Adjust position as needed
+                        
+                        // Add the image to the cell
+                        doc.addImage(image, 'JPEG', xOffset, yOffset, widthInPoints, heightInPoints);
+                    }
+                }
+            },
         });
 
-        await browser.close();
-
-        // Format the dates for the filename
-        const formattedStartDate = formatDate(startDate);
-        const formattedEndDate = formatDate(endDate);
-        const filename = `Monitoring_SEC_${formattedStartDate}_to_${formattedEndDate}.pdf`;
-
-        // Set response headers for PDF download
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        // Export the PDF
+        const pdfBuffer = doc.output('arraybuffer');
         res.setHeader('Content-Type', 'application/pdf');
-        res.send(pdfBuffer);
+        res.setHeader('Content-Disposition', `attachment; filename="Asset_Report_${startDate}_to_${endDate}.pdf"`);
+        res.send(Buffer.from(pdfBuffer));
     } catch (err) {
-        console.error('Failed to export PDF:', err);
+        console.error('Failed to generate PDF:', err);
         res.status(500).send('Error generating PDF');
     }
 });
+
+
 
 
 

@@ -19,14 +19,14 @@
 
     <main>
         <div class="tabs">
-            <button class="tab-link active" onclick="openTab(event, 'manageUser')">Manage User</button>
+            <button class="tab-link" onclick="openTab(event, 'manageUser')">Manage User</button>
             <button class="tab-link" onclick="openTab(event, 'manageTipeLantai')">Manage Tipe Lantai</button>
             <button class="tab-link" onclick="openTab(event, 'manageTipeAset')">Manage Tipe Aset</button>
             <button class="tab-link" onclick="openTab(event, 'manageTipeDoor')">Manage Tipe Door</button>
             <button class="tab-link" onclick="openTab(event, 'manageTipeHB')">Manage Tipe HB</button>
         </div>
 
-        <div id="manageUser" class="tab-content active">
+        <div id="manageUser" class="tab-content">
             <div class="table-container">
                 <div class="data-table">
                     <h2>Manage User</h2>
@@ -48,9 +48,9 @@
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-user-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-user" style="display: inline;">
+                                                <form method="POST" action="/delete-user" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this user?');">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
+                                                    <button type="submit" onclick="storeCurrentTab('manageUser')">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -91,7 +91,7 @@
                                                 <button onclick="window.location.href='/edit-tipe-lantai-form/<%= item.id %>';">Edit</button>
                                                 <form method="POST" action="/delete-tipe-lantai" style="display: inline;">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
+                                                    <button type="submit" onclick="storeCurrentTab('manageTipeLantai')">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -134,7 +134,7 @@
                                                 <button onclick="window.location.href='/edit-tipe-aset-form/<%= item.id %>';">Edit</button>
                                                 <form method="POST" action="/delete-tipe-aset" style="display: inline;">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
+                                                    <button type="submit" onclick="storeCurrentTab('manageTipeAset')">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -150,7 +150,6 @@
                 </div>
             </div>
         </div>
-        
 
         <div id="manageTipeDoor" class="tab-content">
             <div class="table-container">
@@ -178,7 +177,7 @@
                                                 <button onclick="window.location.href='/edit-tipe-door-form/<%= item.id %>';">Edit</button>
                                                 <form method="POST" action="/delete-tipe-door" style="display: inline;">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
+                                                    <button type="submit" onclick="storeCurrentTab('manageTipeDoor')">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -193,7 +192,7 @@
                     </table>
                 </div>
             </div>
-        </div>        
+        </div>
 
         <div id="manageTipeHB" class="tab-content">
             <div class="table-container">
@@ -221,7 +220,7 @@
                                                 <button onclick="window.location.href='/edit-tipe-hb-form/<%= item.id %>';">Edit</button>
                                                 <form method="POST" action="/delete-tipe-hb" style="display: inline;">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
+                                                    <button type="submit" onclick="storeCurrentTab('manageTipeHB')">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -236,10 +235,17 @@
                     </table>
                 </div>
             </div>
-        </div>        
+        </div>
+
     </main>
 
     <script>
+        // Store the current active tab in localStorage
+        function storeCurrentTab(tabName) {
+            localStorage.setItem('activeTab', tabName);
+        }
+
+        // Open the tab based on the clicked button
         function openTab(event, tabName) {
             var i, tabcontent, tablinks;
             tabcontent = document.getElementsByClassName("tab-content");
@@ -256,9 +262,10 @@
             event.currentTarget.className += " active";
         }
 
-        // Initialize the first tab to be active on page load
+        // On page load, set the active tab from localStorage
         document.addEventListener("DOMContentLoaded", function() {
-            document.querySelector(".tab-link").click();
+            var activeTab = localStorage.getItem('activeTab') || 'manageUser';  // Default to 'manageUser'
+            document.querySelector(`.tab-link[onclick="openTab(event, '${activeTab}')"]`).click();
         });
     </script>
 </body>
