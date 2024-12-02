@@ -342,7 +342,7 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
         const worksheet = workbook.addWorksheet('Assets Report');
 
         worksheet.columns = [
-            { header: 'ID', key: 'id', width: 10 },
+            { header: 'No.', key: 'no', width: 10 }, // Updated header for No.
             { header: 'Date Created', key: 'date', width: 20 },
             { header: 'User', key: 'user', width: 20 },
             { header: 'Asset Type', key: 'assetType', width: 20 },
@@ -364,9 +364,10 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
             });
         });
 
+        let rowNumber = 1; // Initialize row number (No.)
         for (const asset of results) {
             const row = {
-                id: asset.id,
+                no: rowNumber++, // Assign sequential number for No.
                 date: new Date(asset.client_timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
                 user: asset.user,
                 assetType: asset.nama_tipe_door || asset.nama_tipe_hb || asset.nama_tipe_aset,
@@ -424,6 +425,7 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
         res.status(500).send('Error generating Excel report');
     }
 });
+
 
 module.exports = router;
 
