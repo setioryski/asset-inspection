@@ -11,9 +11,16 @@
             font-family: Arial, sans-serif;
             margin: 20px;
         }
-        h1 {
+        h1, h2 {
             text-align: center;
+            margin-bottom: 10px;
+        }
+        .filter-criteria {
             margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .filter-criteria p {
+            margin: 2px 0;
         }
         table {
             width: 100%;
@@ -22,7 +29,7 @@
         }
         th, td {
             border: 1px solid #000;
-            padding: 8px;
+            padding: 6px;
             text-align: center;
             vertical-align: middle;
         }
@@ -40,7 +47,37 @@
     </style>
 </head>
 <body>
-    <h1>Dashboard Report</h1>
+    <h1>Laporan Dashboard</h1>
+    <h2>Periode: <%= formatDate(startDate) %> hingga <%= formatDate(endDate) %></h2>
+    
+    <!-- Filter Criteria Section -->
+    <div class="filter-criteria">
+        <% if (kondisi) { %>
+            <p><strong>Kondisi:</strong> <%= kondisi %></p>
+        <% } else { %>
+            <p><strong>Kondisi:</strong> Semua Kondisi</p>
+        <% } %>
+
+        <% if (posisi) { %>
+            <p><strong>Posisi:</strong> <%= posisi %></p>
+        <% } else { %>
+            <p><strong>Posisi:</strong> Semua Posisi</p>
+        <% } %>
+
+        <% if (user) { %>
+            <p><strong>User:</strong> <%= user %></p>
+        <% } else { %>
+            <p><strong>User:</strong> Semua User</p>
+        <% } %>
+
+        <% if (floor) { %>
+            <p><strong>Lantai:</strong> <%= floor %></p>
+        <% } else { %>
+            <p><strong>Lantai:</strong> Semua Lantai</p>
+        <% } %>
+    </div>
+    
+    <!-- Assets Table -->
     <table>
         <thead>
             <tr>
@@ -50,6 +87,7 @@
                 <th>Jenis Aset</th>
                 <th>Lantai</th>
                 <th>Kondisi</th>
+                <th>Posisi</th> <!-- Optional: Include Posisi Column -->
                 <th>Foto</th>
                 <th>Catatan</th>
                 <th>Id</th>
@@ -95,6 +133,9 @@
                     <td><%= asset.nama_lantai %></td>
 
                     <td><%= asset.nama_kondisi %></td>
+
+                    <!-- Optional: Posisi Column -->
+                    <td><%= asset.posisi %></td>
 
                     <td>
                         <% if (asset.fotoBase64) { %>

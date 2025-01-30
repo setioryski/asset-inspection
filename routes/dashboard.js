@@ -11,7 +11,6 @@ const { jsPDF } = require('jspdf');
 require('jspdf-autotable'); // Import the autoTable plugin
 const fetch = require('node-fetch');
 
-
 // Base URL for constructing absolute URLs
 const BASE_URL = 'http://localhost:3000/'; // Adjust this to match your server's base URL
 
@@ -40,7 +39,7 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         LEFT JOIN posisi p ON tl.posisi = p.id`;
 
     const params = [];
-    let { startDate, endDate, kondisi, posisi, page = 1, limit = 50 } = req.query;
+    let { startDate, endDate, kondisi, posisi, user, floor, page = 1, limit = 50 } = req.query;
 
     // Parse and validate 'page' and 'limit'
     page = parseInt(page, 10);
@@ -71,6 +70,17 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         params.push(posisi);
     }
 
+    // **New Filters: User and Floor**
+    if (user) {
+        conditions.push(`u.name = ?`);
+        params.push(user);
+    }
+
+    if (floor) {
+        conditions.push(`tl.nama_lantai = ?`);
+        params.push(floor);
+    }
+
     if (conditions.length > 0) {
         query += ` WHERE ` + conditions.join(' AND ');
     }
@@ -93,11 +103,16 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
     params.push(limit, offset);
 
     try {
-        const [results, countResult, kondisiResults, posisiResults] = await Promise.all([
+        const [results, countResult, kondisiResults, posisiResults, userResults, floorResults] = await Promise.all([
             queryAsync(query, params),
             queryAsync(countQuery, params.slice(0, params.length - 2)), // Exclude LIMIT and OFFSET
             queryAsync('SELECT DISTINCT nama_kondisi FROM tipe_kondisi'),
-            queryAsync('SELECT DISTINCT tipe_posisi FROM posisi')
+            queryAsync('SELECT DISTINCT tipe_posisi FROM posisi'),
+            queryAsync('SELECT DISTINCT name FROM user'), // **Fetch distinct users**
+            // **Fetch distinct floors based on selected 'posisi'**
+            posisi
+                ? queryAsync('SELECT DISTINCT tl.nama_lantai FROM tipe_lantai tl LEFT JOIN posisi p ON tl.posisi = p.id WHERE p.tipe_posisi = ?', [posisi])
+                : queryAsync('SELECT DISTINCT nama_lantai FROM tipe_lantai')
         ]);
 
         const total = countResult[0].total;
@@ -106,11 +121,15 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         res.render('dashboard', { 
             assets: results, 
             kondisiOptions: kondisiResults, 
-            posisiOptions: posisiResults, 
+            posisiOptions: posisiResults,
+            userOptions: userResults, // **Pass user options to template**
+            floorOptions: floorResults, // **Pass floor options to template**
             startDate, 
             endDate, 
             kondisi, 
             posisi,
+            user, // **Pass selected user filter to template**
+            floor, // **Pass selected floor filter to template**
             currentPage: page,
             totalPages,
             limit,
@@ -122,8 +141,10 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
     }
 });
 
+
+// Export to PDF
 router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res) => {
-    const { startDate, endDate, kondisi, posisi } = req.query;
+    const { startDate, endDate, kondisi, posisi, user, floor } = req.query;
 
     if (!startDate || !endDate) {
         return res.status(400).send('Start date and end date are required.');
@@ -168,6 +189,17 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
         if (posisi) {
             conditions.push(`p.tipe_posisi = ?`);
             params.push(posisi);
+        }
+
+        // **New Filters: User and Floor**
+        if (user) {
+            conditions.push(`u.name = ?`);
+            params.push(user);
+        }
+
+        if (floor) {
+            conditions.push(`tl.nama_lantai = ?`);
+            params.push(floor);
         }
 
         if (conditions.length > 0) {
@@ -289,14 +321,11 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
     }
 });
 
-
-
-
-
 // Export to Excel
 router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const fetch = (await import('node-fetch')).default;
-    const { startDate, endDate, kondisi } = req.query;
+    const { startDate, endDate, kondisi, posisi, user, floor } = req.query;
+
     let query = `
         SELECT 
             a.id, 
@@ -315,7 +344,8 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
         LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
         LEFT JOIN tipe_kondisi k ON a.id_kondisi = k.id
         LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
-        LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id`;
+        LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
+        LEFT JOIN posisi p ON tl.posisi = p.id`; // Add the correct JOIN to 'posisi'
 
     const params = [];
     const conditions = [];
@@ -328,6 +358,22 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
     if (kondisi) {
         conditions.push(`k.nama_kondisi = ?`);
         params.push(kondisi);
+    }
+
+    if (posisi) {
+        conditions.push(`p.tipe_posisi = ?`);
+        params.push(posisi);
+    }
+
+    // **New Filters: User and Floor**
+    if (user) {
+        conditions.push(`u.name = ?`);
+        params.push(user);
+    }
+
+    if (floor) {
+        conditions.push(`tl.nama_lantai = ?`);
+        params.push(floor);
     }
 
     if (conditions.length > 0) {
@@ -352,16 +398,16 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
             { header: 'Notes', key: 'notes', width: 30 },
         ];
 
-        worksheet.eachRow((row) => {
-            row.eachCell((cell) => {
-                cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-            });
+        // Apply styling to header row
+        worksheet.getRow(1).eachCell((cell) => {
+            cell.font = { bold: true };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
         });
 
         let rowNumber = 1; // Initialize row number (No.)
@@ -388,21 +434,27 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
                 };
             });
 
+            // Handle image for the 'photo' column (6th index)
             if (asset.foto) {
-                const imageUrl = new URL(asset.foto, BASE_URL);
-                const imageBuffer = await fetch(imageUrl.href).then(res => res.buffer());
+                try {
+                    const imageUrl = new URL(asset.foto, BASE_URL).href;
+                    const imageBuffer = await fetch(imageUrl).then(res => res.buffer());
 
-                const imageId = workbook.addImage({
-                    buffer: imageBuffer,
-                    extension: 'jpeg',
-                });
+                    const imageId = workbook.addImage({
+                        buffer: imageBuffer,
+                        extension: 'jpeg',
+                    });
 
-                worksheet.addImage(imageId, {
-                    tl: { col: 6, row: newRow.number - 1 },
-                    ext: { width: 100, height: 100 }
-                });
+                    // Adjust the cell address based on the 'photo' column (6th index, zero-based)
+                    worksheet.addImage(imageId, {
+                        tl: { col: 6, row: newRow.number - 1 },
+                        ext: { width: 100, height: 100 }
+                    });
 
-                newRow.height = 75; 
+                    newRow.height = 75; // Adjust the row height to accommodate the image
+                } catch (err) {
+                    console.error('Error adding image to Excel for asset', asset.id, err);
+                }
             }
         }
 
@@ -412,6 +464,12 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
         }
         if (kondisi) {
             filename += `_condition_${kondisi}`;
+        }
+        if (user) {
+            filename += `_user_${user}`;
+        }
+        if (floor) {
+            filename += `_floor_${floor}`;
         }
         filename += `.xlsx`;
 
@@ -423,6 +481,28 @@ router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, r
     } catch (err) {
         console.error('Failed to export to Excel:', err);
         res.status(500).send('Error generating Excel report');
+    }
+});
+
+
+// Route to fetch floors based on posisi
+router.get('/getFloors', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    const { posisi } = req.query;
+    try {
+        let query = `
+            SELECT DISTINCT tl.nama_lantai 
+            FROM tipe_lantai tl 
+            LEFT JOIN posisi p ON tl.posisi = p.id`;
+        const params = [];
+        if (posisi) {
+            query += ' WHERE p.tipe_posisi = ?';
+            params.push(posisi);
+        }
+        const floors = await queryAsync(query, params);
+        res.json(floors);
+    } catch (err) {
+        console.error('Failed to retrieve floors:', err);
+        res.status(500).json({ error: 'Error fetching floors' });
     }
 });
 
