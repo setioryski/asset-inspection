@@ -89,6 +89,9 @@ async function synchronizeTime() {
         const clientTime = Date.now();
         timeOffset = serverTime - clientTime;
 
+        // Store timeOffset in localStorage
+        localStorage.setItem('serverTimeOffset', timeOffset);
+
         // Retrieve previous synchronization reference points
         const storedLastSyncServerTime = parseInt(localStorage.getItem('lastSyncServerTime'), 10);
         const storedLastSyncPerformanceTime = parseFloat(localStorage.getItem('lastSyncPerformanceTime'));
@@ -111,6 +114,8 @@ async function synchronizeTime() {
         localStorage.setItem('lastSyncPerformanceTime', lastSyncPerformanceTime);
 
         console.log(`Time synchronized. Offset: ${timeOffset} ms`);
+        console.log(`Last Sync Server Time: ${lastSyncServerTime}`);
+        console.log(`Last Sync Performance Time: ${lastSyncPerformanceTime}`);
 
         // Update lastTimestamp to ensure monotonicity
         let lastTimestamp = parseInt(localStorage.getItem(LAST_TIMESTAMP_KEY), 10) || serverTime;
@@ -170,6 +175,7 @@ function isTimeDrifted() {
 
     // Allow a small margin of error (e.g., 2 minutes)
     const drift = Math.abs(actualServerTime - expectedServerTime);
+    console.log(`Time Drift: ${drift} ms`);
     return drift > 2 * 60 * 1000; // 2 minutes in ms
 }
 
@@ -210,32 +216,61 @@ function getReliableTimestamp() {
  * @param {string} message - The notification message.
  * @param {string} type - Type of notification: 'success', 'error', 'info'.
  */
+let currentNotification = null; // Track the current notification
+
 function showNotification(message, type) {
-    notificationMessage.textContent = message;
+    // If a notification is already being shown, update its content and type
+    if (currentNotification) {
+        notificationMessage.textContent = message;
+        notification.classList.remove('success', 'error', 'info');
+        notificationIcon.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-info-circle');
 
-    // Reset classes
-    notification.classList.remove('success', 'error', 'info');
-    notificationIcon.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-info-circle');
+        if (type === 'success') {
+            notification.classList.add('success');
+            notificationIcon.classList.add('fa-check-circle');
+        } else if (type === 'error') {
+            notification.classList.add('error');
+            notificationIcon.classList.add('fa-times-circle');
+        } else if (type === 'info') {
+            notification.classList.add('info');
+            notificationIcon.classList.add('fa-info-circle');
+        }
 
-    // Add new classes based on type
-    if (type === 'success') {
-        notification.classList.add('success');
-        notificationIcon.classList.add('fa-check-circle');
-    } else if (type === 'error') {
-        notification.classList.add('error');
-        notificationIcon.classList.add('fa-times-circle');
-    } else if (type === 'info') {
-        notification.classList.add('info');
-        notificationIcon.classList.add('fa-info-circle');
+        // Reset the hide timeout
+        clearTimeout(currentNotification);
+        currentNotification = setTimeout(() => {
+            notification.classList.remove('show');
+            currentNotification = null;
+        }, 3000);
+    } else {
+        // No notification is being shown, proceed as usual
+        notificationMessage.textContent = message;
+
+        // Reset classes
+        notification.classList.remove('success', 'error', 'info');
+        notificationIcon.classList.remove('fa-check-circle', 'fa-times-circle', 'fa-info-circle');
+
+        // Add new classes based on type
+        if (type === 'success') {
+            notification.classList.add('success');
+            notificationIcon.classList.add('fa-check-circle');
+        } else if (type === 'error') {
+            notification.classList.add('error');
+            notificationIcon.classList.add('fa-times-circle');
+        } else if (type === 'info') {
+            notification.classList.add('info');
+            notificationIcon.classList.add('fa-info-circle');
+        }
+
+        // Show the notification
+        notification.classList.add('show');
+
+        // Hide after 3 seconds
+        currentNotification = setTimeout(() => {
+            notification.classList.remove('show');
+            currentNotification = null;
+        }, 3000);
     }
-
-    // Show the notification
-    notification.classList.add('show');
-
-    // Hide after 3 seconds
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
 }
 
 /**
@@ -429,33 +464,56 @@ function getSavedAssets() {
  * @param {string} selectedFloorId - The ID of the selected floor.
  */
 function updateAssetsStatus(selectedFloorId) {
-    const assetsStatusList = document.getElementById('assetsStatusList');
-    assetsStatusList.innerHTML = '';
+    const assetsStatusContainer = document.getElementById('assetsStatusList');
+    assetsStatusContainer.innerHTML = ''; // Clear previous content
 
     if (!selectedFloorId) {
         return;
     }
 
     getSavedAssets().then(savedAssets => {
-        const floorAssetsList = floorAssets[selectedFloorId];
-        if (!floorAssetsList) {
-            console.warn(`No assets found for floor ID: ${selectedFloorId}`);
-            return;
+        const floorAssetsList = floorAssets[selectedFloorId] || [];
+
+        // Create separate lists for Aset, Box Hydrant, and Emergency Door
+        const categories = {
+            aset: [],
+            hb: [],
+            door: []
+        };
+
+        // Categorize assets
+        floorAssetsList.forEach(asset => {
+            categories[asset.type]?.push(asset);
+        });
+
+        // Function to create a section for a category
+        function createCategorySection(title, assets, type) {
+            if (assets.length === 0) return '';
+
+            let html = `<h3>${title}</h3><ul>`;
+            assets.forEach(asset => {
+                const uniqueId = `${asset.id}_${asset.type}`;
+                const isSaved = savedAssets[selectedFloorId]?.has(uniqueId);
+                html += `<li style="color: ${isSaved ? 'green' : 'red'};">
+                    ${asset.name} - ${isSaved ? 'Tersimpan' : 'Belum Tersimpan'}
+                </li>`;
+            });
+            html += '</ul>';
+            return html;
         }
 
-        floorAssetsList.forEach(asset => {
-            const li = document.createElement('li');
-            const uniqueId = `${asset.id}_${asset.type}`;
-            const isSaved = savedAssets[selectedFloorId] && savedAssets[selectedFloorId].has(uniqueId);
-            li.textContent = `${asset.name} - ${isSaved ? 'Tersimpan' : 'Belum Tersimpan'}`;
-            li.style.color = isSaved ? 'green' : 'red';
-            assetsStatusList.appendChild(li);
-        });
+        // Append categorized sections to the status container
+        assetsStatusContainer.innerHTML = 
+            createCategorySection('Aset', categories.aset, 'aset') +
+            createCategorySection('Box Hydrant', categories.hb, 'hb') +
+            createCategorySection('Emergency Door', categories.door, 'door');
+
     }).catch(error => {
         console.error('Error getting saved assets:', error);
         showNotification('Error mendapatkan status aset.', 'error');
     });
 }
+
 
 /**
  * Display saved entries from IndexedDB.
@@ -528,7 +586,7 @@ function displaySavedEntries() {
         // After displaying all entries, update assets status and Kirim Semua button
         const selectedFloorId = document.getElementById('id_tipe_lantai').value;
         updateAssetsStatus(selectedFloorId);
-        updateKirimSemuaButton();
+        debouncedUpdateKirimSemuaButton(); // Use debounced function
     };
 
     request.onerror = function(event) {
@@ -616,7 +674,7 @@ async function saveData() {
             // Update assets status and Kirim Semua button
             const selectedFloorId = document.getElementById('id_tipe_lantai').value;
             updateAssetsStatus(selectedFloorId);
-            updateKirimSemuaButton();
+            debouncedUpdateKirimSemuaButton();
         };
 
         request.onerror = function(event) {
@@ -674,6 +732,42 @@ function handleSelection(selected) {
 }
 
 /**
+ * Debounce function to limit the rate at which a function can fire.
+ * @param {Function} func - The function to debounce.
+ * @param {number} wait - The time to wait in milliseconds.
+ * @returns {Function}
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+// Wrap updateKirimSemuaButton with debounce
+const debouncedUpdateKirimSemuaButton = debounce(updateKirimSemuaButton, 300);
+
+/**
+ * Filter dropdown options based on selected lantai.
+ */
+function filterOptionsByLantai() {
+    const selectedLantaiId = document.getElementById('id_tipe_lantai').value;
+    filterDropdownOptions('id_tipe_aset', selectedLantaiId);
+    filterDropdownOptions('id_tipe_hb', selectedLantaiId);
+    filterDropdownOptions('id_tipe_door', selectedLantaiId);
+
+    if (selectedLantaiId) {
+        document.getElementById('assetsStatus').style.display = 'block';
+    } else {
+        document.getElementById('assetsStatus').style.display = 'none';
+    }
+
+    updateAssetsStatus(selectedLantaiId);
+    updateKirimSemuaButton(true); // Notify user only when they select a floor
+}
+
+/**
  * Filter dropdown options based on selected lantai.
  */
 function filterDropdownOptions(selectId, lantaiId) {
@@ -694,24 +788,9 @@ function filterDropdownOptions(selectId, lantaiId) {
     selectElement.disabled = false;
 }
 
-/**
- * Filter dropdown options by lantai and update UI accordingly.
- */
-function filterOptionsByLantai() {
-    const selectedLantaiId = document.getElementById('id_tipe_lantai').value;
-    filterDropdownOptions('id_tipe_aset', selectedLantaiId);
-    filterDropdownOptions('id_tipe_hb', selectedLantaiId);
-    filterDropdownOptions('id_tipe_door', selectedLantaiId);
-
-    if (selectedLantaiId) {
-        document.getElementById('assetsStatus').style.display = 'block';
-    } else {
-        document.getElementById('assetsStatus').style.display = 'none';
-    }
-
-    updateAssetsStatus(selectedLantaiId);
-    updateKirimSemuaButton();
-}
+// ===========================
+// Data Submission Functions
+// ===========================
 
 /**
  * Submit all saved entries to the server.
@@ -724,18 +803,18 @@ async function handleSubmitAll() {
 
     try {
         const savedAssets = await getSavedAssets();
-        let canProceed = false;
+        let canEnable = false;
 
         for (const floorId in floorAssets) {
             const totalAssets = floorAssets[floorId].length;
             const savedCount = savedAssets[floorId] ? savedAssets[floorId].size : 0;
             if (savedCount === totalAssets) {
-                canProceed = true;
+                canEnable = true;
                 break;
             }
         }
 
-        if (!canProceed) {
+        if (!canEnable) {
             showNotification('Ada aset yang belum direkam. Silakan rekam semua aset pada setidaknya satu lantai sebelum mengirim.', 'error');
             return;
         }
@@ -957,7 +1036,7 @@ function deleteEntry(id, showNotif = true) {
         // Update assets status and Kirim Semua button
         const selectedFloorId = document.getElementById('id_tipe_lantai').value;
         updateAssetsStatus(selectedFloorId);
-        updateKirimSemuaButton();
+        debouncedUpdateKirimSemuaButton();
     };
 
     request.onerror = function(event) {
@@ -991,7 +1070,9 @@ function updateFailedEntry(entry) {
 /**
  * Update the state of the "Kirim Semua" button based on saved assets.
  */
-function updateKirimSemuaButton() {
+let previousCanEnable = null; // Track the previous state
+
+function updateKirimSemuaButton(notify = false) {
     getSavedAssets().then(savedAssets => {
         let canEnable = false;
 
@@ -1006,16 +1087,15 @@ function updateKirimSemuaButton() {
 
         kirimSemuaButton.disabled = !canEnable;
 
-        // Optionally, show a message to the user
-        if (canEnable) {
-            showNotification('Semua aset pada satu lantai telah direkam. Anda dapat mengirim data.', 'info');
-        } else {
-            showNotification('Belum semua aset pada satu lantai telah direkam.', 'info');
+        // Show notification only if notify is true (user selected a floor)
+        if (notify && !canEnable) {
+            showNotification('Belum semua aset pada lantai ini telah direkam.', 'info');
         }
     }).catch(error => {
         console.error('Error updating Kirim Semua button:', error);
     });
 }
+
 
 // ===========================
 // Event Listeners for Online/Offline

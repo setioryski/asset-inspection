@@ -58,11 +58,12 @@
             </select>
         </div>
 
-        <!-- Assets Status Section -->
-        <div id="assetsStatus" style="display: none;">
-            <h2>Status Aset pada Lantai Terpilih</h2>
-            <ul id="assetsStatusList"></ul>
-        </div>
+<!-- Assets Status Section -->
+<div id="assetsStatus" style="display: none;">
+    <h2>Status Aset pada Lantai Terpilih</h2>
+    <div id="assetsStatusList"></div> <!-- Dynamic content injected here -->
+</div>
+
 
         <!-- Note -->
         <div class="field-note">
@@ -100,19 +101,21 @@
             </select>
         </div>
 
-        <!-- Step 3: Take Picture (Foto) -->
-        <div>
-            <label for="foto"><i class="fas fa-camera"></i> Foto:</label>
-            <input 
-                type="file" 
-                id="foto" 
-                name="foto" 
-                accept="image/*" 
-                capture="environment" 
-                required 
-            >
-            <img id="previewImg" src="" style="display: none;" alt="Image Preview">
-        </div>
+      <!-- Step 3: Take Picture (Foto) -->
+<div>
+    <label for="foto"><i class="fas fa-camera"></i> Foto:</label>
+    <input 
+        type="file" 
+        id="foto" 
+        name="foto" 
+        accept="image/*" 
+        capture="environment" 
+        required 
+        style="display: none;"
+    >
+    <button id="customButton">Ambil Gambar</button>
+    <img id="previewImg" src="" style="display: none;" alt="Image Preview">
+</div>
 
         <!-- Step 4: Choose Kondisi (Condition) -->
         <div>
@@ -156,6 +159,25 @@
 
 <!-- Reference to main.js -->
 <script src="/js/main.js"></script>
+
+<script>
+    document.getElementById("customButton").addEventListener("click", function() {
+        document.getElementById("foto").click();
+    });
+
+    document.getElementById("foto").addEventListener("change", function(event) {
+        let file = event.target.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let previewImg = document.getElementById("previewImg");
+                previewImg.src = e.target.result;
+                previewImg.style.display = "block";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
 
 
 </body>
