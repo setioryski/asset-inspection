@@ -24,6 +24,9 @@ const originalOptions = {
     id_tipe_door: []
 };
 
+// Floor Assets Mapping
+const floorAssets = {}; // Mapping of floorId to array of assets
+
 // ===========================
 // DOM Elements
 // ===========================
@@ -41,6 +44,7 @@ let notificationMessage;
 let saveButton;
 let inspectionForm;
 let previewImg;
+let assetsStatusList; // New element
 
 // ===========================
 // IndexedDB Initialization
@@ -178,10 +182,6 @@ function isTimeDrifted() {
  * @returns {string} An ISO 8601 formatted timestamp.
  */
 function getReliableTimestamp() {
-    // Retrieve the time offset
-    let offset = parseInt(localStorage.getItem('serverTimeOffset'), 10);
-    if (isNaN(offset)) offset = timeOffset || 0;
-
     // Calculate the current server-aligned time
     const currentTime = getCurrentServerTime();
 
@@ -252,7 +252,6 @@ function updateOnlineStatus() {
         setTimeout(() => {
             statusIndicator.style.display = 'none';
         }, 3000); // Hide after 3 seconds
-        kirimSemuaButton.disabled = false; // Enable the button
         synchronizeTime().then(() => {
             // Automatically submit any pending entries upon reconnection
             synchronizeLocalAssets();
@@ -373,6 +372,92 @@ function toggleSavedEntries() {
 // ===========================
 
 /**
+ * Retrieves saved assets from IndexedDB and organizes them by floor.
+ * @returns {Promise<Object>} A promise that resolves to an object mapping floorId to a Set of saved asset identifiers.
+ */
+function getSavedAssets() {
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const request = objectStore.getAll();
+
+    return new Promise((resolve, reject) => {
+        request.onsuccess = function(event) {
+            const savedData = event.target.result;
+            const savedAssets = {};
+
+            savedData.forEach(entry => {
+                let assetId = null;
+                let assetType = null;
+
+                if (entry.id_tipe_aset) {
+                    assetId = entry.id_tipe_aset;
+                    assetType = 'aset';
+                } else if (entry.id_tipe_hb) {
+                    assetId = entry.id_tipe_hb;
+                    assetType = 'hb';
+                } else if (entry.id_tipe_door) {
+                    assetId = entry.id_tipe_door;
+                    assetType = 'door';
+                }
+
+                if (assetId && assetType) {
+                    // Find the floor for this asset
+                    for (const floorId in floorAssets) {
+                        const asset = floorAssets[floorId].find(a => a.id === assetId && a.type === assetType);
+                        if (asset) {
+                            if (!savedAssets[floorId]) {
+                                savedAssets[floorId] = new Set();
+                            }
+                            savedAssets[floorId].add(`${assetId}_${assetType}`);
+                            break;
+                        }
+                    }
+                }
+            });
+
+            resolve(savedAssets);
+        };
+
+        request.onerror = function(event) {
+            reject(event.target.errorCode);
+        };
+    });
+}
+
+/**
+ * Updates the assets status list in the UI based on the selected floor.
+ * @param {string} selectedFloorId - The ID of the selected floor.
+ */
+function updateAssetsStatus(selectedFloorId) {
+    const assetsStatusList = document.getElementById('assetsStatusList');
+    assetsStatusList.innerHTML = '';
+
+    if (!selectedFloorId) {
+        return;
+    }
+
+    getSavedAssets().then(savedAssets => {
+        const floorAssetsList = floorAssets[selectedFloorId];
+        if (!floorAssetsList) {
+            console.warn(`No assets found for floor ID: ${selectedFloorId}`);
+            return;
+        }
+
+        floorAssetsList.forEach(asset => {
+            const li = document.createElement('li');
+            const uniqueId = `${asset.id}_${asset.type}`;
+            const isSaved = savedAssets[selectedFloorId] && savedAssets[selectedFloorId].has(uniqueId);
+            li.textContent = `${asset.name} - ${isSaved ? 'Tersimpan' : 'Belum Tersimpan'}`;
+            li.style.color = isSaved ? 'green' : 'red';
+            assetsStatusList.appendChild(li);
+        });
+    }).catch(error => {
+        console.error('Error getting saved assets:', error);
+        showNotification('Error mendapatkan status aset.', 'error');
+    });
+}
+
+/**
  * Display saved entries from IndexedDB.
  */
 function displaySavedEntries() {
@@ -439,6 +524,11 @@ function displaySavedEntries() {
             li.innerHTML = entryHtml;
             entryList.appendChild(li);
         });
+
+        // After displaying all entries, update assets status and Kirim Semua button
+        const selectedFloorId = document.getElementById('id_tipe_lantai').value;
+        updateAssetsStatus(selectedFloorId);
+        updateKirimSemuaButton();
     };
 
     request.onerror = function(event) {
@@ -522,6 +612,11 @@ async function saveData() {
             resetSelectOptions('id_tipe_hb');
             resetSelectOptions('id_tipe_door');
             document.getElementById('id_kondisi').disabled = true;
+
+            // Update assets status and Kirim Semua button
+            const selectedFloorId = document.getElementById('id_tipe_lantai').value;
+            updateAssetsStatus(selectedFloorId);
+            updateKirimSemuaButton();
         };
 
         request.onerror = function(event) {
@@ -581,13 +676,6 @@ function handleSelection(selected) {
 /**
  * Filter dropdown options based on selected lantai.
  */
-function filterOptionsByLantai() {
-    const selectedLantaiId = document.getElementById('id_tipe_lantai').value;
-    filterDropdownOptions('id_tipe_aset', selectedLantaiId);
-    filterDropdownOptions('id_tipe_hb', selectedLantaiId);
-    filterDropdownOptions('id_tipe_door', selectedLantaiId);
-}
-
 function filterDropdownOptions(selectId, lantaiId) {
     const selectElement = document.getElementById(selectId);
 
@@ -606,45 +694,82 @@ function filterDropdownOptions(selectId, lantaiId) {
     selectElement.disabled = false;
 }
 
-// ===========================
-// Data Submission Functions
-// ===========================
+/**
+ * Filter dropdown options by lantai and update UI accordingly.
+ */
+function filterOptionsByLantai() {
+    const selectedLantaiId = document.getElementById('id_tipe_lantai').value;
+    filterDropdownOptions('id_tipe_aset', selectedLantaiId);
+    filterDropdownOptions('id_tipe_hb', selectedLantaiId);
+    filterDropdownOptions('id_tipe_door', selectedLantaiId);
+
+    if (selectedLantaiId) {
+        document.getElementById('assetsStatus').style.display = 'block';
+    } else {
+        document.getElementById('assetsStatus').style.display = 'none';
+    }
+
+    updateAssetsStatus(selectedLantaiId);
+    updateKirimSemuaButton();
+}
 
 /**
  * Submit all saved entries to the server.
  */
-function handleSubmitAll() {
+async function handleSubmitAll() {
     if (!navigator.onLine) {
         showNotification('Anda sedang offline. Tidak dapat mengirim data.', 'error');
         return;
     }
 
-    // Show the spinner and disable the Kirim Semua button
-    kirimSemuaButton.disabled = true;
-    kirimSemuaSpinner.style.display = 'inline-block';
+    try {
+        const savedAssets = await getSavedAssets();
+        let canProceed = false;
 
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const objectStore = transaction.objectStore(STORE_NAME);
-    const request = objectStore.getAll();
+        for (const floorId in floorAssets) {
+            const totalAssets = floorAssets[floorId].length;
+            const savedCount = savedAssets[floorId] ? savedAssets[floorId].size : 0;
+            if (savedCount === totalAssets) {
+                canProceed = true;
+                break;
+            }
+        }
 
-    request.onsuccess = function(event) {
-        const entriesToSubmit = event.target.result;
-        if (entriesToSubmit.length === 0) {
-            kirimSemuaButton.disabled = false; // Re-enable the button
-            kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
-            showNotification('Tidak ada data tersimpan untuk dikirim.', 'info');
+        if (!canProceed) {
+            showNotification('Ada aset yang belum direkam. Silakan rekam semua aset pada setidaknya satu lantai sebelum mengirim.', 'error');
             return;
         }
 
-        submitEntries(entriesToSubmit);
-    };
+        // Proceed with submission
+        kirimSemuaButton.disabled = true;
+        kirimSemuaSpinner.style.display = 'inline-block';
 
-    request.onerror = function(event) {
-        kirimSemuaButton.disabled = false; // Re-enable the button
-        kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
-        console.error('Error fetching entries for submission:', event.target.errorCode);
-        showNotification('Error mengambil data untuk pengiriman.', 'error');
-    };
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const objectStore = transaction.objectStore(STORE_NAME);
+        const request = objectStore.getAll();
+
+        request.onsuccess = function(event) {
+            const entriesToSubmit = event.target.result;
+            if (entriesToSubmit.length === 0) {
+                kirimSemuaButton.disabled = false;
+                kirimSemuaSpinner.style.display = 'none';
+                showNotification('Tidak ada data tersimpan untuk dikirim.', 'info');
+                return;
+            }
+
+            submitEntries(entriesToSubmit);
+        };
+
+        request.onerror = function(event) {
+            kirimSemuaButton.disabled = false;
+            kirimSemuaSpinner.style.display = 'none';
+            console.error('Error fetching entries for submission:', event.target.errorCode);
+            showNotification('Error mengambil data untuk pengiriman.', 'error');
+        };
+    } catch (error) {
+        console.error('Error during Kirim Semua:', error);
+        showNotification('Terjadi kesalahan saat memeriksa status aset.', 'error');
+    }
 }
 
 /**
@@ -690,7 +815,14 @@ function submitEntries(entries) {
 
         xhr.onload = function () {
             if (xhr.status >= 200 && xhr.status < 300) {
-                const response = JSON.parse(xhr.responseText);
+                let response;
+                try {
+                    response = JSON.parse(xhr.responseText);
+                } catch (e) {
+                    console.error('Invalid JSON response:', xhr.responseText);
+                    response = { success: false, message: 'Invalid server response.' };
+                }
+
                 if (response.success) {
                     // Remove the entry from IndexedDB
                     deleteEntry(entry.id, false);
@@ -705,7 +837,7 @@ function submitEntries(entries) {
                 }
             } else {
                 // Handle HTTP errors
-                entry.errorMessage = xhr.statusText;
+                entry.errorMessage = xhr.statusText || `HTTP Error: ${xhr.status}`;
                 updateFailedEntry(entry);
                 index++;
                 submitNextEntry();
@@ -765,7 +897,14 @@ function retryEntry(id) {
 
         xhr.onload = function () {
             if (xhr.status >= 200 && xhr.status < 300) {
-                const response = JSON.parse(xhr.responseText);
+                let response;
+                try {
+                    response = JSON.parse(xhr.responseText);
+                } catch (e) {
+                    console.error('Invalid JSON response:', xhr.responseText);
+                    response = { success: false, message: 'Invalid server response.' };
+                }
+
                 if (response.success) {
                     // Remove the entry from IndexedDB
                     deleteEntry(id, false);
@@ -778,7 +917,7 @@ function retryEntry(id) {
                 }
             } else {
                 // Handle errors
-                entry.errorMessage = xhr.statusText;
+                entry.errorMessage = xhr.statusText || `HTTP Error: ${xhr.status}`;
                 updateFailedEntry(entry);
             }
         };
@@ -814,6 +953,11 @@ function deleteEntry(id, showNotif = true) {
         if (showNotif) {
             showNotification('Entry terhapus.', 'success');
         }
+
+        // Update assets status and Kirim Semua button
+        const selectedFloorId = document.getElementById('id_tipe_lantai').value;
+        updateAssetsStatus(selectedFloorId);
+        updateKirimSemuaButton();
     };
 
     request.onerror = function(event) {
@@ -842,6 +986,35 @@ function updateFailedEntry(entry) {
         console.error('Error updating entry:', event.target.errorCode);
         showNotification('Error memperbarui entry.', 'error');
     };
+}
+
+/**
+ * Update the state of the "Kirim Semua" button based on saved assets.
+ */
+function updateKirimSemuaButton() {
+    getSavedAssets().then(savedAssets => {
+        let canEnable = false;
+
+        for (const floorId in floorAssets) {
+            const totalAssets = floorAssets[floorId].length;
+            const savedCount = savedAssets[floorId] ? savedAssets[floorId].size : 0;
+            if (savedCount === totalAssets) {
+                canEnable = true;
+                break;
+            }
+        }
+
+        kirimSemuaButton.disabled = !canEnable;
+
+        // Optionally, show a message to the user
+        if (canEnable) {
+            showNotification('Semua aset pada satu lantai telah direkam. Anda dapat mengirim data.', 'info');
+        } else {
+            showNotification('Belum semua aset pada satu lantai telah direkam.', 'info');
+        }
+    }).catch(error => {
+        console.error('Error updating Kirim Semua button:', error);
+    });
 }
 
 // ===========================
@@ -889,6 +1062,7 @@ document.addEventListener('DOMContentLoaded', function() {
     saveButton = document.getElementById('saveButton');
     inspectionForm = document.getElementById('inspectionForm');
     previewImg = document.getElementById('previewImg');
+    assetsStatusList = document.getElementById('assetsStatusList'); // New element
 
     // Initialize IndexedDB
     initDB();
@@ -896,10 +1070,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Time Synchronization
     initializeTimeSync();
 
-    // Store original options for dependent selects
+    // Store original options for dependent selects and build floorAssets
     ['id_tipe_aset', 'id_tipe_hb', 'id_tipe_door'].forEach(function(selectId) {
         const selectElement = document.getElementById(selectId);
         originalOptions[selectId] = Array.from(selectElement.options);
+
+        Array.from(selectElement.options).forEach(option => {
+            const floorId = option.getAttribute('data-lantai');
+            const assetId = option.value;
+            const assetName = option.textContent;
+            const assetType = selectId.replace('id_tipe_', ''); // Extract type: aset, hb, door
+
+            if (floorId) { // Ensure floorId exists
+                if (!floorAssets[floorId]) {
+                    floorAssets[floorId] = [];
+                }
+                floorAssets[floorId].push({
+                    id: assetId,
+                    name: assetName,
+                    type: assetType
+                });
+            }
+        });
     });
 
     // Initial online status update
@@ -912,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 60 * 60 * 1000); // Every hour
 
-    // Set up event listeners inside window.onload to ensure elements are available
+    // Set up event listeners
     toggleSavedEntriesButton.addEventListener('click', toggleSavedEntries);
     kirimSemuaButton.addEventListener('click', handleSubmitAll);
     saveButton.addEventListener('click', saveData);

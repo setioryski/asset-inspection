@@ -17,7 +17,7 @@
 </head>
 <body>
     <!-- Online/Offline Status Indicator -->
-    <div id="statusIndicator">Anda sedang offline. Data akan disimpan secara lokal.</div>
+    <div id="statusIndicator" style="display: none;">Anda sedang offline. Data akan disimpan secara lokal.</div>
 
     <!-- Notification Element -->
     <div id="notification" role="alert" aria-live="assertive">
@@ -56,6 +56,12 @@
                     <option value="<%= tl.id %>"><%= tl.nama_lantai %></option>
                 <% }); %>
             </select>
+        </div>
+
+        <!-- Assets Status Section -->
+        <div id="assetsStatus" style="display: none;">
+            <h2>Status Aset pada Lantai Terpilih</h2>
+            <ul id="assetsStatusList"></ul>
         </div>
 
         <!-- Note -->
@@ -127,7 +133,7 @@
 
         <!-- Note -->
         <div class="field-note">
-            <p>tombol "simpan lokal" hanya untuk menyimpan sementara, klik tombol "kirim semua" dalam tombol "tampilkan data tersimpan" untuk menyimpan ke database </p>
+            <p>Tombol "Simpan Lokal" hanya untuk menyimpan sementara, klik tombol "Kirim Semua" dalam tombol "Tampilkan Data Tersimpan" untuk menyimpan ke database.</p>
         </div>
 
         <!-- Step 5: Submit -->
@@ -144,7 +150,7 @@
         <h2>Data Tersimpan</h2>
         <ul id="entryList"></ul>
         <!-- Kirim Semua Button with Spinner -->
-        <button type="button" id="kirimSemuaButton"><i class="fas fa-paper-plane"></i> Kirim Semua</button>
+        <button type="button" id="kirimSemuaButton" disabled><i class="fas fa-paper-plane"></i> Kirim Semua</button>
         <div class="spinner" id="kirimSemuaSpinner" style="display: none;"></div>
     </div>
 

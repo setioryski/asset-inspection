@@ -1,100 +1,78 @@
 // sw.js
 
-const CACHE_NAME = 'inspection-cache-v1'; // Use a single cache for simplicity
-const OFFLINE_URL = '/offline.html';
-
-const STATIC_ASSETS = [
+const CACHE_NAME = 'inspection-app-cache-v1';
+const urlsToCache = [
     '/',
-    '/offline.html',
-    '/stylesinspection.css',
     '/js/main.js',
-    // Add other assets to cache
+    '/stylesinspection.css',
+    // Add other resources you want to cache
 ];
 
-// Install Event: Cache Static Assets
-self.addEventListener('install', (event) => {
-    console.log('[Service Worker] Installing Service Worker...', event);
+// Install the Service Worker and cache resources
+self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => {
-                return cache.addAll(STATIC_ASSETS);
-            })
-            .catch((err) => {
-                console.error('[Service Worker] Failed to open cache:', err);
+            .then(cache => {
+                console.log('Opened cache');
+                return cache.addAll(urlsToCache);
             })
     );
-    self.skipWaiting(); // Activate worker immediately
 });
 
-// Activate Event: Clean Up Old Caches
-self.addEventListener('activate', (event) => {
-    console.log('[Service Worker] Activating Service Worker...', event);
-    event.waitUntil(
-        caches.keys()
-            .then((cacheNames) => {
-                return Promise.all(
-                    cacheNames.map((cache) => {
-                        if (cache !== CACHE_NAME) {
-                            console.log('[Service Worker] Removing old cache:', cache);
-                            return caches.delete(cache);
+// Fetch resources from cache or network
+self.addEventListener('fetch', event => {
+    event.respondWith(
+        caches.match(event.request)
+            .then(response => {
+                // Cache hit - return the response
+                if (response) {
+                    return response;
+                }
+
+                // IMPORTANT: Clone the request. A request is a stream and
+                // can only be consumed once. Since we are consuming this
+                // once by cache and once by the browser for fetch, we need
+                // to clone the response.
+                const fetchRequest = event.request.clone();
+
+                return fetch(fetchRequest).then(
+                    networkResponse => {
+                        // Check if we received a valid response
+                        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                            return networkResponse;
                         }
-                    })
+
+                        // IMPORTANT: Clone the response. A response is a stream
+                        // and because we want the browser to consume the response
+                        // as well as the cache consuming the response, we need
+                        // to clone it so we have two streams.
+                        const responseToCache = networkResponse.clone();
+
+                        caches.open(CACHE_NAME)
+                            .then(cache => {
+                                cache.put(event.request, responseToCache);
+                            });
+
+                        return networkResponse;
+                    }
                 );
             })
-            .catch((err) => {
-                console.error('[Service Worker] Activation failed:', err);
-            })
     );
-    self.clients.claim(); // Take control of all clients immediately
 });
 
-// Fetch Event: Implement Stale-While-Revalidate Strategy
-self.addEventListener('fetch', (event) => {
-    const request = event.request;
-    const url = new URL(request.url);
+// Activate the Service Worker and remove old caches
+self.addEventListener('activate', event => {
+    const cacheWhitelist = [CACHE_NAME];
 
-    // Only handle GET requests for same-origin resources
-    if (request.method !== 'GET' || url.origin !== location.origin) {
-        return;
-    }
-
-    // Network First Strategy for HTML pages
-    if (request.headers.get('accept') && request.headers.get('accept').includes('text/html')) {
-        event.respondWith(
-            fetch(request)
-                .then((networkResponse) => {
-                    return caches.open(CACHE_NAME)
-                        .then((cache) => {
-                            cache.put(request, networkResponse.clone());
-                            return networkResponse;
-                        });
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheWhitelist.indexOf(cacheName) === -1) {
+                        return caches.delete(cacheName);
+                    }
                 })
-                .catch(() => {
-                    return caches.match(request)
-                        .then((cachedResponse) => {
-                            return cachedResponse || caches.match(OFFLINE_URL);
-                        });
-                })
-        );
-        return;
-    }
-
-    // Stale-While-Revalidate Strategy for static assets
-    event.respondWith(
-        caches.match(request)
-            .then((cachedResponse) => {
-                const fetchPromise = fetch(request).then((networkResponse) => {
-                    // Update cache with new response
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(request, networkResponse.clone());
-                    });
-                    return networkResponse;
-                }).catch(() => {
-                    // Return cached response if network fails
-                    return cachedResponse;
-                });
-                // Return cached response immediately, update cache in background
-                return cachedResponse || fetchPromise;
-            })
+            );
+        })
     );
 });

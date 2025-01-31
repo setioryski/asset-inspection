@@ -17,6 +17,72 @@
     --button-font-size: 16px;
 }
 
+/* Add to stylesinspection.css */
+.floor-checklist {
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.floor-checklist.complete {
+  border-color: #4CAF50;
+  background-color: #e8f5e9;
+}
+
+.floor-checklist.incomplete {
+  border-color: #f44336;
+  background-color: #ffebee;
+}
+
+.checklist-header {
+  margin-bottom: 15px;
+}
+
+.asset-status {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-icon {
+  font-size: 1.2em;
+}
+
+.complete .status-icon {
+  color: #4CAF50;
+}
+
+.incomplete .status-icon {
+  color: #f44336;
+}
+
+/* Add this to your stylesinspection.css */
+
+/* Assets Status List */
+#assetsStatus {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+#assetsStatusList {
+    list-style-type: none;
+    padding: 0;
+}
+
+#assetsStatusList li {
+    margin-bottom: 5px;
+}
+
+
 /* Box-Sizing Globally */
 *, *::before, *::after {
     box-sizing: border-box;
