@@ -17,52 +17,77 @@
     --button-font-size: 16px;
 }
 
-/* Add to stylesinspection.css */
+
+
 .floor-checklist {
-  border: 1px solid #ddd;
-  padding: 15px;
-  margin: 15px 0;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-}
+    border: 1px solid #ddd;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 16px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
 
-.floor-checklist.complete {
-  border-color: #4CAF50;
-  background-color: #e8f5e9;
-}
+  .floor-checklist.complete {
+    border-color: #4CAF50;
+    background-color: #e8f5e9;
+  }
 
-.floor-checklist.incomplete {
-  border-color: #f44336;
-  background-color: #ffebee;
-}
+  .floor-checklist.incomplete {
+    border-color: #f44336;
+    background-color: #ffebee;
+  }
 
-.checklist-header {
-  margin-bottom: 15px;
-}
+  .checklist-header {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    font-weight: 600;
+  }
 
-.asset-status {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 10px;
-}
+  .asset-status {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+    justify-content: space-between;
+  }
 
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-.status-icon {
-  font-size: 1.2em;
-}
+  .status-icon {
+    font-size: 1.5em;
+    transition: color 0.3s ease;
+  }
 
-.complete .status-icon {
-  color: #4CAF50;
-}
+  .complete .status-icon {
+    color: #4CAF50;
+  }
 
-.incomplete .status-icon {
-  color: #f44336;
-}
+  .incomplete .status-icon {
+    color: #f44336;
+  }
+
+  /* Adding subtle hover effect */
+  .floor-checklist:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+
+  .status-item:hover {
+    transform: translateX(5px);
+    transition: transform 0.2s ease;
+  }
+
+  /* Aesthetic spacing and alignment for content */
+  #assetsStatusList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-left: 10px;
+  }
 
 /* Add this to your stylesinspection.css */
 
@@ -610,3 +635,18 @@ button {
 html {
     scroll-behavior: smooth;
 }
+
+
+    /* Remove the default dropdown arrow */
+    #id_user {
+        -webkit-appearance: none; /* For Safari and Chrome */
+        -moz-appearance: none; /* For Firefox */
+        appearance: none; /* For modern browsers */
+        padding-right: 10px; /* Optional: To maintain padding on the right side */
+    }
+
+    /* Add custom styles for the dropdown if necessary */
+    #id_user::-ms-expand {
+        display: none; /* For Internet Explorer */
+    }
+

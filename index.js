@@ -195,15 +195,23 @@ app.post('/login', loginLimiter, async (req, res) => {
 // Logout route
 app.get('/logout', (req, res) => {
     console.log(`User ${req.session?.user?.name || 'Unknown'} logging out`);
-    req.session.destroy(err => {
+
+    // 🔴 Explicitly remove user data from session before destroying it
+    if (req.session) {
+        req.session.user = null; // Remove user info
+    }
+
+    res.clearCookie('sessionToken', { path: '/' }); // Ensure cookie is cleared
+    req.session.destroy((err) => {
         if (err) {
-            console.error('Failed to destroy session:', err);
-            return res.status(500).send('Could not log out, internal server error');
+            console.error('Error destroying session:', err);
+            return res.status(500).send('Error logging out');
         }
-        res.clearCookie('connect.sid');  // Clear the session cookie
-        res.redirect('/login');
+
+        res.redirect('/login'); // Redirect to login page after session is cleared
     });
 });
+
 
 
 

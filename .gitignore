@@ -1,6 +1,5 @@
 node_modules/
 uploads/
 processed/
-.env.local
 .env.deploy
 core.*

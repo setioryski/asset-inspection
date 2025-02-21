@@ -1089,7 +1089,7 @@ function updateKirimSemuaButton(notify = false) {
 
         // Show notification only if notify is true (user selected a floor)
         if (notify && !canEnable) {
-            showNotification('Belum semua aset pada lantai ini telah direkam.', 'info');
+            showNotification('Di lantai ini belum semua aset terekam, mohon perhatikan daftar aset.', 'info');
         }
     }).catch(error => {
         console.error('Error updating Kirim Semua button:', error);
@@ -1289,3 +1289,6 @@ async function synchronizeLocalAssets() {
     localStorage.removeItem('localAssets');
     console.log('All local assets have been synchronized and cleared from local storage.');
 }
+
+//logout
+

@@ -26,6 +26,7 @@
             <button class="tab-link" onclick="openTab(event, 'manageTipeHB')">Manage Tipe HB</button>
         </div>
 
+        <!-- Manage User Tab -->
         <div id="manageUser" class="tab-content">
             <div class="table-container">
                 <div class="data-table">
@@ -34,6 +35,7 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>No</th>
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Actions</th>
@@ -41,8 +43,9 @@
                         </thead>
                         <tbody>
                             <% if (user && Array.isArray(user) && user.length > 0) { %>
-                                <% user.forEach(item => { %>
+                                <% user.forEach((item, index) => { %>
                                     <tr>
+                                        <td><%= index + 1 %></td> <!-- Display row number -->
                                         <td><%= item.id %></td>
                                         <td><%= item.name %></td>
                                         <td>
@@ -58,7 +61,7 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="3">No users found</td>
+                                    <td colspan="4">No users found</td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -67,6 +70,7 @@
             </div>
         </div>
 
+        <!-- Manage Tipe Lantai Tab -->
         <div id="manageTipeLantai" class="tab-content">
             <div class="table-container">
                 <div class="data-table">
@@ -75,6 +79,7 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>No</th>
                                 <th>ID</th>
                                 <th>Floor Type</th>
                                 <th>Actions</th>
@@ -82,8 +87,9 @@
                         </thead>
                         <tbody>
                             <% if (tipe_lantai && Array.isArray(tipe_lantai) && tipe_lantai.length > 0) { %>
-                                <% tipe_lantai.forEach(item => { %>
+                                <% tipe_lantai.forEach((item, index) => { %>
                                     <tr>
+                                        <td><%= index + 1 %></td> <!-- Display row number -->
                                         <td><%= item.id %></td>
                                         <td><%= item.nama_lantai %></td>
                                         <td>
@@ -99,7 +105,7 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="3">No floor types found</td>
+                                    <td colspan="4">No floor types found</td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -108,6 +114,7 @@
             </div>
         </div>
 
+        <!-- Manage Tipe Aset Tab -->
         <div id="manageTipeAset" class="tab-content">
             <div class="table-container">
                 <div class="data-table">
@@ -116,19 +123,21 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>No</th>
                                 <th>ID</th>
                                 <th>Asset Type</th>
-                                <th>Floor</th> <!-- Added Floor column -->
+                                <th>Floor</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% if (tipe_aset && Array.isArray(tipe_aset) && tipe_aset.length > 0) { %>
-                                <% tipe_aset.forEach(item => { %>
+                                <% tipe_aset.forEach((item, index) => { %>
                                     <tr>
+                                        <td><%= index + 1 %></td> <!-- Display row number -->
                                         <td><%= item.id %></td>
                                         <td><%= item.nama_tipe %></td>
-                                        <td><%= item.nama_lantai %></td> <!-- Display floor name -->
+                                        <td><%= item.nama_lantai %></td>
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-aset-form/<%= item.id %>';">Edit</button>
@@ -142,7 +151,7 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="4">No asset types found</td>
+                                    <td colspan="5">No asset types found</td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -151,6 +160,7 @@
             </div>
         </div>
 
+        <!-- Manage Tipe Door Tab -->
         <div id="manageTipeDoor" class="tab-content">
             <div class="table-container">
                 <div class="data-table">
@@ -159,19 +169,21 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>No</th>
                                 <th>ID</th>
                                 <th>Door Type</th>
-                                <th>Floor</th> <!-- Added Floor column -->
+                                <th>Floor</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% if (tipe_door && Array.isArray(tipe_door) && tipe_door.length > 0) { %>
-                                <% tipe_door.forEach(item => { %>
+                                <% tipe_door.forEach((item, index) => { %>
                                     <tr>
+                                        <td><%= index + 1 %></td> <!-- Display row number -->
                                         <td><%= item.id %></td>
                                         <td><%= item.nama_tipe %></td>
-                                        <td><%= item.nama_lantai %></td> <!-- Display floor name -->
+                                        <td><%= item.nama_lantai %></td>
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-door-form/<%= item.id %>';">Edit</button>
@@ -185,7 +197,7 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="4">No door types found</td>
+                                    <td colspan="5">No door types found</td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -194,6 +206,7 @@
             </div>
         </div>
 
+        <!-- Manage Tipe HB Tab -->
         <div id="manageTipeHB" class="tab-content">
             <div class="table-container">
                 <div class="data-table">
@@ -202,19 +215,21 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>No</th>
                                 <th>ID</th>
                                 <th>HB Type</th>
-                                <th>Floor</th> <!-- Added Floor column -->
+                                <th>Floor</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% if (tipe_hb && Array.isArray(tipe_hb) && tipe_hb.length > 0) { %>
-                                <% tipe_hb.forEach(item => { %>
+                                <% tipe_hb.forEach((item, index) => { %>
                                     <tr>
+                                        <td><%= index + 1 %></td> <!-- Display row number -->
                                         <td><%= item.id %></td>
                                         <td><%= item.nama_tipe %></td>
-                                        <td><%= item.nama_lantai %></td> <!-- Display floor name -->
+                                        <td><%= item.nama_lantai %></td>
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-hb-form/<%= item.id %>';">Edit</button>
@@ -228,7 +243,7 @@
                                 <% }) %>
                             <% } else { %>
                                 <tr>
-                                    <td colspan="4">No HB types found</td>
+                                    <td colspan="5">No HB types found</td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -236,7 +251,6 @@
                 </div>
             </div>
         </div>
-
     </main>
 
     <script>
