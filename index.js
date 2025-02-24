@@ -457,22 +457,29 @@ app.post('/add-user', async (req, res) => {
 
 
 // Route to display the edit form for a user
+// Example for another route
 app.get('/edit-user-form/:id', async (req, res) => {
-    try {
-        const id = req.params.id;
-        const query = 'SELECT * FROM user WHERE id = ?';
-        const results = await queryAsync(query, [id]);
+    const id = req.params.id;
+    const query = 'SELECT * FROM user WHERE id = ?';
 
+    try {
+        const results = await queryAsync(query, [id]);
         if (results.length > 0) {
+            // Set cache control headers
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+
             res.render('edit-user-form', { user: results[0] });
         } else {
             res.status(404).send('User not found');
         }
-    } catch (error) {
-        console.error('Error retrieving user:', error);
+    } catch (err) {
+        console.error('Error retrieving user:', err);
         res.status(500).send('Error retrieving user');
     }
 });
+
 
 
 // Route to handle updating a user
@@ -561,23 +568,22 @@ app.get('/edit-tipe-lantai-form/:id', async (req, res) => {
     const posisiSql = 'SELECT id, tipe_posisi FROM posisi';
 
     try {
-        // Fetch the specific 'tipe_lantai' by id
         const tipeLantaiResults = await queryAsync(tipeLantaiSql, [id]);
-        
-        // Fetch all available 'posisi' options
         const posisiOptions = await queryAsync(posisiSql);
 
         if (tipeLantaiResults.length > 0) {
-            // Pass 'tipeLantai' to match the EJS template variable
-            res.render('edit-tipe-lantai-form', { 
-                tipeLantai: tipeLantaiResults[0], 
-                posisiOptions 
-            });
+            // Prevent caching
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+
+            // Render the edit form with data
+            res.render('edit-tipe-lantai-form', { tipeLantai: tipeLantaiResults[0], posisiOptions });
         } else {
             res.status(404).send('Floor type not found');
         }
     } catch (err) {
-        console.error('Error retrieving tipe_lantai or posisi options:', err);
+        console.error('Error retrieving floor type or posisi options:', err);
         res.status(500).send('Error retrieving tipe_lantai');
     }
 });
@@ -648,6 +654,13 @@ app.get('/edit-tipe-aset-form/:id', isAuthenticated, checkRole(['admin']), async
         const results = await queryAsync(sql, [id]);
         if (results.length > 0) {
             const floorTypes = await getFloorTypes();
+            
+            // Set headers to prevent caching of this response
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+
+            // Render the edit form
             res.render('edit-tipe-aset-form', { tipe_aset: results[0], floorTypes });
         } else {
             res.status(404).send('Asset type not found');
@@ -706,6 +719,7 @@ app.post('/admin/tipe_hb/add', isAuthenticated, checkRole(['admin']), async (req
     }
 });
 
+
 // Route to render the edit form for 'tipe_hb'
 app.get('/edit-tipe-hb-form/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const id = req.params.id;
@@ -714,6 +728,12 @@ app.get('/edit-tipe-hb-form/:id', isAuthenticated, checkRole(['admin']), async (
         const result = await queryAsync('SELECT * FROM tipe_hb WHERE id = ?', [id]);
         if (result.length > 0) {
             const floorTypes = await getFloorTypes();
+            
+            // Prevent caching for this route
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+
             res.render('edit-tipe-hb-form', { tipeHb: result[0], floorTypes });
         } else {
             res.status(404).send('HB type not found');
@@ -722,6 +742,7 @@ app.get('/edit-tipe-hb-form/:id', isAuthenticated, checkRole(['admin']), async (
         res.status(500).send('Error retrieving tipe_hb for edit');
     }
 });
+
 
 // Route to handle updating 'tipe_hb'
 app.post('/admin/tipe_hb/update/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
@@ -815,6 +836,7 @@ app.post('/admin/tipe_door/add', isAuthenticated, checkRole(['admin']), async (r
     }
 });
 
+
 // Route to render the edit form for 'tipe_door'
 app.get('/edit-tipe-door-form/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {
     const id = req.params.id;
@@ -823,6 +845,12 @@ app.get('/edit-tipe-door-form/:id', isAuthenticated, checkRole(['admin']), async
         const result = await queryAsync('SELECT * FROM tipe_door WHERE id = ?', [id]);
         if (result.length > 0) {
             const floorTypes = await getFloorTypes();
+            
+            // Prevent caching for this route
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+
             res.render('edit-tipe-door-form', { tipeDoor: result[0], floorTypes });
         } else {
             res.status(404).send('Door type not found');
@@ -831,6 +859,7 @@ app.get('/edit-tipe-door-form/:id', isAuthenticated, checkRole(['admin']), async
         res.status(500).send('Error retrieving tipe_door for edit');
     }
 });
+
 
 // Route to handle updating 'tipe_door'
 app.post('/admin/tipe_door/update/:id', isAuthenticated, checkRole(['admin']), async (req, res) => {

@@ -17,33 +17,40 @@ self.addEventListener('install', event => {
                 return cache.addAll(urlsToCache);
             })
     );
-});
+})
 
-// Fetch resources from cache or network
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
-    
-    // Bypass cache for admin routes or dynamic content
-    if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/dashboard')) {
-        event.respondWith(fetch(event.request));
+
+    // Bypass cache for form pages (edit pages for Tipe Door, Tipe HB, Tipe Lantai, User, and Tipe Aset)
+    if (
+        url.pathname.startsWith('/admin') || 
+        url.pathname.startsWith('/dashboard') ||
+        url.pathname.startsWith('/edit-tipe-door-form') ||
+        url.pathname.startsWith('/edit-tipe-hb-form') ||
+        url.pathname.startsWith('/edit-tipe-lantai-form') ||
+        url.pathname.startsWith('/edit-user-form') ||
+        url.pathname.startsWith('/edit-tipe-aset-form')
+    ) {
+        event.respondWith(fetch(event.request)); // Always fetch fresh data
         return;
     }
 
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                return response || fetch(event.request).then(networkResponse => {
-                    if (event.request.method === 'GET') {
-                        return caches.open(CACHE_NAME).then(cache => {
-                            cache.put(event.request, networkResponse.clone());
-                            return networkResponse;
-                        });
-                    }
-                    return networkResponse;
-                });
-            })
+        caches.match(event.request).then(response => {
+            return response || fetch(event.request).then(networkResponse => {
+                if (event.request.method === 'GET') {
+                    return caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, networkResponse.clone());
+                        return networkResponse;
+                    });
+                }
+                return networkResponse;
+            });
+        })
     );
 });
+
 
 
 // Activate the Service Worker and remove old caches

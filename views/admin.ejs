@@ -51,9 +51,9 @@
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-user-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-user" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                                <form method="POST" action="/delete-user" style="display: inline;" onsubmit="storeCurrentTab('manageUser')">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit" onclick="storeCurrentTab('manageUser')">Delete</button>
+                                                    <button type="submit">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -95,9 +95,9 @@
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-lantai-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-tipe-lantai" style="display: inline;">
+                                                <form method="POST" action="/delete-tipe-lantai" style="display: inline;" onsubmit="storeCurrentTab('manageTipeLantai')">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit" onclick="storeCurrentTab('manageTipeLantai')">Delete</button>
+                                                    <button type="submit">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -141,9 +141,9 @@
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-aset-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-tipe-aset" style="display: inline;">
+                                                <form method="POST" action="/delete-tipe-aset" style="display: inline;" onsubmit="storeCurrentTab('manageTipeAset')">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit" onclick="storeCurrentTab('manageTipeAset')">Delete</button>
+                                                    <button type="submit">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -187,9 +187,9 @@
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-door-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-tipe-door" style="display: inline;">
+                                                <form method="POST" action="/delete-tipe-door" style="display: inline;" onsubmit="storeCurrentTab('manageTipeDoor')">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit" onclick="storeCurrentTab('manageTipeDoor')">Delete</button>
+                                                    <button type="submit">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
@@ -233,9 +233,9 @@
                                         <td>
                                             <div class="action-buttons">
                                                 <button onclick="window.location.href='/edit-tipe-hb-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-tipe-hb" style="display: inline;">
+                                                <form method="POST" action="/delete-tipe-hb" style="display: inline;" onsubmit="storeCurrentTab('manageTipeHB')">
                                                     <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit" onclick="storeCurrentTab('manageTipeHB')">Delete</button>
+                                                    <button type="submit">Delete</button>
                                                 </form>
                                             </div>
                                         </td>
