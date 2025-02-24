@@ -172,9 +172,12 @@ app.post('/login', loginLimiter, async (req, res) => {
             const user = results[0];
             const match = await bcrypt.compare(password, user.password);
             if (match) {
+                // Set the session with the new user's data
                 req.session.user = { id: user.id, name: user.name, role: user.role_name };
                 req.session.isAuthenticated = true;
                 console.log(`User ${username} logged in successfully`);
+
+                // Ensure that the session is fresh for the new user
                 res.redirect('/inspection');
             } else {
                 console.log(`Invalid password for user: ${username}`);
@@ -189,6 +192,7 @@ app.post('/login', loginLimiter, async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
 
 
 
@@ -333,39 +337,16 @@ app.get('/api/tipe_kondisi', isAuthenticated, async (req, res) => {
 
 app.get('/admin', isAuthenticated, checkRole(['admin']), async (req, res) => {
     try {
-        // Fetch tipe_aset with floor names, sorted by lantai_id and id
-        let tipeAsetResults = await queryAsync(`
-            SELECT ta.id, ta.nama_tipe, ta.lantai_id, tl.nama_lantai
-            FROM tipe_aset ta
-            LEFT JOIN tipe_lantai tl ON ta.lantai_id = tl.id
-            ORDER BY ta.lantai_id ASC, ta.id ASC
-        `);
+        // Prevent caching for admin page
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
 
-        // Fetch tipe_hb with floor names, sorted by lantai_id and id
-        let tipeHbResults = await queryAsync(`
-            SELECT th.id, th.nama_tipe, th.lantai_id, tl.nama_lantai
-            FROM tipe_hb th
-            LEFT JOIN tipe_lantai tl ON th.lantai_id = tl.id
-            ORDER BY th.lantai_id ASC, th.id ASC
-        `);
-
-        // Fetch tipe_door with floor names, sorted by lantai_id and id
-        let tipeDoorResults = await queryAsync(`
-            SELECT td.id, td.nama_tipe, td.lantai_id, tl.nama_lantai
-            FROM tipe_door td
-            LEFT JOIN tipe_lantai tl ON td.lantai_id = tl.id
-            ORDER BY td.lantai_id ASC, td.id ASC
-        `);
-
-        // Fetch tipe_lantai 
+        let tipeAsetResults = await queryAsync(`SELECT ta.id, ta.nama_tipe, ta.lantai_id, tl.nama_lantai FROM tipe_aset ta LEFT JOIN tipe_lantai tl ON ta.lantai_id = tl.id ORDER BY ta.lantai_id ASC, ta.id ASC`);
+        let tipeHbResults = await queryAsync(`SELECT th.id, th.nama_tipe, th.lantai_id, tl.nama_lantai FROM tipe_hb th LEFT JOIN tipe_lantai tl ON th.lantai_id = tl.id ORDER BY th.lantai_id ASC, th.id ASC`);
+        let tipeDoorResults = await queryAsync(`SELECT td.id, td.nama_tipe, td.lantai_id, tl.nama_lantai FROM tipe_door td LEFT JOIN tipe_lantai tl ON td.lantai_id = tl.id ORDER BY td.lantai_id ASC, td.id ASC`);
         let tipeLantaiResults = await queryAsync('SELECT id, nama_lantai FROM tipe_lantai');
-
-        // Fetch users (no sorting needed, or add if desired)
-        let userResults = await queryAsync(`
-            SELECT id, name 
-            FROM user 
-            ORDER BY id ASC
-        `);
+        let userResults = await queryAsync('SELECT id, name FROM user ORDER BY id ASC');
 
         const userRole = req.session.user.role;
 
@@ -385,14 +366,24 @@ app.get('/admin', isAuthenticated, checkRole(['admin']), async (req, res) => {
 
 
 
+
 // Route to display the login form
 app.get('/login', (req, res) => {
-    res.render('login');
+    // Make sure to clear session data before rendering the login page
+    req.session.destroy(() => {
+        res.render('login');
+    });
 });
 
 app.get('/inspection', isAuthenticated, checkRole(['admin', 'petugas']), async (req, res) => {
     console.log(`User ${req.session.user.name} accessed inspection form`);
+    
     try {
+        // Ensure no caching of this page
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+
         const currentUser = {
             id: req.session.user.id,
             name: req.session.user.name
@@ -405,7 +396,7 @@ app.get('/inspection', isAuthenticated, checkRole(['admin', 'petugas']), async (
 
         console.log(`Data fetched successfully for inspection form by user ${currentUser.name}`);
         res.render('InspectionForm', {
-            user: currentUser,
+            user: currentUser,  // Pass user data to the view
             tipe_aset: assetTypes,
             tipe_lantai: floorTypes,
             tipe_kondisi: conditions,
@@ -417,6 +408,9 @@ app.get('/inspection', isAuthenticated, checkRole(['admin', 'petugas']), async (
         res.status(500).send('Error fetching data');
     }
 });
+
+
+
 
 // ADMIN FUNCTION
 
@@ -982,9 +976,8 @@ function redirectIfLoggedIn(req, res, next) {
     next();
 }
 
-app.get('/login', redirectIfLoggedIn, (req, res) => {
-    res.render('login');
-});
+
+
 
 function ensureAuthenticated(req, res, next) {
     if (!req.session.isAuthenticated) {

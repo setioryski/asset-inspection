@@ -26,6 +26,8 @@ self.addEventListener('fetch', event => {
     if (
         url.pathname.startsWith('/admin') || 
         url.pathname.startsWith('/dashboard') ||
+        url.pathname.startsWith('/inspection') ||
+        url.pathname.startsWith('/login') ||
         url.pathname.startsWith('/edit-tipe-door-form') ||
         url.pathname.startsWith('/edit-tipe-hb-form') ||
         url.pathname.startsWith('/edit-tipe-lantai-form') ||
