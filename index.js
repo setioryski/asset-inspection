@@ -680,16 +680,20 @@ app.post('/update-tipe-aset', isAuthenticated, checkRole(['admin']), async (req,
 // Route to handle deleting 'tipe_aset'
 app.post('/delete-tipe-aset', async (req, res) => {
     const { id } = req.body;
-    const sql = 'DELETE FROM tipe_aset WHERE id = ?';
-
     try {
-        await queryAsync(sql, [id]);
+        // First, delete related records from the `aset` table
+        await queryAsync('DELETE FROM aset WHERE id_tipe_aset = ?', [id]);
+
+        // Then, delete the `tipe_aset` record
+        await queryAsync('DELETE FROM tipe_aset WHERE id = ?', [id]);
+
         res.redirect('/admin');
     } catch (err) {
-        console.error('Error deleting tipe_aset:hb', err);
+        console.error('Error deleting tipe_aset:', err);
         res.status(500).send('Failed to delete tipe_aset');
     }
 });
+
 
 // Route to render the form for adding a new 'tipe_hb'
 app.get('/add-tipe-hb-form', isAuthenticated, checkRole(['admin']), async (req, res) => {
