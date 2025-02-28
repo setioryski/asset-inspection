@@ -937,6 +937,7 @@ function submitEntries(entries) {
     submitNextEntry();
 }
 
+
 /**
  * Retry submitting a single failed entry.
  * @param {number} id - The ID of the entry to retry.
@@ -958,8 +959,14 @@ function retryEntry(id) {
 
         const formData = new FormData();
 
-        // Append the image file
-        formData.append('foto', entry.foto, 'image.jpg');
+        // Append the image file if available
+        if (entry.foto) {
+            formData.append('foto', entry.foto, 'image.jpg');
+        } else {
+            console.error('No photo available for entry ID:', id);
+            showNotification('Tidak ada foto yang tersedia untuk dikirim.', 'error');
+            return;
+        }
 
         // Append other fields
         Object.entries(entry).forEach(function([key, value]) {
@@ -972,7 +979,7 @@ function retryEntry(id) {
         formData.append('clientTimestamp', entry.client_timestamp);
 
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/upload', true); // Replace '/upload' with your actual endpoint
+        xhr.open('POST', '/upload', true); // Ensure '/upload' is the correct endpoint
 
         xhr.onload = function () {
             if (xhr.status >= 200 && xhr.status < 300) {
@@ -995,7 +1002,7 @@ function retryEntry(id) {
                     updateFailedEntry(entry);
                 }
             } else {
-                // Handle errors
+                // Handle HTTP errors
                 entry.errorMessage = xhr.statusText || `HTTP Error: ${xhr.status}`;
                 updateFailedEntry(entry);
             }
@@ -1015,6 +1022,7 @@ function retryEntry(id) {
         showNotification('Error mengambil data entry.', 'error');
     };
 }
+
 
 /**
  * Delete an entry from IndexedDB.
