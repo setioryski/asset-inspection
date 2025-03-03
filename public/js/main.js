@@ -846,17 +846,20 @@ async function handleSubmitAll() {
         const request = objectStore.getAll();
 
         request.onsuccess = function(event) {
-            const entriesToSubmit = event.target.result;
+            let entriesToSubmit = event.target.result;
+            // Sort entries by client_timestamp (assuming earlier entries first)
+            entriesToSubmit.sort((a, b) => new Date(a.client_timestamp) - new Date(b.client_timestamp));
+            
             if (entriesToSubmit.length === 0) {
                 kirimSemuaButton.disabled = false;
                 kirimSemuaSpinner.style.display = 'none';
                 showNotification('Tidak ada data tersimpan untuk dikirim.', 'info');
                 return;
             }
-
+        
             submitEntries(entriesToSubmit);
         };
-
+        
         request.onerror = function(event) {
             kirimSemuaButton.disabled = false;
             kirimSemuaSpinner.style.display = 'none';
