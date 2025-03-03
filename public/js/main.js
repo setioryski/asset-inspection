@@ -80,54 +80,6 @@ function initDB() {
 // ===========================
 
 /**
- * Synchronize client time with server time.
- */
-async function synchronizeTime() {
-    try {
-        const serverTimeStr = await fetchServerTime();
-        const serverTime = new Date(serverTimeStr).getTime();
-        const clientTime = Date.now();
-        timeOffset = serverTime - clientTime;
-
-        // Store timeOffset in localStorage
-        localStorage.setItem('serverTimeOffset', timeOffset);
-
-        // Retrieve previous synchronization reference points
-        const storedLastSyncServerTime = parseInt(localStorage.getItem('lastSyncServerTime'), 10);
-        const storedLastSyncPerformanceTime = parseFloat(localStorage.getItem('lastSyncPerformanceTime'));
-
-        if (!isNaN(storedLastSyncServerTime) && !isNaN(storedLastSyncPerformanceTime)) {
-            lastSyncServerTime = storedLastSyncServerTime;
-            lastSyncPerformanceTime = storedLastSyncPerformanceTime;
-        } else {
-            // Initialize if not present
-            lastSyncServerTime = serverTime;
-            lastSyncPerformanceTime = performance.now();
-        }
-
-        // Update reference points
-        lastSyncServerTime = serverTime;
-        lastSyncPerformanceTime = performance.now();
-
-        // Store updated reference points
-        localStorage.setItem('lastSyncServerTime', lastSyncServerTime);
-        localStorage.setItem('lastSyncPerformanceTime', lastSyncPerformanceTime);
-
-        console.log(`Time synchronized. Offset: ${timeOffset} ms`);
-        console.log(`Last Sync Server Time: ${lastSyncServerTime}`);
-        console.log(`Last Sync Performance Time: ${lastSyncPerformanceTime}`);
-
-        // Update lastTimestamp to ensure monotonicity
-        let lastTimestamp = parseInt(localStorage.getItem(LAST_TIMESTAMP_KEY), 10) || serverTime;
-        const adjustedLastTimestamp = Math.max(lastTimestamp, serverTime);
-        localStorage.setItem(LAST_TIMESTAMP_KEY, adjustedLastTimestamp);
-    } catch (error) {
-        console.error('Failed to synchronize time:', error);
-        showNotification('Failed to synchronize time with server.', 'error');
-    }
-}
-
-/**
  * Fetches the current server time from the server.
  * @returns {Promise<string>} A promise that resolves to the server time in ISO 8601 format.
  */
@@ -149,34 +101,100 @@ async function fetchServerTime() {
 }
 
 /**
- * Get the estimated current server time based on performance.now()
- * @returns {number} Estimated server time in ms since epoch.
+ * Synchronizes client time with server time and stores reference values for monotonic time calculation.
  */
-function getCurrentServerTime() {
-    const storedLastSyncServerTime = parseInt(localStorage.getItem('lastSyncServerTime'), 10);
-    const storedLastSyncPerformanceTime = parseFloat(localStorage.getItem('lastSyncPerformanceTime'));
+async function synchronizeTime() {
+    try {
+        const serverTimeStr = await fetchServerTime();
+        const serverTime = new Date(serverTimeStr).getTime();
+        const clientTime = Date.now();
+        // Compute offset if needed elsewhere, but note that our monotonic calculation won't reapply it.
+        const offset = serverTime - clientTime;
+        localStorage.setItem('serverTimeOffset', offset);
 
-    if (isNaN(storedLastSyncServerTime) || isNaN(storedLastSyncPerformanceTime)) {
-        // Fallback if not available
-        return Date.now() + timeOffset;
+        // Update reference points using the monotonic clock
+        const currentPerf = performance.now();
+        localStorage.setItem('lastSyncServerTime', serverTime);
+        localStorage.setItem('lastSyncPerformanceTime', currentPerf);
+
+        // Ensure monotonicity for timestamps
+        const lastTimestamp = parseInt(localStorage.getItem(LAST_TIMESTAMP_KEY), 10) || serverTime;
+        localStorage.setItem(LAST_TIMESTAMP_KEY, Math.max(lastTimestamp, serverTime));
+
+        console.log(`Time synchronized. Offset: ${offset} ms`);
+        console.log(`Last Sync Server Time: ${serverTime}`);
+        console.log(`Last Sync Performance Time: ${currentPerf}`);
+    } catch (error) {
+        console.error('Failed to synchronize time:', error);
+        showNotification('Failed to synchronize time with server.', 'error');
     }
-
-    const elapsed = performance.now() - storedLastSyncPerformanceTime;
-    return storedLastSyncServerTime + elapsed + timeOffset;
 }
 
 /**
- * Detect significant time drift.
- * @returns {boolean} True if drift is significant, else false.
+ * Estimates the current server time using stored reference values and the monotonic performance clock.
+ * @returns {number} Estimated server time in ms since epoch.
+ */
+function getCurrentServerTime() {
+    const storedServerTime = parseInt(localStorage.getItem('lastSyncServerTime'), 10);
+    const storedPerfTime = parseFloat(localStorage.getItem('lastSyncPerformanceTime'));
+    if (isNaN(storedServerTime) || isNaN(storedPerfTime)) {
+        // Fallback to system time if no sync data is available
+        return Date.now();
+    }
+    const elapsed = performance.now() - storedPerfTime;
+    return storedServerTime + elapsed;
+}
+
+/**
+ * Checks if there is significant time drift between the estimated server time and the current system time.
+ * @returns {boolean} True if drift is significant, otherwise false.
  */
 function isTimeDrifted() {
-    const expectedServerTime = getCurrentServerTime();
-    const actualServerTime = Date.now() + timeOffset; // Approximation
-
-    // Allow a small margin of error (e.g., 2 minutes)
-    const drift = Math.abs(actualServerTime - expectedServerTime);
+    const estimatedServerTime = getCurrentServerTime();
+    const systemTime = Date.now();
+    const drift = Math.abs(systemTime - estimatedServerTime);
     console.log(`Time Drift: ${drift} ms`);
-    return drift > 2 * 60 * 1000; // 2 minutes in ms
+    // Consider drift significant if greater than 2 minutes
+    return drift > 2 * 60 * 1000;
+}
+
+/**
+ * Generates a reliable, monotonic timestamp.
+ * @returns {string} An ISO 8601 formatted timestamp.
+ */
+function getReliableTimestamp() {
+    const currentTime = getCurrentServerTime();
+    let lastTimestamp = parseInt(localStorage.getItem(LAST_TIMESTAMP_KEY), 10);
+    if (isNaN(lastTimestamp)) {
+        lastTimestamp = currentTime;
+    }
+    const newTimestamp = Math.max(currentTime, lastTimestamp + 1);
+    localStorage.setItem(LAST_TIMESTAMP_KEY, newTimestamp);
+    return new Date(newTimestamp).toISOString();
+}
+
+/**
+ * Initializes time synchronization based on network availability.
+ * When online, it synchronizes with the server; when offline, it uses stored values.
+ */
+async function initializeTimeSync() {
+    if (navigator.onLine) {
+        await synchronizeTime();
+    } else {
+        // Offline: try to use stored sync values; if not present, initialize with current system time.
+        const storedServerTime = parseInt(localStorage.getItem('lastSyncServerTime'), 10);
+        const storedPerfTime = parseFloat(localStorage.getItem('lastSyncPerformanceTime'));
+        if (isNaN(storedServerTime) || isNaN(storedPerfTime)) {
+            const now = Date.now();
+            localStorage.setItem('lastSyncServerTime', now);
+            localStorage.setItem('lastSyncPerformanceTime', performance.now());
+            localStorage.setItem('serverTimeOffset', 0);
+            localStorage.setItem(LAST_TIMESTAMP_KEY, now);
+            console.log('Offline mode: Initialized new time reference values.');
+        } else {
+            console.log('Offline mode: Using stored time reference values.');
+        }
+    }
 }
 
 // ===========================
@@ -852,91 +870,108 @@ async function handleSubmitAll() {
 }
 
 /**
- * Submit entries one by one to the server.
+ * Submit entries in batches with a retry mechanism.
  * @param {Array} entries - Array of entries to submit.
  */
 function submitEntries(entries) {
-    let index = 0;
-    const failedEntries = [];
+    const batchSize = 5;         // Process 5 entries at a time
+    const maxRetries = 3;          // Maximum number of retry attempts per entry
+    const initialRetryDelay = 1000; // 1 second initial delay
 
-    function submitNextEntry() {
-        if (index >= entries.length) {
-            kirimSemuaButton.disabled = false; // Re-enable the button
-            kirimSemuaSpinner.style.display = 'none'; // Hide the spinner
-            displaySavedEntries();
-
-            if (failedEntries.length > 0) {
-                showNotification(`${failedEntries.length} entri gagal dikirim. Anda dapat mencoba mengirim ulang secara individu.`, 'error');
-            } else {
-                showNotification('Data berhasil dikirim ke server.', 'success');
-            }
-            return;
-        }
-
-        const entry = entries[index];
-        const formData = new FormData();
-
-        // Append the image file
-        formData.append('foto', entry.foto, 'image.jpg');
-
-        // Append other fields
-        Object.entries(entry).forEach(function([key, value]) {
-            if (!['foto', 'errorMessage', 'id'].includes(key) && !key.startsWith('nama_') && key !== 'client_timestamp') {
-                formData.append(key, value);
-            }
-        });
-
-        // Append the client-assigned timestamp as ISO string
-        formData.append('clientTimestamp', entry.client_timestamp);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/upload', true); // Replace '/upload' with your actual endpoint
-
-        xhr.onload = function () {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                let response;
-                try {
-                    response = JSON.parse(xhr.responseText);
-                } catch (e) {
-                    console.error('Invalid JSON response:', xhr.responseText);
-                    response = { success: false, message: 'Invalid server response.' };
+    // Helper function to submit a single entry with retry logic.
+    function submitEntryWithRetry(entry, attempt = 0) {
+        return new Promise((resolve) => {
+            const formData = new FormData();
+            // Append the image file.
+            formData.append('foto', entry.foto, 'image.jpg');
+            // Append the other fields.
+            Object.entries(entry).forEach(([key, value]) => {
+                if (!['foto', 'errorMessage', 'id'].includes(key) &&
+                    !key.startsWith('nama_') && key !== 'client_timestamp') {
+                    formData.append(key, value);
                 }
+            });
+            // Append the client-assigned timestamp.
+            formData.append('clientTimestamp', entry.client_timestamp);
 
-                if (response.success) {
-                    // Remove the entry from IndexedDB
-                    deleteEntry(entry.id, false);
-                    index++;
-                    submitNextEntry();
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    let response;
+                    try {
+                        response = JSON.parse(xhr.responseText);
+                    } catch (e) {
+                        response = { success: false, message: 'Invalid server response.' };
+                    }
+                    if (response.success) {
+                        // Successfully submitted: remove the entry.
+                        deleteEntry(entry.id, false);
+                        resolve(true);
+                    } else {
+                        // Server responded with an error.
+                        if (attempt < maxRetries) {
+                            setTimeout(() => {
+                                submitEntryWithRetry(entry, attempt + 1).then(resolve);
+                            }, initialRetryDelay * Math.pow(2, attempt));
+                        } else {
+                            entry.errorMessage = response.message || 'Unknown error';
+                            updateFailedEntry(entry);
+                            resolve(false);
+                        }
+                    }
                 } else {
-                    // Handle server-side validation errors
-                    entry.errorMessage = response.message || 'Unknown error';
-                    updateFailedEntry(entry);
-                    index++;
-                    submitNextEntry();
+                    // HTTP error.
+                    if (attempt < maxRetries) {
+                        setTimeout(() => {
+                            submitEntryWithRetry(entry, attempt + 1).then(resolve);
+                        }, initialRetryDelay * Math.pow(2, attempt));
+                    } else {
+                        entry.errorMessage = xhr.statusText || `HTTP Error: ${xhr.status}`;
+                        updateFailedEntry(entry);
+                        resolve(false);
+                    }
                 }
-            } else {
-                // Handle HTTP errors
-                entry.errorMessage = xhr.statusText || `HTTP Error: ${xhr.status}`;
-                updateFailedEntry(entry);
-                index++;
-                submitNextEntry();
-            }
-        };
-
-        xhr.onerror = function () {
-            console.error('Network error during submission.');
-            entry.errorMessage = 'Network error';
-            updateFailedEntry(entry);
-            index++;
-            submitNextEntry();
-        };
-
-        xhr.send(formData);
+            };
+            xhr.onerror = function () {
+                if (attempt < maxRetries) {
+                    setTimeout(() => {
+                        submitEntryWithRetry(entry, attempt + 1).then(resolve);
+                    }, initialRetryDelay * Math.pow(2, attempt));
+                } else {
+                    entry.errorMessage = 'Network error';
+                    updateFailedEntry(entry);
+                    resolve(false);
+                }
+            };
+            xhr.send(formData);
+        });
     }
 
-    submitNextEntry();
-}
+    // Process one batch of entries concurrently.
+    function processBatch(batch) {
+        return Promise.all(batch.map(entry => submitEntryWithRetry(entry)));
+    }
 
+    // Process all batches sequentially.
+    async function processAllBatches() {
+        for (let i = 0; i < entries.length; i += batchSize) {
+            const batch = entries.slice(i, i + batchSize);
+            await processBatch(batch);
+        }
+    }
+
+    // Disable the "Kirim Semua" button and show a spinner during submission.
+    kirimSemuaButton.disabled = true;
+    kirimSemuaSpinner.style.display = 'inline-block';
+
+    processAllBatches().then(() => {
+        kirimSemuaButton.disabled = false;
+        kirimSemuaSpinner.style.display = 'none';
+        displaySavedEntries();
+        showNotification('Data submitted with batch processing and retries.', 'success');
+    });
+}
 
 /**
  * Retry submitting a single failed entry.
@@ -975,11 +1010,10 @@ function retryEntry(id) {
             }
         });
 
-        // Append the client-assigned timestamp as ISO string
         formData.append('clientTimestamp', entry.client_timestamp);
 
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/upload', true); // Ensure '/upload' is the correct endpoint
+        xhr.open('POST', '/upload', true);
 
         xhr.onload = function () {
             if (xhr.status >= 200 && xhr.status < 300) {
@@ -1022,7 +1056,6 @@ function retryEntry(id) {
         showNotification('Error mengambil data entry.', 'error');
     };
 }
-
 
 /**
  * Delete an entry from IndexedDB.
@@ -1104,11 +1137,9 @@ function updateKirimSemuaButton(notify = false) {
     });
 }
 
-
 // ===========================
 // Event Listeners for Online/Offline
 // ===========================
-
 window.addEventListener('online', () => {
     updateOnlineStatus();
     synchronizeTime(); // Re-synchronize when back online
@@ -1119,8 +1150,6 @@ window.addEventListener('offline', updateOnlineStatus);
 // ===========================
 // Service Worker Registration
 // ===========================
-
-
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
     .then(function(registration) {
@@ -1131,11 +1160,9 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-
 // ===========================
 // Initial Load and Periodic Synchronization
 // ===========================
-
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize DOM elements
     entryList = document.getElementById('entryList');
@@ -1255,7 +1282,7 @@ async function synchronizeLocalAssets() {
     for (const asset of localAssets) {
         try {
             const formData = new FormData();
-            formData.append('foto', asset.foto, 'image.jpg'); // Ensure a filename is provided
+            formData.append('foto', asset.foto, 'image.jpg');
 
             // Append other fields
             Object.entries(asset).forEach(([key, value]) => {
@@ -1264,10 +1291,9 @@ async function synchronizeLocalAssets() {
                 }
             });
 
-            // Append the client-assigned timestamp as ISO string
             formData.append('clientTimestamp', asset.client_timestamp);
 
-            const response = await fetch('/upload', { // Replace '/upload' with your actual endpoint
+            const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData
             });
@@ -1278,11 +1304,9 @@ async function synchronizeLocalAssets() {
 
             const responseData = await response.json();
             if (responseData.success) {
-                // Remove the entry from IndexedDB
                 deleteEntry(asset.id, false);
                 console.log('Asset synchronized:', asset);
             } else {
-                // Handle server-side validation errors
                 asset.errorMessage = responseData.message || 'Unknown error';
                 updateFailedEntry(asset);
             }
@@ -1293,10 +1317,10 @@ async function synchronizeLocalAssets() {
         }
     }
 
-    // Clear local assets after successful synchronization
     localStorage.removeItem('localAssets');
     console.log('All local assets have been synchronized and cleared from local storage.');
 }
+
 
 //logout
 

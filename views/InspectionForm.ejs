@@ -192,16 +192,12 @@
     // Clear IndexedDB (Optional: Only if storing user data)
     await clearIndexedDB();
 
-    // Unregister Service Worker and Clear Cache
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            registrations.forEach(reg => reg.unregister());
-        });
+  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    .then(reg => console.log('Service Worker registered', reg))
+    .catch(err => console.error('Service Worker registration failed:', err));
+}
 
-        caches.keys().then(cacheNames => {
-            cacheNames.forEach(cacheName => caches.delete(cacheName));
-        });
-    }
 
     // Force reload to ensure fresh login page
     window.location.href = '/login';
@@ -221,6 +217,8 @@ function clearIndexedDB() {
         };
     });
 }
+
+
 
     </script>
 
