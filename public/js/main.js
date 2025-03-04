@@ -771,16 +771,22 @@ function submitEntries(entries) {
                 }
             });
             formData.append('clientTimestamp', entry.client_timestamp);
-
+    
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/upload', true);
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     let response;
-                    try {
-                        response = JSON.parse(xhr.responseText);
-                    } catch (e) {
-                        response = { success: false, message: 'Invalid server response.' };
+                    // Check if responseText is non-empty before parsing.
+                    if (xhr.responseText && xhr.responseText.trim()) {
+                        try {
+                            response = JSON.parse(xhr.responseText);
+                        } catch (e) {
+                            console.error("Error parsing server response:", e, "Response:", xhr.responseText);
+                            response = { success: false, message: 'Invalid server response format.' };
+                        }
+                    } else {
+                        response = { success: false, message: 'Empty server response.' };
                     }
                     if (response.success) {
                         // Successfully submitted: remove the entry.
@@ -823,6 +829,7 @@ function submitEntries(entries) {
             xhr.send(formData);
         });
     }
+    
 
     function processBatch(batch) {
         return Promise.all(batch.map(entry => submitEntryWithRetry(entry)));
