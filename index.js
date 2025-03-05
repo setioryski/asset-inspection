@@ -223,70 +223,115 @@ app.get('/logout', (req, res) => {
 
 
 // Upload route
-app.post('/upload', uploadLimiter, isAuthenticated, checkRole(['admin', 'petugas']), upload.single('foto'), async (req, res) => {
-    const {
-        catatan, id_user, id_tipe_aset, id_tipe_lantai,
-        id_kondisi, id_tipe_hb, id_tipe_door, clientTimestamp
-    } = req.body;
-
-    // Validate required fields
-    if (
-        !req.file || !id_kondisi || !id_user || !id_tipe_lantai ||
-        (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)
-    ) {
-        // Delete the uploaded file if validation fails
-        fs.unlink(req.file.path, (err) => {
-            if (err) console.error('Error deleting file:', err);
-        });
-        return res.status(400).json({ success: false, message: 'Missing required fields.' });
-    }
-
-    // Validate clientTimestamp format
-    const timestamp = new Date(clientTimestamp);
-    if (!clientTimestamp || isNaN(timestamp.getTime())) {
-        fs.unlink(req.file.path, (err) => {
-            if (err) console.error('Error deleting file:', err);
-        });
-        return res.status(400).json({ success: false, message: 'Invalid client timestamp.' });
-    }
-
-    const filePath = req.file.path;
-    const processedPath = `processed/${path.basename(filePath)}`;
-
-    // Push the image processing task to the queue
-    imageProcessingQueue.push({ filePath }, async (err) => {
-        if (err) {
-            console.error('Image processing failed:', err);
-            // Delete the original file if processing fails
-            fs.unlink(filePath, (unlinkErr) => {
-                if (unlinkErr) console.error('Error deleting file:', unlinkErr);
+app.post(
+    '/upload',
+    uploadLimiter,
+    isAuthenticated,
+    checkRole(['admin', 'petugas']),
+    upload.single('foto'),
+    async (req, res) => {
+      try {
+        const {
+          catatan,
+          id_user,
+          id_tipe_aset,
+          id_tipe_lantai,
+          id_kondisi,
+          id_tipe_hb,
+          id_tipe_door,
+          clientTimestamp,
+        } = req.body;
+  
+        // Validate required fields
+        if (
+          !req.file ||
+          !id_kondisi ||
+          !id_user ||
+          !id_tipe_lantai ||
+          (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)
+        ) {
+          if (req.file) {
+            fs.unlink(req.file.path, (err) => {
+              if (err) console.error('Error deleting file:', err);
             });
-            return res.status(500).json({ success: false, message: 'Image processing failed.' });
+          }
+          return res
+            .status(400)
+            .json({ success: false, message: 'Missing required fields.' });
         }
-
+  
+        // Validate clientTimestamp format
+        const timestamp = new Date(clientTimestamp);
+        if (!clientTimestamp || isNaN(timestamp.getTime())) {
+          fs.unlink(req.file.path, (err) => {
+            if (err) console.error('Error deleting file:', err);
+          });
+          return res
+            .status(400)
+            .json({ success: false, message: 'Invalid client timestamp.' });
+        }
+  
+        const filePath = req.file.path;
+        const processedPath = `processed/${path.basename(filePath)}`;
+  
+        // Wrap image processing in a promise so we can await it
+        await new Promise((resolve, reject) => {
+          imageProcessingQueue.push({ filePath }, (err) => {
+            if (err) {
+              console.error('Image processing failed:', err);
+              fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr)
+                  console.error('Error deleting file:', unlinkErr);
+              });
+              return reject(new Error('Image processing failed.'));
+            }
+            resolve();
+          });
+        });
+  
+        // Insert the record into the database using the processed image path
         try {
-            // Insert into the database using processedPath
-            await queryAsync(`
-                INSERT INTO aset (
-                    foto, id_kondisi, catatan, id_user, id_tipe_aset,
-                    id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
-                processedPath, id_kondisi, catatan, id_user, id_tipe_aset,
-                id_tipe_lantai, id_tipe_hb, id_tipe_door, timestamp
-            ]);
-
-            res.status(200).json({ success: true, message: 'Form submitted successfully!' });
-        } catch (error) {
-            console.error('Database error during upload:', error);
-            // Delete the processed file if database insertion fails
-            fs.unlink(processedPath, (unlinkErr) => {
-                if (unlinkErr) console.error('Error deleting processed file:', unlinkErr);
-            });
-            res.status(500).json({ success: false, message: 'Internal Server Error' });
+          await queryAsync(
+            `
+              INSERT INTO aset (
+                  foto, id_kondisi, catatan, id_user, id_tipe_aset,
+                  id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+              processedPath,
+              id_kondisi,
+              catatan,
+              id_user,
+              id_tipe_aset,
+              id_tipe_lantai,
+              id_tipe_hb,
+              id_tipe_door,
+              timestamp,
+            ]
+          );
+          return res
+            .status(200)
+            .json({ success: true, message: 'Form submitted successfully!' });
+        } catch (dbError) {
+          console.error('Database error during upload:', dbError);
+          fs.unlink(processedPath, (unlinkErr) => {
+            if (unlinkErr)
+              console.error('Error deleting processed file:', unlinkErr);
+          });
+          return res
+            .status(500)
+            .json({ success: false, message: 'Internal Server Error' });
         }
-    });
-});
+      } catch (error) {
+        console.error('Unexpected upload error:', error);
+        return res
+          .status(500)
+          .json({ success: false, message: error.message || 'Unexpected error occurred.' });
+      }
+    }
+  );
+  
 
 
 
