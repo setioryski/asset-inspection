@@ -333,9 +333,6 @@ app.post(
   );
   
 
-
-
-
 // Time sync endpoint
 app.get('/api/server-time', (req, res) => {
     res.json({ serverTime: Date.now() });
@@ -1042,9 +1039,6 @@ app.get('/inspection', ensureAuthenticated, (req, res) => {
 
 
 
-
-
-
 function deleteFileWithRetry(filePath, maxAttempts = 3) {
     let attempts = 0;
 
@@ -1068,18 +1062,15 @@ function deleteFileWithRetry(filePath, maxAttempts = 3) {
 
 
 
-//https
-// app.use((req, res, next) => {
-//     if (req.secure) {
-//         next();
-//     } else {
-//         res.redirect(`https://${req.headers.host}${req.url}`);
-//     }
-// });
-
-// httpsServer.listen(port, () => {
-//     console.log(`HTTPS server running on port ${port}`);
-//   });
+// Global Error Handler
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    console.error('Unhandled error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+  });
+  
   
     app.listen(port, () => {
     console.log(`HTTP server running on port ${port}`);

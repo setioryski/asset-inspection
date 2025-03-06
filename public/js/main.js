@@ -502,7 +502,7 @@ function displaySavedEntries() {
                 entryHtml += `<img src="${url}" alt="Foto" style="max-width: 100px;" onload="URL.revokeObjectURL(this.src)"><br>`;
             }
 
-            // If an entry failed, show its error message (manual retry per entry is removed)
+            // If an entry failed, show its error message
             if (entry.errorMessage) {
                 entryHtml += `<div style="color: #f44336; margin-top: 10px;"><strong>Error:</strong> ${entry.errorMessage}</div>`;
             }
@@ -760,6 +760,7 @@ function submitEntries(entries) {
     const maxRetries = 3;          // Maximum number of retry attempts per entry
     const initialRetryDelay = 1000; // 1 second initial delay
 
+    // Adjusted submitEntryWithRetry to better handle empty or malformed responses
     function submitEntryWithRetry(entry, attempt = 0) {
         return new Promise((resolve) => {
             const formData = new FormData();
@@ -771,13 +772,12 @@ function submitEntries(entries) {
                 }
             });
             formData.append('clientTimestamp', entry.client_timestamp);
-    
+
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/upload', true);
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     let response;
-                    // Check if responseText is non-empty before parsing.
                     if (xhr.responseText && xhr.responseText.trim()) {
                         try {
                             response = JSON.parse(xhr.responseText);
@@ -830,7 +830,6 @@ function submitEntries(entries) {
         });
     }
     
-
     function processBatch(batch) {
         return Promise.all(batch.map(entry => submitEntryWithRetry(entry)));
     }
