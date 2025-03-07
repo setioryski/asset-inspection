@@ -80,13 +80,13 @@ const upload = multer({
 // Rate Limiter for Uploads
 const uploadLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 100, // Limit each IP to 100 upload requests per windowMs
+    max: 1000, // Limit each IP to 100 upload requests per windowMs
     message: "Too many uploads from this IP, please try again after a minute"
 });
 
 const generalLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 10000, // Limit each IP to 100 requests per windowMs
+    max: 20000, // Limit each IP to 100 requests per windowMs
     message: "Too many requests from this IP, please try again after a minute"
 });
 app.use(generalLimiter);

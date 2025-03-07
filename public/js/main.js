@@ -939,23 +939,35 @@ let previousCanEnable = null; // Track previous state
 
 function updateKirimSemuaButton(notify = false) {
     getSavedAssets().then(savedAssets => {
-        let canEnable = false;
-        for (const floorId in floorAssets) {
-            const totalAssets = floorAssets[floorId].length;
-            const savedCount = savedAssets[floorId] ? savedAssets[floorId].size : 0;
-            if (savedCount === totalAssets) {
-                canEnable = true;
-                break;
+        // Dapatkan daftar lantai yang memiliki entry tersimpan
+        const floorsWithSaved = Object.keys(savedAssets).filter(floorId => savedAssets[floorId].size > 0);
+        
+        // Jika ada lebih dari satu lantai dengan entry, nonaktifkan tombol
+        if (floorsWithSaved.length !== 1) {
+            kirimSemuaButton.disabled = true;
+            if (notify) {
+                showNotification('Hanya satu lantai yang boleh dikirim sekaligus. Mohon periksa data tersimpan.', 'info');
             }
-        }
-        kirimSemuaButton.disabled = !canEnable;
-        if (notify && !canEnable) {
-            showNotification('Di lantai ini belum semua aset terekam, mohon perhatikan daftar aset.', 'info');
+        } else {
+            // Hanya ada satu lantai dengan entry tersimpan
+            const floorId = floorsWithSaved[0];
+            const totalAssets = floorAssets[floorId] ? floorAssets[floorId].length : 0;
+            const savedCount = savedAssets[floorId].size;
+            
+            if (savedCount === totalAssets) {
+                kirimSemuaButton.disabled = false;
+            } else {
+                kirimSemuaButton.disabled = true;
+                if (notify) {
+                    showNotification('Di lantai ini belum semua aset terekam, mohon perhatikan daftar aset.', 'info');
+                }
+            }
         }
     }).catch(error => {
         console.error('Error updating Kirim Semua button:', error);
     });
 }
+
 
 // ===========================
 // Event Listeners for Online/Offline
