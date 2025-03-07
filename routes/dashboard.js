@@ -98,9 +98,10 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         LEFT JOIN posisi p ON tl.posisi = p.id` + 
         (conditions.length > 0 ? ` WHERE ` + conditions.join(' AND ') : '');
 
-    const offset = (page - 1) * limit;
-    query += ` ORDER BY a.id ASC LIMIT ? OFFSET ?`;
-    params.push(limit, offset);
+        const offset = (page - 1) * limit;
+        // Sort by client_timestamp (newest first)
+        query += ` ORDER BY a.client_timestamp DESC LIMIT ? OFFSET ?`;
+        params.push(limit, offset);
 
     try {
         const [results, countResult, kondisiResults, posisiResults, userResults, floorResults] = await Promise.all([
