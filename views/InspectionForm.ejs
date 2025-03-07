@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Formulir Inspeksi Aset</title>
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="/stylesinspection.css">
+    <link rel="stylesheet" href="/stylesinspection.css?v=<%= Date.now() %>">
     <!-- Include Font Awesome -->
     <link
       rel="stylesheet"
@@ -162,7 +162,7 @@
     </div>
 
 <!-- Reference to main.js -->
-<script src="/js/main.js"></script>
+<script src="/js/main.js?v=<%= Date.now() %>"></script>
 
 <script>
     document.getElementById("customButton").addEventListener("click", function() {
