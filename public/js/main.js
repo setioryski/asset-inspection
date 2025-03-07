@@ -431,17 +431,18 @@ function updateAssetsStatus(selectedFloorId) {
 
         function createCategorySection(title, assets) {
             if (assets.length === 0) return '';
-            let html = `<h3>${title}</h3><ul>`;
+            let html = `<h3>${title}</h3><ol>`; // Changed from <ul> to <ol>
             assets.forEach(asset => {
                 const uniqueId = `${asset.id}_${asset.type}`;
                 const isSaved = savedAssets[selectedFloorId]?.has(uniqueId);
                 html += `<li style="color: ${isSaved ? 'green' : 'red'};">
-                    ${asset.name} - ${isSaved ? 'Tersimpan' : 'Belum Tersimpan'}
-                </li>`;
+                            ${asset.name} - ${isSaved ? 'Tersimpan' : 'Belum Tersimpan'}
+                         </li>`;
             });
-            html += '</ul>';
+            html += '</ol>'; // Changed from </ul> to </ol>
             return html;
         }
+        
 
         assetsStatusContainer.innerHTML = 
             createCategorySection('Aset', categories.aset) +
