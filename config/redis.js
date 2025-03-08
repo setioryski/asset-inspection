@@ -18,4 +18,9 @@ redisClient.on('ready', () => {
     console.log('Connected to Redis successfully.');
 });
 
+redisClient.on('error', (err) => {
+    console.error('Redis error encountered:', err);
+    process.exit(1); // Exits the process so PM2 can restart it
+  });
+
 module.exports = redisClient;
