@@ -1119,3 +1119,33 @@ async function synchronizeLocalAssets() {
     localStorage.removeItem('localAssets');
     console.log('All local assets have been synchronized and cleared from local storage.');
 }
+
+// JavaScript code to clear caches and renew the app (without clearing IndexedDB)
+document.getElementById('clearCacheBtn').addEventListener('click', async () => {
+    try {
+        // Clear localStorage
+        localStorage.clear();
+        console.log('localStorage cleared.');
+
+        // Clear all caches (e.g., service worker caches)
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+            console.log('Caches cleared.');
+        }
+
+        // Unregister all service workers
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+                await registration.unregister();
+                console.log('Service worker unregistered:', registration);
+            }
+        }
+
+        // Reload the page to renew the application state
+        location.reload();
+    } catch (error) {
+        console.error('Error during cache clear and renew:', error);
+    }
+});
