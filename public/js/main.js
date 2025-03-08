@@ -198,6 +198,8 @@ async function initializeTimeSync() {
 let currentNotification = null; // Track the current notification
 
 function showNotification(message, type) {
+    const displayDuration = 8000; // Ubah durasi notifikasi di sini (dalam milidetik)
+    
     if (currentNotification) {
         notificationMessage.textContent = message;
         notification.classList.remove('success', 'error', 'info');
@@ -218,7 +220,7 @@ function showNotification(message, type) {
         currentNotification = setTimeout(() => {
             notification.classList.remove('show');
             currentNotification = null;
-        }, 3000);
+        }, displayDuration);
     } else {
         notificationMessage.textContent = message;
         notification.classList.remove('success', 'error', 'info');
@@ -239,9 +241,10 @@ function showNotification(message, type) {
         currentNotification = setTimeout(() => {
             notification.classList.remove('show');
             currentNotification = null;
-        }, 3000);
+        }, displayDuration);
     }
 }
+
 
 function updateOnlineStatus() {
     if (!navigator.onLine) {
@@ -937,36 +940,38 @@ function updateFailedEntry(entry) {
 
 let previousCanEnable = null; // Track previous state
 
-function updateKirimSemuaButton(notify = false) {
+function updateKirimSemuaButton() {
     getSavedAssets().then(savedAssets => {
         // Dapatkan daftar lantai yang memiliki entry tersimpan
         const floorsWithSaved = Object.keys(savedAssets).filter(floorId => savedAssets[floorId].size > 0);
         
-        // Jika ada lebih dari satu lantai dengan entry, nonaktifkan tombol
-        if (floorsWithSaved.length !== 1) {
+        if (floorsWithSaved.length > 1) {
+            // Jika terdapat entry pada lebih dari satu lantai, tombol dinonaktifkan dan notifikasi ditampilkan
             kirimSemuaButton.disabled = true;
-            if (notify) {
-                showNotification('Hanya satu lantai yang boleh dikirim sekaligus. Mohon periksa data tersimpan.', 'info');
-            }
-        } else {
-            // Hanya ada satu lantai dengan entry tersimpan
+            showNotification('Terdeteksi entry pada lebih dari satu lantai. Hanya satu lantai yang dapat dikirim sekaligus. Mohon periksa data tersimpan.', 'info');
+        } else if (floorsWithSaved.length === 1) {
+            // Jika hanya terdapat entry pada satu lantai, cek apakah semua aset sudah direkam
             const floorId = floorsWithSaved[0];
             const totalAssets = floorAssets[floorId] ? floorAssets[floorId].length : 0;
             const savedCount = savedAssets[floorId].size;
             
             if (savedCount === totalAssets) {
+                // Jika semua aset sudah terekam, tombol diaktifkan
                 kirimSemuaButton.disabled = false;
             } else {
+                // Jika belum semua terekam, tombol dinonaktifkan dan notifikasi ditampilkan
                 kirimSemuaButton.disabled = true;
-                if (notify) {
-                    showNotification('Di lantai ini belum semua aset terekam, mohon perhatikan daftar aset.', 'info');
-                }
+                showNotification('Di lantai ini belum semua aset terekam, mohon perhatikan daftar aset.', 'info');
             }
+        } else {
+            // Jika tidak ada entry tersimpan sama sekali, tombol dinonaktifkan
+            kirimSemuaButton.disabled = true;
         }
     }).catch(error => {
         console.error('Error updating Kirim Semua button:', error);
     });
 }
+
 
 
 // ===========================
