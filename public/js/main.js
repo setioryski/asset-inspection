@@ -258,11 +258,14 @@ function updateOnlineStatus() {
             statusIndicator.style.display = 'none';
         }, 3000);
         synchronizeTime().then(() => {
-            // Automatically submit any pending entries upon reconnection
+            // Otomatis kirim aset yang tertunda saat koneksi kembali tersedia
             synchronizeLocalAssets();
+            // Panggil ulang fungsi updateKirimSemuaButton agar tombol dievaluasi ulang
+            updateKirimSemuaButton();
         });
     }
 }
+
 
 /**
  * Resize image using Canvas API
