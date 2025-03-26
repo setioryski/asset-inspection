@@ -1,370 +1,378 @@
 <!DOCTYPE html>
-<html lang="id"> <!-- Indonesian language -->
+<html lang="id">
 <head>
-    <!-- Meta Tags -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <!-- Stylesheet -->
-    <link rel="stylesheet" href="/stylesdashboard.css?v=<%= Date.now() %>">
-    <!-- Include Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <!-- Optional: DataTables CSS for enhanced table features -->
-    <!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"> -->
-    
-    <style>
-        /* Print-specific styles to hide unnecessary elements */
-        @media print {
-            /* Hide all elements by default */
-            body * {
-                visibility: hidden;
-            }
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-            /* Show only the dashboard content */
-            .dashboard-container, .dashboard-container * {
-                visibility: visible;
-            }
+  <!-- Your existing stylesheet -->
+  <link rel="stylesheet" href="/stylesdashboard.css?v=<%= Date.now() %>">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-            .dashboard-container {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
+  <!-- Flatpickr core CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <!-- Example Theme: material_blue (try different themes like "airbnb", "dark", etc.) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css" />
 
-            /* Hide specific elements even within dashboard-container if necessary */
-            nav, .filter-container, .pagination {
-                display: none;
-            }
+  <style>
+    /* If you want to hide the original input and style only the alt input: */
+    .flatpickr-input {
+      display: none; /* Hides the hidden input holding the real value */
+    }
 
-            /* Adjust table styling for better print appearance */
-            table {
-                width: 100%;
-                border-collapse: collapse;
-            }
+    /* Style the alt input so it matches your form design */
+    .myDateInput {
+      min-width: 160px;      /* Adjust to your preference */
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
+      margin-right: 10px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .myDateInput:focus {
+      border-color: #007BFF;
+      box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+      outline: none;
+    }
 
-            th, td {
-                border: 1px solid #000;
-                padding: 8px;
-                text-align: left;
-            }
-
-            /* Optional: Adjust font sizes for print */
-            body {
-                font-size: 12pt;
-            }
-        }
-    </style>
+    /* If you want a placeholder in the alt input, you can do so with a pseudo-element or JS,
+       because Flatpickr overwrites placeholders once a date is set. */
+  </style>
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav>
-        <ul>
-            <li><a href="/admin"><i class="fas fa-user-cog"></i> Admin</a></li>
-            <li><a href="/inspection"><i class="fas fa-search"></i> Inspection</a></li>
-            <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-        </ul>
-    </nav>
+  <!-- Navigation -->
+  <nav>
+    <ul>
+      <li><a href="/admin"><i class="fas fa-user-cog"></i> Admin</a></li>
+      <li><a href="/inspection"><i class="fas fa-search"></i> Inspection</a></li>
+      <li><a href="/monitoring">Monitoring</a></li>
+      <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+    </ul>
+  </nav>
+  
 
-    <!-- Page Title -->
-    <h1>Dashboard</h1>
+  <h1>Dashboard</h1>
 
-    <div class="dashboard-container">
-        <!-- Filter Form -->
-        <div class="filter-container">
-            <form action="/dashboard" method="get" class="date-picker-form">
-                <!-- Start Date -->
-                <label for="startDate">Tanggal Mulai:</label>
-                <input type="date" id="startDate" name="startDate" value="<%= startDate %>" required>
+  <div class="dashboard-container">
+    <!-- Filter Form -->
+    <div class="filter-container">
+      <form action="/dashboard" method="get" class="date-picker-form">
+        
+        <label for="startDate">Tanggal Mulai:</label>
+        <!-- This is the hidden input. The user will see only the altInput. -->
+        <input
+          type="text"
+          id="startDate"
+          name="startDate"
+          required
+        />
 
-                <!-- End Date -->
-                <label for="endDate">Tanggal Akhir:</label>
-                <input type="date" id="endDate" name="endDate" value="<%= endDate %>" required>
+        <label for="endDate">Tanggal Akhir:</label>
+        <input
+          type="text"
+          id="endDate"
+          name="endDate"
+          required
+        />
 
-                <!-- Kondisi (Condition) -->
-                <label for="kondisi">Kondisi:</label>
-                <select id="kondisi" name="kondisi">
-                    <option value="">Semua Kondisi</option>
-                    <% kondisiOptions.forEach(option => { %>
-                        <option value="<%= option.nama_kondisi %>" <%= kondisi === option.nama_kondisi ? 'selected' : '' %>><%= option.nama_kondisi %></option>
-                    <% }); %>
-                </select>
+        <!-- Kondisi -->
+        <label for="kondisi">Kondisi:</label>
+        <select id="kondisi" name="kondisi">
+          <option value="">Semua Kondisi</option>
+          <% kondisiOptions.forEach(option => { %>
+            <option
+              value="<%= option.nama_kondisi %>"
+              <%= kondisi === option.nama_kondisi ? 'selected' : '' %>>
+              <%= option.nama_kondisi %>
+            </option>
+          <% }); %>
+        </select>
 
+        <!-- User -->
+        <label for="user">User:</label>
+        <select id="user" name="user">
+          <option value="">Semua User</option>
+          <% userOptions.forEach(option => { %>
+            <option
+              value="<%= option.name %>"
+              <%= user === option.name ? 'selected' : '' %>>
+              <%= option.name %>
+            </option>
+          <% }); %>
+        </select>
 
-                <!-- **New Filter: User** -->
-                <label for="user">User:</label>
-                <select id="user" name="user">
-                    <option value="">Semua User</option>
-                    <% userOptions.forEach(option => { %>
-                        <option value="<%= option.name %>" <%= user === option.name ? 'selected' : '' %>><%= option.name %></option>
-                    <% }); %>
-                </select>
+        <!-- Posisi -->
+        <label for="posisi">Posisi:</label>
+        <select name="posisi" id="posisi">
+          <option value="">Semua Posisi</option>
+          <% posisiOptions.forEach(option => { %>
+            <option
+              value="<%= option.tipe_posisi %>"
+              <%= posisi === option.tipe_posisi ? 'selected' : '' %>>
+              <%= option.tipe_posisi %>
+            </option>
+          <% }); %>
+        </select>
 
-                 <!-- Posisi (Position) -->
-                 <label for="posisi">Posisi:</label>
-                 <select name="posisi" id="posisi">
-                     <option value="">Semua Posisi</option>
-                     <% posisiOptions.forEach(option => { %>
-                         <option value="<%= option.tipe_posisi %>" <%= posisi === option.tipe_posisi ? 'selected' : '' %>><%= option.tipe_posisi %></option>
-                     <% }); %>
-                 </select>
+        <!-- Floor -->
+        <label for="floor">Lantai:</label>
+        <select id="floor" name="floor">
+          <option value="">Semua Lantai</option>
+          <% floorOptions.forEach(option => { %>
+            <option
+              value="<%= option.nama_lantai %>"
+              <%= floor === option.nama_lantai ? 'selected' : '' %>>
+              <%= option.nama_lantai %>
+            </option>
+          <% }); %>
+        </select>
+        <span id="floorLoading" style="display:none;">Loading...</span>
 
-                <!-- **New Filter: Floor** -->
-                <label for="floor">Lantai:</label>
-                <select id="floor" name="floor">
-                    <option value="">Semua Lantai</option>
-                    <% floorOptions.forEach(option => { %>
-                        <option value="<%= option.nama_lantai %>" <%= floor === option.nama_lantai ? 'selected' : '' %>><%= option.nama_lantai %></option>
-                    <% }); %>
-                </select>
-                <!-- Loading Indicator for Floor Dropdown -->
-                <span id="floorLoading" style="display:none;">Loading...</span>
+        <!-- Rows per page -->
+        <label for="limit">Baris per halaman:</label>
+        <select name="limit" id="limit">
+          <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
+          <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
+          <option value="500" <%= limit == 500 ? 'selected' : '' %>>500</option>
+          <option value="1000" <%= limit == 1000 ? 'selected' : '' %>>1000</option>
+        </select>
 
-                <!-- Rows per page -->
-                <label for="limit">Baris per halaman:</label>
-                <select name="limit" id="limit">
-                    <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
-                    <option value="100" <%= limit == 100 ? 'selected' : '' %>>100</option>
-                    <option value="500" <%= limit == 500 ? 'selected' : '' %>>500</option>
-                    <option value="1000" <%= limit == 1000 ? 'selected' : '' %>>1000</option>
-                </select>
+        <input type="hidden" name="page" value="1">
 
-                <!-- Reset to first page on filter change -->
-                <input type="hidden" name="page" value="1">
-
-                <!-- Action Buttons -->
-                <button type="submit" class="filter-button"><i class="fas fa-filter"></i> Filter</button>
-                <button type="button" class="export-button" id="exportPDF"><i class="fas fa-file-pdf"></i> Export ke PDF</button>
-                <button type="button" class="export-button" id="exportExcel"><i class="fas fa-file-excel"></i> Export ke Excel</button>
-            </form>
-        </div>
-
-        <!-- Assets Table -->
-        <table id="assetsTable">
-            <thead>
-                <tr>
-                    <th class="no-column">No.</th>
-                    <th>Tanggal/Waktu</th>
-                    <th>User</th>
-                    <th>Jenis Aset</th>
-                    <th>Lantai</th>
-                    <th>Kondisi</th>
-                    <th>Foto</th>
-                    <th>Catatan</th>
-                    <th class="id-column">Id</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% assets.forEach((asset, index) => { %>
-                    <tr>
-                        <td class="no-column"><%= (currentPage - 1) * limit + index + 1 %></td>
-                        <% 
-                            let dateCreated = asset.client_timestamp;
-                            let dateObj = null;
-
-                            if (typeof dateCreated === 'string') {
-                                let dateISO = dateCreated.replace(' ', 'T');
-                                dateObj = new Date(dateISO);
-                            } else if (dateCreated instanceof Date) {
-                                dateObj = dateCreated;
-                            }
-                        %>
-                        <td>
-                            <% if (dateObj && !isNaN(dateObj.getTime())) { %>
-                                <%= dateObj.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' }).replace(/\./g, ':') %>
-                            <% } else { %>
-                                <span class="invalid-date">Tanggal tidak valid</span>
-                            <% } %>
-                        </td>
-                        <td><%= asset.user %></td>
-                        <td>
-                            <% if (asset.nama_tipe_door) { %>
-                                <%= asset.nama_tipe_door %>
-                            <% } else if (asset.nama_tipe_hb) { %>
-                                <%= asset.nama_tipe_hb %>
-                            <% } else { %>
-                                <%= asset.nama_tipe_aset %>
-                            <% } %>
-                        </td>
-                        <td><%= asset.nama_lantai %></td>
-                        <td><%= asset.nama_kondisi %></td>
-                        <td>
-                            <% if (asset.foto) { %>
-                                <img src="/<%= asset.foto %>" alt="Foto Aset" class="asset-photo">
-                            <% } else { %>
-                                <span class="no-image">Tidak Ada Foto</span>
-                            <% } %>
-                        </td>
-                        <td>
-                            <% if (asset.catatan) { %>
-                                <%- asset.catatan.split(' ').map((word, idx) => ((idx + 1) % 6 === 0 ? word + '<br>' : word)).join(' ') %>
-                            <% } else { %>
-                                <span class="no-notes">Tidak ada catatan</span>
-                            <% } %>
-                        </td>
-                        <td class="id-column"><%= asset.id %></td>
-                    </tr>
-                <% }); %>
-            </tbody>
-        </table>
-
-        <!-- Pagination Controls -->
-        <div class="pagination">
-            <% if (currentPage > 1) { %>
-                <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&user=<%= encodeURIComponent(user) %>&floor=<%= encodeURIComponent(floor) %>&limit=<%= limit %>&page=<%= currentPage - 1 %>">« Sebelumnya</a>
-            <% } else { %>
-                <span class="disabled">« Sebelumnya</span>
-            <% } %>
-
-            <% 
-                const maxPagesToShow = 5;
-                let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-                let endPage = startPage + maxPagesToShow - 1;
-
-                if (endPage > totalPages) {
-                    endPage = totalPages;
-                    startPage = Math.max(1, endPage - maxPagesToShow + 1);
-                }
-            %>
-
-            <% for(let i = startPage; i <= endPage; i++) { %>
-                <% if(i === currentPage) { %>
-                    <span class="current"><%= i %></span>
-                <% } else { %>
-                    <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&user=<%= encodeURIComponent(user) %>&floor=<%= encodeURIComponent(floor) %>&limit=<%= limit %>&page=<%= i %>"><%= i %></a>
-                <% } %>
-            <% } %>
-
-            <% if (currentPage < totalPages) { %>
-                <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&user=<%= encodeURIComponent(user) %>&floor=<%= encodeURIComponent(floor) %>&limit=<%= limit %>&page=<%= currentPage + 1 %>">Berikutnya »</a>
-            <% } else { %>
-                <span class="disabled">Berikutnya »</span>
-            <% } %>
-        </div>
+        <button type="submit" class="filter-button"><i class="fas fa-filter"></i> Filter</button>
+        <button type="button" class="export-button" id="exportPDF"><i class="fas fa-file-pdf"></i> Export ke PDF</button>
+        <button type="button" class="export-button" id="exportExcel"><i class="fas fa-file-excel"></i> Export ke Excel</button>
+      </form>
     </div>
 
-    <!-- Scripts -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const startDateInput = document.getElementById('startDate');
-            const endDateInput = document.getElementById('endDate');
-            const posisiSelect = document.getElementById('posisi');
-            const floorSelect = document.getElementById('floor');
-            const kondisiSelect = document.getElementById('kondisi');
-            const userSelect = document.getElementById('user');
+    <!-- Assets Table -->
+    <table id="assetsTable">
+      <thead>
+        <tr>
+          <th class="no-column">No.</th>
+          <th>Tanggal/Waktu</th>
+          <th>User</th>
+          <th>Jenis Aset</th>
+          <th>Lantai</th>
+          <th>Kondisi</th>
+          <th>Foto</th>
+          <th>Catatan</th>
+          <th class="id-column">Id</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% assets.forEach((asset, index) => { %>
+          <tr>
+            <td class="no-column"><%= (currentPage - 1) * limit + index + 1 %></td>
+            <%
+              let dateCreated = asset.client_timestamp;
+              let dateObj = null;
+              if (typeof dateCreated === 'string') {
+                  let dateISO = dateCreated.replace(' ', 'T');
+                  dateObj = new Date(dateISO);
+              } else if (dateCreated instanceof Date) {
+                  dateObj = dateCreated;
+              }
+            %>
+            <td>
+              <% if (dateObj && !isNaN(dateObj.getTime())) { %>
+                <% 
+                  let formattedDate = dateObj.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  });
+                  let formattedTime = dateObj.toLocaleTimeString('en-GB', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                  });
+                %>
+                <%= formattedDate %> <%= formattedTime %>
+              <% } else { %>
+                <span class="invalid-date">Tanggal tidak valid</span>
+              <% } %>
+            </td>
+            <td><%= asset.user %></td>
+            <td>
+              <% if (asset.nama_tipe_door) { %>
+                <%= asset.nama_tipe_door %>
+              <% } else if (asset.nama_tipe_hb) { %>
+                <%= asset.nama_tipe_hb %>
+              <% } else { %>
+                <%= asset.nama_tipe_aset %>
+              <% } %>
+            </td>
+            <td><%= asset.nama_lantai %></td>
+            <td><%= asset.nama_kondisi %></td>
+            <td>
+              <% if (asset.foto) { %>
+                <img src="/<%= asset.foto %>" alt="Foto Aset" class="asset-photo">
+              <% } else { %>
+                <span class="no-image">Tidak Ada Foto</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (asset.catatan) { %>
+                <%- asset.catatan.split(' ').map((word, idx) => ((idx + 1) % 6 === 0 ? word + '<br>' : word)).join(' ') %>
+              <% } else { %>
+                <span class="no-notes">Tidak ada catatan</span>
+              <% } %>
+            </td>
+            <td class="id-column"><%= asset.id %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
 
-            // Function to format date to YYYY-MM-DD
-            const formatDate = (date) => {
-                let day = date.getDate();
-                let month = date.getMonth() + 1; // Months are zero-based
-                const year = date.getFullYear();
+    <!-- Pagination -->
+    <div class="pagination">
+      <% if (currentPage > 1) { %>
+        <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&user=<%= encodeURIComponent(user) %>&floor=<%= encodeURIComponent(floor) %>&limit=<%= limit %>&page=<%= currentPage - 1 %>">« Sebelumnya</a>
+      <% } else { %>
+        <span class="disabled">« Sebelumnya</span>
+      <% } %>
 
-                if (day < 10) {
-                    day = '0' + day;
-                }
-                if (month < 10) {
-                    month = '0' + month;
-                }
-                return `${year}-${month}-${day}`;
-            };
+      <%
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = startPage + maxPagesToShow - 1;
+        if (endPage > totalPages) {
+          endPage = totalPages;
+          startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+      %>
 
-            // Set default dates if not provided
-            if (!startDateInput.value) {
-                const currentDate = new Date();
-                const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-                startDateInput.value = formatDate(firstDayOfMonth);
-            }
+      <% for(let i = startPage; i <= endPage; i++) { %>
+        <% if(i === currentPage) { %>
+          <span class="current"><%= i %></span>
+        <% } else { %>
+          <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&user=<%= encodeURIComponent(user) %>&floor=<%= encodeURIComponent(floor) %>&limit=<%= limit %>&page=<%= i %>"><%= i %></a>
+        <% } %>
+      <% } %>
 
-            if (!endDateInput.value) {
-                const currentDate = new Date();
-                const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-                endDateInput.value = formatDate(lastDayOfMonth);
-            }
+      <% if (currentPage < totalPages) { %>
+        <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&user=<%= encodeURIComponent(user) %>&floor=<%= encodeURIComponent(floor) %>&limit=<%= limit %>&page=<%= currentPage + 1 %>">Berikutnya »</a>
+      <% } else { %>
+        <span class="disabled">Berikutnya »</span>
+      <% } %>
+    </div>
+  </div>
 
-            // Validate dates: End Date must be after Start Date
-            const validateDates = () => {
-                const startDate = new Date(startDateInput.value);
-                const endDate = new Date(endDateInput.value);
-                if (startDate > endDate) {
-                    alert('Tanggal Akhir harus lebih dari Tanggal Mulai.');
-                    return false;
-                }
-                return true;
-            };
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-            startDateInput.addEventListener('change', validateDates);
-            endDateInput.addEventListener('change', validateDates);
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // "today at 00:00:00" and "tomorrow at 00:00:00"
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
 
-            // Function to fetch floors based on posisi
-            const fetchFloors = async (posisi) => {
-                const floorLoading = document.getElementById('floorLoading');
-                floorLoading.style.display = 'inline'; // Show loading indicator
-                try {
-                    const response = await fetch(`/getFloors?posisi=${encodeURIComponent(posisi)}`);
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    const floors = await response.json();
+      // Initialize Flatpickr with altInput for neat styling
+      flatpickr("#startDate", {
+        defaultDate: startOfToday,
+        enableTime: true,
+        time_24hr: true,
+        dateFormat: "Y-m-d H:i:S",   // the actual value for the server
+        altInput: true,
+        altFormat: "d-m-Y H:i:S",    // the displayed format
+        altInputClass: "myDateInput"
+      });
 
-                    // Clear existing floor options
-                    floorSelect.innerHTML = '<option value="">Semua Lantai</option>';
+      flatpickr("#endDate", {
+        defaultDate: startOfTomorrow,
+        enableTime: true,
+        time_24hr: true,
+        dateFormat: "Y-m-d H:i:S",
+        altInput: true,
+        altFormat: "d-m-Y H:i:S",
+        altInputClass: "myDateInput"
+      });
 
-                    // Populate floor options
-                    floors.forEach(floor => {
-                        const option = document.createElement('option');
-                        option.value = floor.nama_lantai;
-                        option.textContent = floor.nama_lantai;
-                        floorSelect.appendChild(option);
-                    });
+      // Validate that endDate >= startDate
+      const startDateInput = document.getElementById('startDate');
+      const endDateInput = document.getElementById('endDate');
+      const validateDates = () => {
+        const startVal = startDateInput.value ? new Date(startDateInput.value) : null;
+        const endVal = endDateInput.value ? new Date(endDateInput.value) : null;
+        if (startVal && endVal && startVal > endVal) {
+          alert('Tanggal Akhir harus lebih dari Tanggal Mulai.');
+        }
+      };
+      startDateInput.addEventListener('change', validateDates);
+      endDateInput.addEventListener('change', validateDates);
 
-                } catch (error) {
-                    console.error('Error fetching floors:', error);
-                    alert('Terjadi kesalahan saat memuat lantai.');
-                } finally {
-                    floorLoading.style.display = 'none'; // Hide loading indicator
-                }
-            };
+      // Fetch floors based on Posisi
+      const posisiSelect = document.getElementById('posisi');
+      const floorSelect = document.getElementById('floor');
+      const floorLoading = document.getElementById('floorLoading');
+      const fetchFloors = async (posisi) => {
+        floorLoading.style.display = 'inline';
+        try {
+          const response = await fetch(`/getFloors?posisi=${encodeURIComponent(posisi)}`);
+          if (!response.ok) throw new Error('Network response was not ok');
+          const floors = await response.json();
+          floorSelect.innerHTML = '<option value="">Semua Lantai</option>';
+          floors.forEach(floor => {
+            const option = document.createElement('option');
+            option.value = floor.nama_lantai;
+            option.textContent = floor.nama_lantai;
+            floorSelect.appendChild(option);
+          });
+        } catch (error) {
+          console.error('Error fetching floors:', error);
+          alert('Terjadi kesalahan saat memuat lantai.');
+        } finally {
+          floorLoading.style.display = 'none';
+        }
+      };
 
-            // Handle Posisi change
-            posisiSelect.addEventListener('change', function () {
-                const selectedPosisi = this.value;
-                if (selectedPosisi) {
-                    fetchFloors(selectedPosisi);
-                } else {
-                    // If 'All Posisi' is selected, fetch all floors
-                    fetchFloors('');
-                }
-            });
+      // Handle Posisi changes
+      posisiSelect.addEventListener('change', function () {
+        const selectedPosisi = this.value;
+        if (selectedPosisi) {
+          fetchFloors(selectedPosisi);
+        } else {
+          fetchFloors('');
+        }
+      });
 
-            // **Initial Floor Options Based on Current Posisi Selection**
-            (function initializeFloors() {
-                const selectedPosisi = posisiSelect.value;
-                if (selectedPosisi) {
-                    fetchFloors(selectedPosisi);
-                } else {
-                    // If 'All Posisi' is selected, fetch all floors
-                    fetchFloors('');
-                }
-            })();
+      // Initialize floors on page load
+      (function initializeFloors() {
+        const selectedPosisi = posisiSelect.value;
+        if (selectedPosisi) {
+          fetchFloors(selectedPosisi);
+        } else {
+          fetchFloors('');
+        }
+      })();
 
-            // Handle Export to PDF (trigger print dialog)
-            document.getElementById('exportPDF').addEventListener('click', function () {
-                window.print(); // This will trigger the browser's print dialog
-            });
+      // Export to PDF => print dialog
+      document.getElementById('exportPDF').addEventListener('click', function () {
+        window.print();
+      });
 
-            // Handle Export to Excel
-            document.getElementById('exportExcel').addEventListener('click', function () {
-                const queryParams = new URLSearchParams({
-                    startDate: startDateInput.value,
-                    endDate: endDateInput.value,
-                    kondisi: kondisiSelect.value,
-                    posisi: posisiSelect.value,
-                    user: userSelect.value,
-                    floor: floorSelect.value
-                }).toString();
-                window.location.href = `/export/excel?${queryParams}`;
-            });
-        });
-    </script>
+      // Export to Excel
+      const kondisiSelect = document.getElementById('kondisi');
+      const userSelect = document.getElementById('user');
+      document.getElementById('exportExcel').addEventListener('click', function () {
+        const queryParams = new URLSearchParams({
+          startDate: startDateInput.value,
+          endDate: endDateInput.value,
+          kondisi: kondisiSelect.value,
+          posisi: posisiSelect.value,
+          user: userSelect.value,
+          floor: floorSelect.value
+        }).toString();
+        window.location.href = `/export/excel?${queryParams}`;
+      });
+    });
+  </script>
 </body>
 </html>

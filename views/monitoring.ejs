@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitoring Data</title>
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #f5f5f5;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    label {
+      margin-right: 10px;
+    }
+    input {
+      margin-right: 20px;
+    }
+    #notes {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background-color: #fafafa;
+    }
+    #notes h3 {
+      margin-bottom: 5px;
+    }
+    #notes ul {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Monitoring Data</h1>
+  <form action="/monitoring" method="get">
+    <label for="startDate">Tanggal Mulai:</label>
+    <input type="text" id="startDate" name="startDate" value="<%= startDate %>" placeholder="YYYY-MM-DD 00:00:00">
+    <label for="endDate">Tanggal Akhir:</label>
+    <input type="text" id="endDate" name="endDate" value="<%= endDate %>" placeholder="YYYY-MM-DD 00:00:00">
+    <button type="submit">Tampilkan</button>
+  </form>
+
+  <!-- Catatan di bawah Datepicker -->
+  <div id="notes">
+    <h3>Lantai Tanpa Record (duplicate_count = 0)</h3>
+    <ul>
+      <% 
+        // Filter data untuk record yang tidak ada (duplicate_count = 0 / record_type "No Record")
+        var noRecordFloors = data.filter(function(item) {
+          return item.record_type === 'No Record';
+        });
+      %>
+      <% if(noRecordFloors.length > 0) { %>
+        <% noRecordFloors.forEach(function(item) { %>
+          <li><%= item.nama_lantai %> - tidak ada record</li>
+        <% }); %>
+      <% } else { %>
+        <li>Tidak ada lantai dengan duplicate_count = 0.</li>
+      <% } %>
+    </ul>
+
+    <h3>Lantai dengan Unique Record (duplicate_count = 1)</h3>
+    <% 
+      // Filter data untuk record unik (duplicate_count = 1 / record_type "Unique")
+      var uniqueFloors = data.filter(function(item) {
+        return item.record_type === 'Unique';
+      });
+      // Group berdasarkan lantai_id untuk menghitung jumlah record per lantai
+      var uniqueFloorGroups = {};
+      uniqueFloors.forEach(function(item) {
+        if (!uniqueFloorGroups[item.lantai_id]) {
+          uniqueFloorGroups[item.lantai_id] = { 
+            nama_lantai: item.nama_lantai, 
+            count: 0 
+          };
+        }
+        uniqueFloorGroups[item.lantai_id].count += 1;
+      });
+    %>
+    <ul>
+      <% 
+        var uniqueKeys = Object.keys(uniqueFloorGroups);
+        if(uniqueKeys.length > 0) {
+          uniqueKeys.forEach(function(key) { 
+            var group = uniqueFloorGroups[key];
+            // Cari total aset per lantai dari query asetPerLantai
+            var aset = asetPerLantai.find(function(a) { return a.lantai_id == key; });
+            var totalAset = aset ? aset.total_aset : 0;
+            var comparison = group.count == totalAset ? "Sesuai" : "Tidak sesuai";
+      %>
+        <li>
+          <%= group.nama_lantai %>: Unique record count = <%= group.count %>, Total Aset = <%= totalAset %> (<%= comparison %>)
+        </li>
+      <%   });
+        } else { %>
+        <li>Tidak ada lantai dengan duplicate_count = 1.</li>
+      <% } %>
+    </ul>
+  </div>
+
+  <!-- Tabel Monitoring -->
+  <table>
+    <thead>
+      <tr>
+        <th>No.</th>
+        <th>Row Index per Lantai</th>
+        <th>Combined Tipe ID</th>
+        <th>Nama Tipe</th>
+        <th>Lantai ID</th>
+        <th>Nama Lantai</th>
+        <th>Duplicate Count</th>
+        <th>Record Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (data.length > 0) { %>
+        <% data.forEach(function(item){ %>
+          <tr>
+            <td><%= item.overall_row_index %></td>
+            <td><%= item.row_index_per_lantai %></td>
+            <td><%= item.combined_tipe_id ? item.combined_tipe_id : '-' %></td>
+            <td><%= item.nama_tipe ? item.nama_tipe : '-' %></td>
+            <td><%= item.lantai_id %></td>
+            <td><%= item.nama_lantai %></td>
+            <td><%= item.duplicate_count %></td>
+            <td><%= item.record_type %></td>
+          </tr>
+        <% }); %>
+      <% } else { %>
+          <tr>
+            <td colspan="8">Tidak ada data untuk periode ini.</td>
+          </tr>
+      <% } %>
+    </tbody>
+  </table>
+
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    // Inisialisasi Flatpickr pada kedua input
+    flatpickr("#startDate", {
+      enableTime: true,
+      time_24hr: true,
+      dateFormat: "Y-m-d H:i:S",
+      defaultDate: "<%= startDate %>"
+    });
+    flatpickr("#endDate", {
+      enableTime: true,
+      time_24hr: true,
+      dateFormat: "Y-m-d H:i:S",
+      defaultDate: "<%= endDate %>"
+    });
+  </script>
+</body>
+</html>

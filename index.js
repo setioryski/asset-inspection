@@ -11,6 +11,7 @@ const util = require('util');
 const https = require('https');
 const rateLimit = require('express-rate-limit');
 const dashboardRoutes = require('./routes/dashboard');
+const monitoringRoutes = require('./routes/monitoring'); // Adjust path as needed
 const { pool,queryAsync } = require('./config/db'); // Updated to use queryAsync
 const { isAuthenticated, checkRole } = require('./authMiddleware'); // Authentication and role-check middleware
 const RedisStore = require('connect-redis')(session);
@@ -158,6 +159,9 @@ app.get('/sw.js', (req, res) => {
 
 //use dashboard routes
 app.use('/', dashboardRoutes);
+
+// Mount the Monitoring routes
+app.use('/', monitoringRoutes);
 
 
 // Login route
