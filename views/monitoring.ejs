@@ -31,14 +31,15 @@
     #notes {
       margin-bottom: 20px;
       padding: 10px;
-      border: 1px solid #ddd;
-      background-color: #fafafa;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
     }
     #notes h3 {
       margin-bottom: 5px;
     }
     #notes ul {
-      margin-top: 0;
+      list-style-type: disc;
+      margin-left: 20px;
     }
   </style>
 </head>
@@ -52,61 +53,59 @@
     <button type="submit">Tampilkan</button>
   </form>
 
-  <!-- Catatan di bawah Datepicker -->
+  <!-- Catatan di bawah datepicker -->
   <div id="notes">
-    <h3>Lantai Tanpa Record (duplicate_count = 0)</h3>
+    <h2>Catatan</h2>
+    <!-- Catatan untuk lantai tanpa record (duplicate_count = 0) -->
+    <h3>Lantai tanpa record (duplicate_count = 0):</h3>
     <ul>
       <% 
-        // Filter data untuk record yang tidak ada (duplicate_count = 0 / record_type "No Record")
-        var noRecordFloors = data.filter(function(item) {
-          return item.record_type === 'No Record';
-        });
+        // Filter data untuk record_type 'No Record' (cte_no_aset menghasilkan duplicate_count = 0)
+        let floorsNoRecord = data.filter(item => item.record_type === 'No Record');
+        if (floorsNoRecord.length === 0) { 
       %>
-      <% if(noRecordFloors.length > 0) { %>
-        <% noRecordFloors.forEach(function(item) { %>
-          <li><%= item.nama_lantai %> - tidak ada record</li>
-        <% }); %>
-      <% } else { %>
-        <li>Tidak ada lantai dengan duplicate_count = 0.</li>
-      <% } %>
+        <li>Tidak ada lantai tanpa record.</li>
+      <% } else { 
+           floorsNoRecord.forEach(item => { %>
+        <li>Lantai <%= item.nama_lantai %> (ID: <%= item.lantai_id %>) - Tidak ada record.</li>
+      <%   });
+         } %>
     </ul>
 
-    <h3>Lantai dengan Unique Record (duplicate_count = 1)</h3>
-    <% 
-      // Filter data untuk record unik (duplicate_count = 1 / record_type "Unique")
-      var uniqueFloors = data.filter(function(item) {
-        return item.record_type === 'Unique';
-      });
-      // Group berdasarkan lantai_id untuk menghitung jumlah record per lantai
-      var uniqueFloorGroups = {};
-      uniqueFloors.forEach(function(item) {
-        if (!uniqueFloorGroups[item.lantai_id]) {
-          uniqueFloorGroups[item.lantai_id] = { 
-            nama_lantai: item.nama_lantai, 
-            count: 0 
-          };
-        }
-        uniqueFloorGroups[item.lantai_id].count += 1;
-      });
-    %>
+    <!-- Catatan untuk lantai dengan record (duplicate_count = 1) -->
+    <h3>Lantai dengan record (duplicate_count = 1):</h3>
     <ul>
-      <% 
-        var uniqueKeys = Object.keys(uniqueFloorGroups);
-        if(uniqueKeys.length > 0) {
-          uniqueKeys.forEach(function(key) { 
-            var group = uniqueFloorGroups[key];
-            // Cari total aset per lantai dari query asetPerLantai
-            var aset = asetPerLantai.find(function(a) { return a.lantai_id == key; });
-            var totalAset = aset ? aset.total_aset : 0;
-            var comparison = group.count == totalAset ? "Sesuai" : "Tidak sesuai";
+      <%
+        // Kelompokkan data monitoring berdasarkan lantai, kecuali record 'No Record'
+        let grouped = {};
+        data.forEach(item => {
+          if(item.record_type !== 'No Record') {
+            if(!grouped[item.lantai_id]) {
+              grouped[item.lantai_id] = { nama_lantai: item.nama_lantai, records: [] };
+            }
+            grouped[item.lantai_id].records.push(item);
+          }
+        });
+        let keys = Object.keys(grouped);
+        if(keys.length === 0) { 
       %>
-        <li>
-          <%= group.nama_lantai %>: Unique record count = <%= group.count %>, Total Aset = <%= totalAset %> (<%= comparison %>)
-        </li>
-      <%   });
-        } else { %>
-        <li>Tidak ada lantai dengan duplicate_count = 1.</li>
-      <% } %>
+        <li>Tidak ada lantai dengan record unique.</li>
+      <% } else {
+           keys.forEach(lantaiId => {
+             let group = grouped[lantaiId];
+             // Jika setidaknya ada 1 record dengan duplicate_count == 1
+             let hasUnique = group.records.some(r => r.duplicate_count == 1);
+             if(hasUnique) {
+               let monitoringCount = group.records.length;
+               // Temukan total aset per lantai dari asetPerLantai
+               let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
+               let totalAset = asetItem ? asetItem.total_aset : 0;
+      %>
+        <li>Lantai <%= group.nama_lantai %> (ID: <%= lantaiId %>): Jumlah monitoring record: <%= monitoringCount %> vs Total aset: <%= totalAset %></li>
+      <%   }
+           });
+         }
+      %>
     </ul>
   </div>
 
