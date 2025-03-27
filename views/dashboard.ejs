@@ -63,21 +63,10 @@
       <form action="/dashboard" method="get" class="date-picker-form">
         
         <label for="startDate">Tanggal Mulai:</label>
-        <!-- This is the hidden input. The user will see only the altInput. -->
-        <input
-          type="text"
-          id="startDate"
-          name="startDate"
-          required
-        />
+        <input type="text" id="startDate" name="startDate" required value="<%= startDate || '' %>">
 
         <label for="endDate">Tanggal Akhir:</label>
-        <input
-          type="text"
-          id="endDate"
-          name="endDate"
-          required
-        />
+        <input type="text" id="endDate" name="endDate" required value="<%= endDate || '' %>">
 
         <!-- Kondisi -->
         <label for="kondisi">Kondisi:</label>
@@ -271,33 +260,36 @@
     document.addEventListener('DOMContentLoaded', function () {
       // "today at 00:00:00" and "tomorrow at 00:00:00"
       const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
 
-      // Initialize Flatpickr with altInput for neat styling
+  const startDateInput = document.getElementById('startDate');
+  const endDateInput = document.getElementById('endDate');
+
       flatpickr("#startDate", {
-        defaultDate: startOfToday,
-        enableTime: true,
-        time_24hr: true,
-        dateFormat: "Y-m-d H:i:S",   // the actual value for the server
-        altInput: true,
-        altFormat: "d-m-Y H:i:S",    // the displayed format
-        altInputClass: "myDateInput"
-      });
+  disableMobile: true,          // Force Flatpickr on mobile
+  defaultDate: startOfToday,
+  enableTime: true,
+  time_24hr: true,
+  dateFormat: "Y-m-d H:i:S",    // Value for server
+  altInput: true,
+  altFormat: "d-m-Y H:i:S",     // Displayed format in 24-hour format
+  altInputClass: "myDateInput"
+});
 
-      flatpickr("#endDate", {
-        defaultDate: startOfTomorrow,
-        enableTime: true,
-        time_24hr: true,
-        dateFormat: "Y-m-d H:i:S",
-        altInput: true,
-        altFormat: "d-m-Y H:i:S",
-        altInputClass: "myDateInput"
-      });
+flatpickr("#endDate", {
+  disableMobile: true,          // Force Flatpickr on mobile
+  defaultDate: startOfTomorrow,
+  enableTime: true,
+  time_24hr: true,
+  dateFormat: "Y-m-d H:i:S",
+  altInput: true,
+  altFormat: "d-m-Y H:i:S",
+  altInputClass: "myDateInput"
+});
 
-      // Validate that endDate >= startDate
-      const startDateInput = document.getElementById('startDate');
-      const endDateInput = document.getElementById('endDate');
+
+
       const validateDates = () => {
         const startVal = startDateInput.value ? new Date(startDateInput.value) : null;
         const endVal = endDateInput.value ? new Date(endDateInput.value) : null;

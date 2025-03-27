@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta charset="UTF-8">
   <title>Monitoring Data</title>
   <!-- External Stylesheet -->
@@ -198,23 +199,25 @@
   <script>
     // Initialize Flatpickr with altInput (Material Blue Theme)
     flatpickr("#startDate", {
-      enableTime: true,
-      time_24hr: true,
-      dateFormat: "Y-m-d H:i:S",
-      altInput: true,
-      altFormat: "d-m-Y H:i:S",
-      altInputClass: "myDateInput",
-      defaultDate: "<%= startDate %>"
-    });
-    flatpickr("#endDate", {
-      enableTime: true,
-      time_24hr: true,
-      dateFormat: "Y-m-d H:i:S",
-      altInput: true,
-      altFormat: "d-m-Y H:i:S",
-      altInputClass: "myDateInput",
-      defaultDate: "<%= endDate %>"
-    });
+  disableMobile: true,         // Force Flatpickr's custom UI on mobile devices
+  enableTime: true,
+  time_24hr: true,
+  dateFormat: "Y-m-d H:i:S",
+  altInput: true,
+  altFormat: "d-m-Y H:i:S",
+  altInputClass: "myDateInput",
+  defaultDate: "<%= startDate %>"
+});
+flatpickr("#endDate", {
+  disableMobile: true,         // Force Flatpickr's custom UI on mobile devices
+  enableTime: true,
+  time_24hr: true,
+  dateFormat: "Y-m-d H:i:S",
+  altInput: true,
+  altFormat: "d-m-Y H:i:S",
+  altInputClass: "myDateInput",
+  defaultDate: "<%= endDate %>"
+});
 
     // Copy notes functionality
     document.getElementById('copyNotes').addEventListener('click', function() {

@@ -253,3 +253,20 @@
       font-size: 14px;
     }
  
+    /* Smartphone-friendly adjustments for the notes section */
+@media (max-width: 600px) {
+  .notes-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .notes-list {
+    min-width: 100%;
+  }
+  #copyNotes {
+    float: none;
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+}

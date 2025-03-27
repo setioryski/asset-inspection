@@ -16,6 +16,7 @@ const BASE_URL = 'http://localhost:3000/'; // Adjust this to match your server's
 
 // Dashboard route
 router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    
     let query = `
         SELECT 
             a.id, 
@@ -120,6 +121,15 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
         const totalPages = Math.ceil(total / limit);
 
         res.render('dashboard', { 
+
+            startDate: req.query.startDate,
+            endDate: req.query.endDate,
+            kondisi: req.query.kondisi,
+            user: req.query.user,
+            posisi: req.query.posisi,
+            floor: req.query.floor,
+            limit: req.query.limit,
+            page: req.query.page,
             assets: results, 
             kondisiOptions: kondisiResults, 
             posisiOptions: posisiResults,

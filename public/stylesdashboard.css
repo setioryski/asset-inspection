@@ -320,28 +320,30 @@ img {
         overflow-x: auto; /* Enable horizontal scrolling if needed */
     }
 
-    /* Optional: Hide text labels and show icons only if needed */
-    /*
-    nav ul li a {
-        padding: 5px;
-    }
-    */
 
     /* Adjust filter container padding and layout */
-    .filter-container {
-        padding: 10px;
-    }
-
-    .date-picker-form label {
-        font-size: 12px;
-    }
-
-    .date-picker-form input[type="date"],
-    .date-picker-form select,
-    .date-picker-form button {
-        font-size: 14px;
-        padding: 10px;
-    }
+    @media (max-width: 600px) {
+        .filter-container {
+          flex-direction: column; 
+          align-items: flex-start; 
+          overflow-x: visible; /* so it doesn’t clip the datepicker */
+        }
+      
+        .date-picker-form {
+          flex-wrap: wrap; /* allow items to wrap onto new lines */
+        }
+      
+        .date-picker-form label,
+        .date-picker-form input,
+        .date-picker-form select,
+        .date-picker-form button {
+          width: 100%;         /* each item takes full width */
+          min-width: auto;     /* override large min-width so it can shrink */
+          margin-right: 0;     /* remove horizontal spacing */
+          margin-bottom: 10px; /* give each row some vertical space */
+        }
+      }
+      
 
     th, td {
         padding: 10px;
@@ -364,5 +366,3 @@ img {
         padding: 10px 5px;
     }
 }
-
-
