@@ -3,47 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <title>Monitoring Data</title>
-  <!-- Flatpickr CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <style>
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      text-align: left;
-    }
-    th {
-      background-color: #f5f5f5;
-    }
-    form {
-      margin-bottom: 20px;
-    }
-    label {
-      margin-right: 10px;
-    }
-    input {
-      margin-right: 20px;
-    }
-    #notes {
-      margin-bottom: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background: #f9f9f9;
-    }
-    #notes h3 {
-      margin-bottom: 5px;
-    }
-    #notes ul {
-      list-style-type: disc;
-      margin-left: 20px;
-    }
-  </style>
+  <!-- External Stylesheet -->
+  <link rel="stylesheet" href="/stylesmonitor.css?v=<%= Date.now() %>">
+  <!-- Flatpickr CSS and Material Blue Theme -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  
 </head>
 <body>
+  <!-- Header Navigation -->
+  <nav>
+    <ul>
+      <li><a href="/admin"><i class="fas fa-user-cog"></i> Admin</a></li>
+      <li><a href="/inspection"><i class="fas fa-search"></i> Inspection</a></li>
+      <li><a href="/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+      <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+    </ul>
+  </nav>
+
   <h1>Monitoring Data</h1>
   <form action="/monitoring" method="get">
     <label for="startDate">Tanggal Mulai:</label>
@@ -53,30 +33,35 @@
     <button type="submit">Tampilkan</button>
   </form>
 
-  <!-- Catatan di bawah datepicker -->
+  <!-- Catatan Section with 4 Columns -->
   <div id="notes">
     <h2>Catatan</h2>
-    <!-- Catatan untuk lantai tanpa record (duplicate_count = 0) -->
-    <h3>Lantai tanpa record (duplicate_count = 0):</h3>
-    <ul>
-      <% 
-        // Filter data untuk record_type 'No Record' (cte_no_aset menghasilkan duplicate_count = 0)
-        let floorsNoRecord = data.filter(item => item.record_type === 'No Record');
-        if (floorsNoRecord.length === 0) { 
-      %>
-        <li>Tidak ada lantai tanpa record.</li>
-      <% } else { 
-           floorsNoRecord.forEach(item => { %>
-        <li>Lantai <%= item.nama_lantai %> (ID: <%= item.lantai_id %>) - Tidak ada record.</li>
-      <%   });
-         } %>
-    </ul>
+    <button id="copyNotes">Salin</button>
+    <div class="notes-container">
+      <!-- Column 1: Lantai tanpa patroli (record_type = 'No Record') -->
+      <div class="notes-list">
+        <h3>Tidak Ada Patroli</h3>
+        <ul>
+          <% 
+            let floorsNoPatrol = [];
+            data.forEach(item => {
+              if(item.record_type === 'No Record' && !floorsNoPatrol.find(f => f.lantai_id === item.lantai_id)) {
+                floorsNoPatrol.push({ lantai_id: item.lantai_id, nama_lantai: item.nama_lantai });
+              }
+            });
+            if (floorsNoPatrol.length === 0) { 
+          %>
+            <li>Semua lantai telah dipatroli.</li>
+          <% } else { 
+               floorsNoPatrol.forEach(floor => { %>
+            <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>) tidak ada patroli.</li>
+          <%   });
+             } %>
+        </ul>
+      </div>
 
-    <!-- Catatan untuk lantai dengan record (duplicate_count = 1) -->
-    <h3>Lantai dengan record (duplicate_count = 1):</h3>
-    <ul>
+      <!-- Prepare grouped data for floors with records (duplicate_count = 1) -->
       <%
-        // Kelompokkan data monitoring berdasarkan lantai, kecuali record 'No Record'
         let grouped = {};
         data.forEach(item => {
           if(item.record_type !== 'No Record') {
@@ -86,30 +71,93 @@
             grouped[item.lantai_id].records.push(item);
           }
         });
-        let keys = Object.keys(grouped);
-        if(keys.length === 0) { 
       %>
-        <li>Tidak ada lantai dengan record unique.</li>
-      <% } else {
-           keys.forEach(lantaiId => {
-             let group = grouped[lantaiId];
-             // Jika setidaknya ada 1 record dengan duplicate_count == 1
-             let hasUnique = group.records.some(r => r.duplicate_count == 1);
-             if(hasUnique) {
-               let monitoringCount = group.records.length;
-               // Temukan total aset per lantai dari asetPerLantai
-               let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
-               let totalAset = asetItem ? asetItem.total_aset : 0;
-      %>
-        <li>Lantai <%= group.nama_lantai %> (ID: <%= lantaiId %>): Jumlah monitoring record: <%= monitoringCount %> vs Total aset: <%= totalAset %></li>
-      <%   }
-           });
-         }
-      %>
-    </ul>
+
+      <!-- Column 2: Patroli 1 Kali (record exists and monitoringCount matches total aset) -->
+      <div class="notes-list">
+        <h3>Patroli 1 Kali</h3>
+        <ul>
+          <%
+            let floorsPatrolOK = [];
+            let keys = Object.keys(grouped);
+            if(keys.length === 0) { 
+          %>
+            <li>Tidak ada lantai dengan record.</li>
+          <% } else {
+               keys.forEach(lantaiId => {
+                 let group = grouped[lantaiId];
+                 let hasUnique = group.records.some(r => r.duplicate_count == 1);
+                 if(hasUnique) {
+                   let monitoringCount = group.records.length;
+                   let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
+                   let totalAset = asetItem ? asetItem.total_aset : 0;
+                   if(monitoringCount === totalAset) {
+                     floorsPatrolOK.push({ lantai_id: lantaiId, nama_lantai: group.nama_lantai });
+                   }
+                 }
+               });
+               if(floorsPatrolOK.length === 0) {
+          %>
+            <li>Tidak ada laporan patroli 1 kali.</li>
+          <% } else {
+                   floorsPatrolOK.forEach(floor => { %>
+            <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>) hanya dipatroli 1 kali.</li>
+          <%     });
+               }
+             }
+          %>
+        </ul>
+      </div>
+
+      <!-- Column 3: Perlu Pengecekan (record exists with duplicate_count = 1 but monitoringCount does not match total aset) -->
+      <div class="notes-list">
+        <h3>Perlu Pengecekan</h3>
+        <ul>
+          <%
+            let floorsNeedCheck = [];
+            keys.forEach(lantaiId => {
+              let group = grouped[lantaiId];
+              let hasUnique = group.records.some(r => r.duplicate_count == 1);
+              if(hasUnique) {
+                let monitoringCount = group.records.length;
+                let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
+                let totalAset = asetItem ? asetItem.total_aset : 0;
+                if(monitoringCount !== totalAset) {
+                  floorsNeedCheck.push({ lantai_id: lantaiId, nama_lantai: group.nama_lantai, monitoringCount, totalAset });
+                }
+              }
+            });
+            if(floorsNeedCheck.length === 0) {
+          %>
+            <li>Tidak ada yang perlu pengecekan.</li>
+          <% } else {
+                   floorsNeedCheck.forEach(floor => { %>
+            <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>): Patroli 1 kali, namun record (<%= floor.monitoringCount %>) tidak sesuai dengan total aset (<%= floor.totalAset %>).</li>
+          <%     });
+               }
+          %>
+        </ul>
+      </div>
+
+      <!-- Column 4: Total Aset per Lantai -->
+      <div class="notes-list">
+        <h3>Total Aset per Lantai</h3>
+        <ul>
+          <% 
+            if (!asetPerLantai || asetPerLantai.length === 0) { 
+          %>
+            <li>Tidak ada data aset.</li>
+          <% } else {
+               asetPerLantai.forEach(aset => { %>
+            <li>Lantai <%= aset.nama_lantai %> (ID: <%= aset.lantai_id %>): Total aset <%= aset.total_aset %></li>
+          <%   });
+             } %>
+        </ul>
+      </div>
+    </div>
   </div>
 
-  <!-- Tabel Monitoring -->
+  <!-- Monitoring Data Table -->
   <table>
     <thead>
       <tr>
@@ -148,18 +196,34 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
-    // Inisialisasi Flatpickr pada kedua input
+    // Initialize Flatpickr with altInput (Material Blue Theme)
     flatpickr("#startDate", {
       enableTime: true,
       time_24hr: true,
       dateFormat: "Y-m-d H:i:S",
+      altInput: true,
+      altFormat: "d-m-Y H:i:S",
+      altInputClass: "myDateInput",
       defaultDate: "<%= startDate %>"
     });
     flatpickr("#endDate", {
       enableTime: true,
       time_24hr: true,
       dateFormat: "Y-m-d H:i:S",
+      altInput: true,
+      altFormat: "d-m-Y H:i:S",
+      altInputClass: "myDateInput",
       defaultDate: "<%= endDate %>"
+    });
+
+    // Copy notes functionality
+    document.getElementById('copyNotes').addEventListener('click', function() {
+      const notesContent = document.getElementById('notes').innerText;
+      navigator.clipboard.writeText(notesContent).then(() => {
+        alert('Catatan berhasil disalin!');
+      }).catch(err => {
+        alert('Gagal menyalin catatan.');
+      });
     });
   </script>
 </body>
