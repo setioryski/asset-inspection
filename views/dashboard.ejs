@@ -260,8 +260,8 @@
     document.addEventListener('DOMContentLoaded', function () {
       // "today at 00:00:00" and "tomorrow at 00:00:00"
       const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-  const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+  const startOfToday = "<%= startDate ? startDate : '' %>";
+  const startOfTomorrow = "<%= endDate ? endDate : '' %>";
 
   const startDateInput = document.getElementById('startDate');
   const endDateInput = document.getElementById('endDate');
