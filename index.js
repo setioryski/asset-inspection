@@ -140,16 +140,6 @@ app.use(session({
 
 
 
-app.get('/user', isAuthenticated, async (req, res) => {
-    try {
-        const results = await queryAsync('SELECT id, name FROM user');
-        res.json(results);
-    } catch (err) {
-        console.error('Failed to retrieve user:', err);
-        res.status(500).send('Error retrieving user data');
-    }
-});
-
 app.get('/back', (req, res) => {
     res.render('back');  // This will render the login.ejs file
 });
@@ -187,26 +177,44 @@ app.post('/login', loginLimiter, async (req, res) => {
             const user = results[0];
             const match = await bcrypt.compare(password, user.password);
             if (match) {
-                // Set the session with the new user's data
+                // Set session data
                 req.session.user = { id: user.id, name: user.name, role: user.role_name };
                 req.session.isAuthenticated = true;
                 console.log(`User ${username} logged in successfully`);
-
-                // Ensure that the session is fresh for the new user
-                res.redirect('/inspection');
+                // Jika permintaan berasal dari AJAX, kirim JSON
+                if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+                    return res.status(200).json({
+                        success: true,
+                        message: 'Login successful',
+                        user: req.session.user
+                    });
+                }
+                // Jika bukan, lakukan redirect
+                return res.redirect('/inspection');
             } else {
                 console.log(`Invalid password for user: ${username}`);
-                res.send('Invalid credentials');
+                if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+                    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+                }
+                return res.status(401).json({ success: false, message: 'Invalid credentials' });
+
             }
         } else {
             console.log(`Login failed: User ${username} not found`);
-            res.send('User not found');
+            if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+                return res.status(404).json({ success: false, message: 'User not found' });
+            }
+            return res.status(404).send('User not found');
         }
     } catch (err) {
         console.error(`Database error during login for user ${username}:`, err);
-        res.status(500).send('Internal Server Error');
+        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+        }
+        return res.status(500).send('Internal Server Error');
     }
 });
+
 
 
 
@@ -398,16 +406,16 @@ app.get('/api/server-time', (req, res) => {
 // File upload endpoint
 
 
-app.get('/user', isAuthenticated, (req, res) => {
-    queryAsync('SELECT id, name FROM user', (err, results) => {
-        if (err) {
-            console.error('Failed to retrieve user:', err);
-            res.status(500).send('Error retrieving user data');
-        } else {
-            res.json(results);
-        }
-    });
+app.get('/user', isAuthenticated, async (req, res) => {
+    try {
+        const results = await queryAsync('SELECT id, name FROM user');
+        res.json(results);
+    } catch (err) {
+        console.error('Failed to retrieve user:', err);
+        res.status(500).json({ success: false, message: 'Error retrieving user data' });
+    }
 });
+
 
 app.get('/api/floor_types', isAuthenticated, async (req, res) => {
     try {
@@ -415,7 +423,7 @@ app.get('/api/floor_types', isAuthenticated, async (req, res) => {
         res.json(results);
     } catch (err) {
         console.error('Failed to retrieve floor types:', err);
-        res.status(500).send('Error retrieving floor types');
+        res.status(500).json({ success: false, message: 'Error retrieving floor types' });
     }
 });
 
@@ -426,7 +434,7 @@ app.get('/api/tipe_kondisi', isAuthenticated, async (req, res) => {
         res.json(results);
     } catch (err) {
         console.error('Failed to retrieve conditions:', err);
-        res.status(500).send('Error retrieving conditions');
+        res.status(500).json({ success: false, message: 'Error retrieving conditions' });
     }
 });
 
