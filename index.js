@@ -80,16 +80,27 @@ const upload = multer({
 
 // Rate Limiter for Uploads
 const uploadLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 1000, // Limit each IP to 100 upload requests per windowMs
-    message: "Too many uploads from this IP, please try again after a minute"
-});
-
-const generalLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 20000, // Limit each IP to 100 requests per windowMs
-    message: "Too many requests from this IP, please try again after a minute"
-});
+    windowMs: 1 * 60 * 1000,
+    max: 10000,
+    handler: (req, res, _next, options) => {
+      return res.status(options.statusCode).json({
+        success: false,
+        message: "Too many uploads from this IP, please try again after a minute"
+      });
+    }
+  });
+  
+  const generalLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 20000,
+    handler: (req, res, _next, options) => {
+      return res.status(options.statusCode).json({
+        success: false,
+        message: "Too many requests from this IP, please try again after a minute"
+      });
+    }
+  });
+  
 app.use(generalLimiter);
 
 // Ensure directories exist
@@ -1035,11 +1046,6 @@ function ensureAuthenticated(req, res, next) {
     }
     next();
 }
-
-app.get('/inspection', ensureAuthenticated, (req, res) => {
-    // Assuming that the inspection form can handle logged-in users' data
-    res.render('inspectionForm');
-});
 
 
 

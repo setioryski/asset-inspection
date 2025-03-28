@@ -465,26 +465,12 @@ function updateAssetsStatus(selectedFloorId) {
  */
 function displaySavedEntries() {
     entryList.innerHTML = '';
-
-    // Pastikan retryButton ada di DOM, jika tidak, buat dan tambahkan ke savedEntriesDiv
-    retryButton = document.getElementById('retryButton');
-    if (!retryButton) {
-        retryButton = document.createElement('button');
-        retryButton.id = 'retryButton';
-        retryButton.textContent = 'Retry Failed';
-        retryButton.style.display = 'none';
-        retryButton.addEventListener('click', retryFailedEntries);
-        savedEntriesDiv.appendChild(retryButton);
-    }
-
     const transaction = db.transaction([STORE_NAME], 'readonly');
     const objectStore = transaction.objectStore(STORE_NAME);
     const request = objectStore.getAll();
 
     request.onsuccess = function(event) {
         const savedData = event.target.result;
-        let hasFailed = false; // Flag untuk mendeteksi entry yang gagal
-
         savedData.forEach(function(entry) {
             const date = new Date(entry.client_timestamp);
             const formattedDate = date.toLocaleString('id-ID', {
@@ -523,9 +509,8 @@ function displaySavedEntries() {
                 entryHtml += `<img src="${url}" alt="Foto" style="max-width: 100px;" onload="URL.revokeObjectURL(this.src)"><br>`;
             }
 
-            // Jika ada errorMessage, tampilkan pesan error dan set flag hasFailed
+            // If an entry failed, show its error message
             if (entry.errorMessage) {
-                hasFailed = true;
                 entryHtml += `<div style="color: #f44336; margin-top: 10px;"><strong>Error:</strong> ${entry.errorMessage}</div>`;
             }
 
@@ -535,8 +520,11 @@ function displaySavedEntries() {
             entryList.appendChild(li);
         });
 
-        // Update tampilan retry button berdasarkan apakah ada entry gagal
-        retryButton.style.display = hasFailed ? 'block' : 'none';
+        // Check if any entry has an errorMessage. If so, display the retry button.
+        const hasFailed = savedData.some(entry => entry.errorMessage);
+        if (retryButton) {
+            retryButton.style.display = hasFailed ? 'block' : 'none';
+        }
 
         const selectedFloorId = document.getElementById('id_tipe_lantai').value;
         updateAssetsStatus(selectedFloorId);
@@ -548,7 +536,6 @@ function displaySavedEntries() {
         showNotification('Error fetching saved entries.', 'error');
     };
 }
-
 
 /**
  * Save form data to IndexedDB with appropriate timestamp.
