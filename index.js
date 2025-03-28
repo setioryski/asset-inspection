@@ -257,6 +257,10 @@ app.post(
           clientTimestamp,
         } = req.body;
   
+        // Detailed logging: Log the received body and file info
+        console.log('Received /upload request with body:', req.body);
+        console.log('Received file info:', req.file);
+  
         // Validate required fields
         if (
           !req.file ||
@@ -265,9 +269,19 @@ app.post(
           !id_tipe_lantai ||
           (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)
         ) {
+          console.error('Missing required fields:', {
+            file: req.file ? req.file : 'No file received',
+            id_kondisi,
+            id_user,
+            id_tipe_lantai,
+            id_tipe_aset,
+            id_tipe_hb,
+            id_tipe_door
+          });
           if (req.file) {
             fs.unlink(req.file.path, (err) => {
-              if (err) console.error('Error deleting file:', err);
+              if (err) console.error('Error deleting file due to missing fields:', err);
+              else console.log('Deleted file due to missing fields:', req.file.path);
             });
           }
           return res
@@ -278,8 +292,12 @@ app.post(
         // Validate clientTimestamp format
         const timestamp = new Date(clientTimestamp);
         if (!clientTimestamp || isNaN(timestamp.getTime())) {
+          console.error('Invalid client timestamp:', clientTimestamp);
           fs.unlink(req.file.path, (err) => {
-            if (err) console.error('Error deleting file:', err);
+            if (err)
+              console.error('Error deleting file after invalid timestamp:', err);
+            else
+              console.log('Deleted file due to invalid timestamp:', req.file.path);
           });
           return res
             .status(400)
@@ -289,19 +307,36 @@ app.post(
         const filePath = req.file.path;
         const processedPath = `processed/${path.basename(filePath)}`;
   
+        console.log('Starting image processing for file:', filePath);
+  
         // Wrap image processing in a promise so we can await it
         await new Promise((resolve, reject) => {
           imageProcessingQueue.push({ filePath }, (err) => {
             if (err) {
-              console.error('Image processing failed:', err);
+              console.error('Image processing failed for file:', filePath, 'Error:', err);
               fs.unlink(filePath, (unlinkErr) => {
                 if (unlinkErr)
-                  console.error('Error deleting file:', unlinkErr);
+                  console.error('Error deleting file after image processing failure:', unlinkErr);
+                else
+                  console.log('Deleted file after image processing failure:', filePath);
               });
               return reject(new Error('Image processing failed.'));
             }
+            console.log('Image processing completed successfully for file:', filePath);
             resolve();
           });
+        });
+  
+        console.log('Inserting record into database with data:', {
+          processedPath,
+          id_kondisi,
+          catatan,
+          id_user,
+          id_tipe_aset,
+          id_tipe_lantai,
+          id_tipe_hb,
+          id_tipe_door,
+          client_timestamp: timestamp.toISOString()
         });
   
         // Insert the record into the database using the processed image path
@@ -325,14 +360,17 @@ app.post(
               timestamp,
             ]
           );
+          console.log('Database insert succeeded for file:', processedPath);
           return res
             .status(200)
             .json({ success: true, message: 'Form submitted successfully!' });
         } catch (dbError) {
-          console.error('Database error during upload:', dbError);
+          console.error('Database error during upload for file:', processedPath, 'Error:', dbError);
           fs.unlink(processedPath, (unlinkErr) => {
             if (unlinkErr)
-              console.error('Error deleting processed file:', unlinkErr);
+              console.error('Error deleting processed file after database error:', unlinkErr);
+            else
+              console.log('Deleted processed file after database error:', processedPath);
           });
           return res
             .status(500)
@@ -346,6 +384,7 @@ app.post(
       }
     }
   );
+  
   
 
 // Time sync endpoint
