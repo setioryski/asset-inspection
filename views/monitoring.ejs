@@ -176,14 +176,15 @@
       <% if (data.length > 0) { %>
         <% data.forEach(function(item){ %>
           <tr>
-            <td><%= item.overall_row_index %></td>
-            <td><%= item.row_index_per_lantai %></td>
-            <td><%= item.combined_tipe_id ? item.combined_tipe_id : '-' %></td>
-            <td><%= item.nama_tipe ? item.nama_tipe : '-' %></td>
-            <td><%= item.lantai_id %></td>
-            <td><%= item.nama_lantai %></td>
-            <td><%= item.duplicate_count %></td>
-            <td><%= item.record_type %></td>
+            <td data-label="No."><%= item.overall_row_index %></td>
+            <td data-label="Row Index per Lantai"><%= item.row_index_per_lantai %></td>
+            <td data-label="Combined Tipe ID"><%= item.combined_tipe_id ? item.combined_tipe_id : '-' %></td>
+            <td data-label="Nama Tipe"><%= item.nama_tipe ? item.nama_tipe : '-' %></td>
+            <td data-label="Lantai ID"><%= item.lantai_id %></td>
+            <td data-label="Nama Lantai"><%= item.nama_lantai %></td>
+            <td data-label="Duplicate Count"><%= item.duplicate_count %></td>
+            <td data-label="Record Type"><%= item.record_type %></td>
+            
           </tr>
         <% }); %>
       <% } else { %>

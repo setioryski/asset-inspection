@@ -4,33 +4,22 @@
   <meta charset="UTF-8">
   <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Your existing stylesheet -->
-  <link rel="stylesheet" href="/stylesdashboard.css?v=<%= Date.now() %>">
   
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
-  <!-- Flatpickr core CSS -->
+  <!-- Styles -->
+  <link rel="stylesheet" href="/stylesdashboard.css?v=<%= Date.now() %>">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
-  <!-- Example Theme: material_blue (try different themes like "airbnb", "dark", etc.) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
 
   <style>
-    /* If you want to hide the original input and style only the alt input: */
-    .flatpickr-input {
-      display: none; /* Hides the hidden input holding the real value */
-    }
-
-    /* Style the alt input so it matches your form design */
+    .flatpickr-input { display: none; }
     .myDateInput {
-      min-width: 160px;      /* Adjust to your preference */
+      min-width: 160px;
       padding: 12px;
       border: 1px solid #ccc;
       border-radius: 8px;
       font-size: 16px;
       font-family: inherit;
-      margin-right: 10px;
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
     .myDateInput:focus {
@@ -38,13 +27,27 @@
       box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
       outline: none;
     }
-
-    /* If you want a placeholder in the alt input, you can do so with a pseudo-element or JS,
-       because Flatpickr overwrites placeholders once a date is set. */
   </style>
 </head>
+
 <body>
-  <!-- Navigation -->
+  <% 
+    // Helper function for pagination query string
+    function paginationQuery(page) {
+      var queryParams = [];
+      if (startDate) queryParams.push("startDate=" + encodeURIComponent(startDate));
+      if (endDate) queryParams.push("endDate=" + encodeURIComponent(endDate));
+      if (kondisi) queryParams.push("kondisi=" + encodeURIComponent(kondisi));
+      if (user) queryParams.push("user=" + encodeURIComponent(user));
+      if (posisi) queryParams.push("posisi=" + encodeURIComponent(posisi));
+      if (floor) queryParams.push("floor=" + encodeURIComponent(floor));
+      if (limit) queryParams.push("limit=" + encodeURIComponent(limit));
+      queryParams.push("page=" + encodeURIComponent(page));
+      return queryParams.join("&");
+    }
+  %>
+
+  <!-- NAVIGATION -->
   <nav>
     <ul>
       <li><a href="/admin"><i class="fas fa-user-cog"></i> Admin</a></li>
@@ -53,75 +56,60 @@
       <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
     </ul>
   </nav>
-  
 
   <h1>Dashboard</h1>
 
   <div class="dashboard-container">
-    <!-- Filter Form -->
+    <!-- FILTER FORM -->
     <div class="filter-container">
       <form action="/dashboard" method="get" class="date-picker-form">
-        
         <label for="startDate">Tanggal Mulai:</label>
         <input type="text" id="startDate" name="startDate" required value="<%= startDate || '' %>">
 
         <label for="endDate">Tanggal Akhir:</label>
         <input type="text" id="endDate" name="endDate" required value="<%= endDate || '' %>">
 
-        <!-- Kondisi -->
         <label for="kondisi">Kondisi:</label>
         <select id="kondisi" name="kondisi">
           <option value="">Semua Kondisi</option>
           <% kondisiOptions.forEach(option => { %>
-            <option
-              value="<%= option.nama_kondisi %>"
-              <%= kondisi === option.nama_kondisi ? 'selected' : '' %>>
+            <option value="<%= option.nama_kondisi %>" <%= kondisi === option.nama_kondisi ? 'selected' : '' %>>
               <%= option.nama_kondisi %>
             </option>
           <% }); %>
         </select>
 
-        <!-- User -->
         <label for="user">User:</label>
         <select id="user" name="user">
           <option value="">Semua User</option>
           <% userOptions.forEach(option => { %>
-            <option
-              value="<%= option.name %>"
-              <%= user === option.name ? 'selected' : '' %>>
+            <option value="<%= option.name %>" <%= user === option.name ? 'selected' : '' %>>
               <%= option.name %>
             </option>
           <% }); %>
         </select>
 
-        <!-- Posisi -->
         <label for="posisi">Posisi:</label>
         <select name="posisi" id="posisi">
           <option value="">Semua Posisi</option>
           <% posisiOptions.forEach(option => { %>
-            <option
-              value="<%= option.tipe_posisi %>"
-              <%= posisi === option.tipe_posisi ? 'selected' : '' %>>
+            <option value="<%= option.tipe_posisi %>" <%= posisi === option.tipe_posisi ? 'selected' : '' %>>
               <%= option.tipe_posisi %>
             </option>
           <% }); %>
         </select>
 
-        <!-- Floor -->
         <label for="floor">Lantai:</label>
         <select id="floor" name="floor">
           <option value="">Semua Lantai</option>
           <% floorOptions.forEach(option => { %>
-            <option
-              value="<%= option.nama_lantai %>"
-              <%= floor === option.nama_lantai ? 'selected' : '' %>>
+            <option value="<%= option.nama_lantai %>" <%= floor === option.nama_lantai ? 'selected' : '' %>>
               <%= option.nama_lantai %>
             </option>
           <% }); %>
         </select>
         <span id="floorLoading" style="display:none;">Loading...</span>
 
-        <!-- Rows per page -->
         <label for="limit">Baris per halaman:</label>
         <select name="limit" id="limit">
           <option value="50" <%= limit == 50 ? 'selected' : '' %>>50</option>
@@ -132,13 +120,18 @@
 
         <input type="hidden" name="page" value="1">
 
-        <button type="submit" class="filter-button"><i class="fas fa-filter"></i> Filter</button>
-        <button type="button" class="export-button" id="exportPDF"><i class="fas fa-file-pdf"></i> Export ke PDF</button>
-        <button type="button" class="export-button" id="exportExcel"><i class="fas fa-file-excel"></i> Export ke Excel</button>
+<!-- Row 4: Buttons (horizontal layout) -->
+<div class="button-row">
+  <button type="submit" class="filter-button"><i class="fas fa-filter"></i> Filter</button>
+  <button type="button" class="export-button" id="exportPDF"><i class="fas fa-file-pdf"></i> Export PDF</button>
+  <button type="button" class="export-button" id="exportExcel"><i class="fas fa-file-excel"></i> Export Excel</button>
+</div>
+
+
       </form>
     </div>
 
-    <!-- Assets Table -->
+    <!-- ASSETS TABLE -->
     <table id="assetsTable">
       <thead>
         <tr>
@@ -155,60 +148,39 @@
       </thead>
       <tbody>
         <% assets.forEach((asset, index) => { %>
+          <%
+            let dateObj = null;
+            if (typeof asset.client_timestamp === 'string') {
+              dateObj = new Date(asset.client_timestamp.replace(' ', 'T'));
+            } else if (asset.client_timestamp instanceof Date) {
+              dateObj = asset.client_timestamp;
+            }
+          %>
           <tr>
-            <td class="no-column"><%= (currentPage - 1) * limit + index + 1 %></td>
-            <%
-              let dateCreated = asset.client_timestamp;
-              let dateObj = null;
-              if (typeof dateCreated === 'string') {
-                  let dateISO = dateCreated.replace(' ', 'T');
-                  dateObj = new Date(dateISO);
-              } else if (dateCreated instanceof Date) {
-                  dateObj = dateCreated;
-              }
-            %>
-            <td>
+            <td class="no-column" data-label="No."><%= (currentPage - 1) * limit + index + 1 %></td>
+            <td data-label="Tanggal/Waktu">
               <% if (dateObj && !isNaN(dateObj.getTime())) { %>
-                <% 
-                  let formattedDate = dateObj.toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                  });
-                  let formattedTime = dateObj.toLocaleTimeString('en-GB', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false
-                  });
-                %>
-                <%= formattedDate %> <%= formattedTime %>
+                <%= dateObj.toLocaleDateString('id-ID') %> <%= dateObj.toLocaleTimeString('id-ID', { hour12: false }) %>
               <% } else { %>
                 <span class="invalid-date">Tanggal tidak valid</span>
               <% } %>
             </td>
-            <td><%= asset.user %></td>
-            <td>
-              <% if (asset.nama_tipe_door) { %>
-                <%= asset.nama_tipe_door %>
-              <% } else if (asset.nama_tipe_hb) { %>
-                <%= asset.nama_tipe_hb %>
-              <% } else { %>
-                <%= asset.nama_tipe_aset %>
-              <% } %>
+            <td data-label="User"><%= asset.user %></td>
+            <td data-label="Jenis Aset">
+              <%= asset.nama_tipe_door || asset.nama_tipe_hb || asset.nama_tipe_aset %>
             </td>
-            <td><%= asset.nama_lantai %></td>
-            <td><%= asset.nama_kondisi %></td>
-            <td>
+            <td data-label="Lantai"><%= asset.nama_lantai %></td>
+            <td data-label="Kondisi"><%= asset.nama_kondisi %></td>
+            <td data-label="Foto">
               <% if (asset.foto) { %>
                 <img src="/<%= asset.foto %>" alt="Foto Aset" class="asset-photo">
               <% } else { %>
                 <span class="no-image">Tidak Ada Foto</span>
               <% } %>
             </td>
-            <td>
+            <td data-label="Catatan">
               <% if (asset.catatan) { %>
-                <%- asset.catatan.split(' ').map((word, idx) => ((idx + 1) % 6 === 0 ? word + '<br>' : word)).join(' ') %>
+                <%- asset.catatan.replace(/(.{40})/g, "$1<br>") %>
               <% } else { %>
                 <span class="no-notes">Tidak ada catatan</span>
               <% } %>
@@ -219,152 +191,94 @@
       </tbody>
     </table>
 
-    <!-- Pagination -->
+    <!-- PAGINATION -->
     <div class="pagination">
       <% if (currentPage > 1) { %>
-        <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&user=<%= encodeURIComponent(user) %>&floor=<%= encodeURIComponent(floor) %>&limit=<%= limit %>&page=<%= currentPage - 1 %>">« Sebelumnya</a>
+        <a href="?<%= paginationQuery(currentPage - 1) %>">« Sebelumnya</a>
       <% } else { %>
         <span class="disabled">« Sebelumnya</span>
       <% } %>
 
-      <%
-        const maxPagesToShow = 5;
-        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-        let endPage = startPage + maxPagesToShow - 1;
-        if (endPage > totalPages) {
-          endPage = totalPages;
-          startPage = Math.max(1, endPage - maxPagesToShow + 1);
-        }
-      %>
-
-      <% for(let i = startPage; i <= endPage; i++) { %>
+      <% for(let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) { %>
         <% if(i === currentPage) { %>
           <span class="current"><%= i %></span>
         <% } else { %>
-          <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&user=<%= encodeURIComponent(user) %>&floor=<%= encodeURIComponent(floor) %>&limit=<%= limit %>&page=<%= i %>"><%= i %></a>
+          <a href="?<%= paginationQuery(i) %>"><%= i %></a>
         <% } %>
       <% } %>
 
       <% if (currentPage < totalPages) { %>
-        <a href="?startDate=<%= encodeURIComponent(startDate) %>&endDate=<%= encodeURIComponent(endDate) %>&kondisi=<%= encodeURIComponent(kondisi) %>&posisi=<%= encodeURIComponent(posisi) %>&user=<%= encodeURIComponent(user) %>&floor=<%= encodeURIComponent(floor) %>&limit=<%= limit %>&page=<%= currentPage + 1 %>">Berikutnya »</a>
+        <a href="?<%= paginationQuery(currentPage + 1) %>">Berikutnya »</a>
       <% } else { %>
         <span class="disabled">Berikutnya »</span>
       <% } %>
     </div>
   </div>
 
-  <!-- Flatpickr JS -->
+  <!-- FLATPICKR & INTERACTIONS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      // "today at 00:00:00" and "tomorrow at 00:00:00"
-      const now = new Date();
-  const startOfToday = "<%= startDate ? startDate : '' %>";
-  const startOfTomorrow = "<%= endDate ? endDate : '' %>";
-
-  const startDateInput = document.getElementById('startDate');
-  const endDateInput = document.getElementById('endDate');
-
-      flatpickr("#startDate", {
-  disableMobile: true,          // Force Flatpickr on mobile
-  defaultDate: startOfToday,
-  enableTime: true,
-  time_24hr: true,
-  dateFormat: "Y-m-d H:i:S",    // Value for server
-  altInput: true,
-  altFormat: "d-m-Y H:i:S",     // Displayed format in 24-hour format
-  altInputClass: "myDateInput"
-});
-
-flatpickr("#endDate", {
-  disableMobile: true,          // Force Flatpickr on mobile
-  defaultDate: startOfTomorrow,
-  enableTime: true,
-  time_24hr: true,
-  dateFormat: "Y-m-d H:i:S",
-  altInput: true,
-  altFormat: "d-m-Y H:i:S",
-  altInputClass: "myDateInput"
-});
-
-
-
-      const validateDates = () => {
-        const startVal = startDateInput.value ? new Date(startDateInput.value) : null;
-        const endVal = endDateInput.value ? new Date(endDateInput.value) : null;
-        if (startVal && endVal && startVal > endVal) {
-          alert('Tanggal Akhir harus lebih dari Tanggal Mulai.');
-        }
-      };
-      startDateInput.addEventListener('change', validateDates);
-      endDateInput.addEventListener('change', validateDates);
-
-      // Fetch floors based on Posisi
-      const posisiSelect = document.getElementById('posisi');
-      const floorSelect = document.getElementById('floor');
-      const floorLoading = document.getElementById('floorLoading');
-      const fetchFloors = async (posisi) => {
-        floorLoading.style.display = 'inline';
-        try {
-          const response = await fetch(`/getFloors?posisi=${encodeURIComponent(posisi)}`);
-          if (!response.ok) throw new Error('Network response was not ok');
-          const floors = await response.json();
-          floorSelect.innerHTML = '<option value="">Semua Lantai</option>';
-          floors.forEach(floor => {
-            const option = document.createElement('option');
-            option.value = floor.nama_lantai;
-            option.textContent = floor.nama_lantai;
-            floorSelect.appendChild(option);
-          });
-        } catch (error) {
-          console.error('Error fetching floors:', error);
-          alert('Terjadi kesalahan saat memuat lantai.');
-        } finally {
-          floorLoading.style.display = 'none';
-        }
-      };
-
-      // Handle Posisi changes
-      posisiSelect.addEventListener('change', function () {
-        const selectedPosisi = this.value;
-        if (selectedPosisi) {
-          fetchFloors(selectedPosisi);
-        } else {
-          fetchFloors('');
-        }
-      });
-
-      // Initialize floors on page load
-      (function initializeFloors() {
-        const selectedPosisi = posisiSelect.value;
-        if (selectedPosisi) {
-          fetchFloors(selectedPosisi);
-        } else {
-          fetchFloors('');
-        }
-      })();
-
-      // Export to PDF => print dialog
-      document.getElementById('exportPDF').addEventListener('click', function () {
-        window.print();
-      });
-
-      // Export to Excel
-      const kondisiSelect = document.getElementById('kondisi');
-      const userSelect = document.getElementById('user');
-      document.getElementById('exportExcel').addEventListener('click', function () {
-        const queryParams = new URLSearchParams({
-          startDate: startDateInput.value,
-          endDate: endDateInput.value,
-          kondisi: kondisiSelect.value,
-          posisi: posisiSelect.value,
-          user: userSelect.value,
-          floor: floorSelect.value
-        }).toString();
-        window.location.href = `/export/excel?${queryParams}`;
-      });
+    flatpickr("#startDate", {
+      disableMobile: true,
+      defaultDate: "<%= startDate || '' %>",
+      enableTime: true,
+      time_24hr: true,
+      dateFormat: "Y-m-d H:i:S",
+      altInput: true,
+      altFormat: "d-m-Y H:i:S",
+      altInputClass: "myDateInput"
     });
+
+    flatpickr("#endDate", {
+      disableMobile: true,
+      defaultDate: "<%= endDate || '' %>",
+      enableTime: true,
+      time_24hr: true,
+      dateFormat: "Y-m-d H:i:S",
+      altInput: true,
+      altFormat: "d-m-Y H:i:S",
+      altInputClass: "myDateInput"
+    });
+
+    document.getElementById('exportPDF').addEventListener('click', () => window.print());
+
+    document.getElementById('exportExcel').addEventListener('click', () => {
+      const queryParams = new URLSearchParams({
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+        kondisi: document.getElementById('kondisi').value,
+        user: document.getElementById('user').value,
+        posisi: document.getElementById('posisi').value,
+        floor: document.getElementById('floor').value
+      }).toString();
+      window.location.href = `/export/excel?${queryParams}`;
+    });
+
+    const posisiSelect = document.getElementById('posisi');
+    const floorSelect = document.getElementById('floor');
+    const floorLoading = document.getElementById('floorLoading');
+
+    async function fetchFloors(posisi) {
+      floorLoading.style.display = 'inline';
+      try {
+        const res = await fetch(`/getFloors?posisi=${encodeURIComponent(posisi)}`);
+        const floors = await res.json();
+        floorSelect.innerHTML = '<option value="">Semua Lantai</option>';
+        floors.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.nama_lantai;
+          opt.textContent = f.nama_lantai;
+          floorSelect.appendChild(opt);
+        });
+      } catch {
+        alert('Gagal memuat data lantai.');
+      } finally {
+        floorLoading.style.display = 'none';
+      }
+    }
+
+    posisiSelect.addEventListener('change', () => fetchFloors(posisiSelect.value));
+    fetchFloors(posisiSelect.value);
   </script>
 </body>
 </html>
