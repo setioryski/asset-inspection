@@ -591,7 +591,18 @@ async function saveData() {
         request.onsuccess = function(event) {
             displaySavedEntries();
             showNotification('Data berhasil disimpan secara lokal.', 'success');
+        
+            // Store the currently selected floor value
+            const selectedFloor = document.getElementById('id_tipe_lantai').value;
+        
+            // Reset the form
             inspectionForm.reset();
+        
+            // Restore the floor selection
+            if (selectedFloor) {
+                document.getElementById('id_tipe_lantai').value = selectedFloor;
+            }
+        
             if (previewImg) {
                 previewImg.src = '';
                 previewImg.style.display = 'none';
@@ -600,10 +611,12 @@ async function saveData() {
             resetSelectOptions('id_tipe_hb');
             resetSelectOptions('id_tipe_door');
             document.getElementById('id_kondisi').disabled = true;
-            const selectedFloorId = document.getElementById('id_tipe_lantai').value;
-            updateAssetsStatus(selectedFloorId);
+        
+            // Reapply filtering so the assets are repopulated based on the preserved floor value
+            filterOptionsByLantai();
             debouncedUpdateKirimSemuaButton();
         };
+        
 
         request.onerror = function(event) {
             showNotification('Error menyimpan data: ' + event.target.errorCode, 'error');
