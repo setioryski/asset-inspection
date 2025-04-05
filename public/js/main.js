@@ -83,9 +83,14 @@ function initDB() {
  * Fetches the current server time from the server.
  * @returns {Promise<string>} A promise that resolves to the server time in ISO 8601 format.
  */
-async function fetchServerTime() {
+ async function fetchServerTime() {
     try {
-        const response = await fetch('/api/server-time', { cache: 'no-store' });
+        const response = await fetch('/api/server-time', {
+            cache: 'no-store',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
         if (!response.ok) {
             throw new Error(`Server responded with status ${response.status}`);
         }
@@ -99,6 +104,7 @@ async function fetchServerTime() {
         throw error;
     }
 }
+
 
 /**
  * Synchronizes client time with server time and stores reference values for monotonic time calculation.
@@ -792,9 +798,13 @@ function submitEntries(entries) {
                 }
             });
             formData.append('clientTimestamp', entry.client_timestamp);
-
+    
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/upload', true);
+            // Tambahkan header agar server mengembalikan respons JSON
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     let response;
@@ -849,6 +859,7 @@ function submitEntries(entries) {
             xhr.send(formData);
         });
     }
+    
     
     function processBatch(batch) {
         return Promise.all(batch.map(entry => submitEntryWithRetry(entry)));
@@ -1110,6 +1121,10 @@ async function synchronizeLocalAssets() {
             formData.append('clientTimestamp', asset.client_timestamp);
             const response = await fetch('/upload', {
                 method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 body: formData
             });
             if (!response.ok) {
@@ -1132,6 +1147,7 @@ async function synchronizeLocalAssets() {
     localStorage.removeItem('localAssets');
     console.log('All local assets have been synchronized and cleared from local storage.');
 }
+
 
 // JavaScript code to clear caches and renew the app (without clearing IndexedDB)
 document.getElementById('clearCacheBtn').addEventListener('click', async () => {

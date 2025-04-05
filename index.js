@@ -11,113 +11,190 @@ const util = require('util');
 const https = require('https');
 const rateLimit = require('express-rate-limit');
 const dashboardRoutes = require('./routes/dashboard');
-const monitoringRoutes = require('./routes/monitoring'); // Adjust path as needed
-const { pool,queryAsync } = require('./config/db'); // Updated to use queryAsync
-const { isAuthenticated, checkRole } = require('./authMiddleware'); // Authentication and role-check middleware
+const monitoringRoutes = require('./routes/monitoring');
+const { pool, queryAsync } = require('./config/db');
+const { isAuthenticated, checkRole } = require('./authMiddleware');
 const RedisStore = require('connect-redis')(session);
-const redisClient = require('./config/redis'); // Ensure the path is correct
+const redisClient = require('./config/redis');
 const compression = require('compression');
-const asyncLib = require('async'); // Renamed to avoid conflict with async keyword
+const asyncLib = require('async'); // Digunakan untuk image processing queue
+const Bull = require('bull'); // Bull untuk shared job queue berbasis Redis
 
 // Trust Proxy Configuration
-app.set('trust proxy', 1); // Trust the first proxy. Adjust as needed.
+app.set('trust proxy', 1);
 
+// =============================
+// Image Processing Queue (async.queue)
+// =============================
 const imageProcessingQueue = asyncLib.queue((task, callback) => {
-    sharp(task.filePath)
-        .resize({ width: 800, withoutEnlargement: true })
-        .jpeg({ quality: 70 })
-        .toFile(`processed/${path.basename(task.filePath)}`)
-        .then(() => {
-            // Delete the original file from 'uploads/' directory
-            fs.unlink(task.filePath, (unlinkErr) => {
-                if (unlinkErr) {
-                    console.error('Error deleting original file:', unlinkErr);
-                    // Optionally handle the error (e.g., log it)
-                }
-                // Call the callback with no error to indicate success
-                callback(null);
-            });
-        })
-        .catch((error) => {
-            console.error('Image processing error:', error);
-            // Call the callback with the error to indicate failure
-            callback(error);
-        });
-}, 2); // Limit to 2 concurrent image processing tasks
+  sharp(task.filePath)
+    .resize({ width: 800, withoutEnlargement: true })
+    .jpeg({ quality: 70 })
+    .toFile(`processed/${path.basename(task.filePath)}`)
+    .then(() => {
+      // Hapus file asli dari direktori 'uploads/'
+      fs.unlink(task.filePath, (unlinkErr) => {
+        if (unlinkErr) {
+          console.error('Error deleting original file:', unlinkErr);
+        }
+        callback(null);
+      });
+    })
+    .catch((error) => {
+      console.error('Image processing error:', error);
+      callback(error);
+    });
+}, 1); // Limit 1 proses bersamaan
 
-
-
-
-
-//login limiter
-const loginLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1 minute
-    max: 5, // limit each IP to 5 requests per windowMs
-    message: "Too many login attempts from this IP, please try again after 1 minute"
+// =============================
+// Konfigurasi Bull Queue untuk Upload Job
+// =============================
+const uploadJobQueue = new Bull('uploadJobQueue', {
+  redis: {
+    host: 'localhost', // Sesuaikan dengan konfigurasi Redis Anda
+    port: 6379
+  }
 });
-// MySQL connection pool setup
 
-//multer
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+// Worker untuk memproses job upload dengan concurrency 2
+// === Worker Bull Queue untuk memproses job upload ===
+uploadJobQueue.process(1, async (job) => {
+    try {
+      const { body, file } = job.data;
+  
+      // Validasi required fields
+      if (
+        !file ||
+        !body.id_kondisi ||
+        !body.id_user ||
+        !body.id_tipe_lantai ||
+        (!body.id_tipe_aset && !body.id_tipe_hb && !body.id_tipe_door)
+      ) {
+        if (file) {
+          fs.unlink(file.path, (err) => {
+            if (err) console.error('Error deleting file due to missing fields:', err);
+          });
+        }
+        throw new Error('Missing required fields.');
+      }
+  
+      // Validasi format clientTimestamp
+      const timestamp = new Date(body.clientTimestamp);
+      if (!body.clientTimestamp || isNaN(timestamp.getTime())) {
+        fs.unlink(file.path, (err) => {
+          if (err) console.error('Error deleting file after invalid timestamp:', err);
+        });
+        throw new Error('Invalid client timestamp.');
+      }
+  
+      const filePath = file.path;
+      const processedPath = `processed/${path.basename(filePath)}`;
+  
+      // Proses gambar menggunakan imageProcessingQueue
+      await new Promise((resolve, reject) => {
+        imageProcessingQueue.push({ filePath }, (err) => {
+          if (err) {
+            fs.unlink(filePath, (unlinkErr) => {
+              if (unlinkErr) console.error('Error deleting file after image processing failure:', unlinkErr);
+            });
+            return reject(new Error('Image processing failed.'));
+          }
+          resolve();
+        });
+      });
+  
+      // Insert data ke database dengan path file yang telah diproses
+      try {
+        await queryAsync(
+          `
+            INSERT INTO aset (
+              foto, id_kondisi, catatan, id_user, id_tipe_aset,
+              id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            processedPath,
+            body.id_kondisi,
+            body.catatan,
+            body.id_user,
+            body.id_tipe_aset,
+            body.id_tipe_lantai,
+            body.id_tipe_hb,
+            body.id_tipe_door,
+            timestamp,
+          ]
+        );
+        console.log(`Data berhasil disimpan untuk file: ${processedPath}`);
+      } catch (dbError) {
+        fs.unlink(processedPath, (unlinkErr) => {
+          if (unlinkErr) console.error('Error deleting processed file after database error:', unlinkErr);
+        });
+        throw new Error('Internal Server Error');
+      }
+    } catch (error) {
+      console.error(`Error pada proses job upload (jobId: ${job.id}):`, error);
+      // Lempar error agar job bisa dicoba ulang jika masih tersisa retry
+      throw error;
     }
+  });
+  
+
+// =============================
+// Rate Limiter dan Multer Configuration
+// =============================
+const loginLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 5,
+  message: "Too many login attempts from this IP, please try again after 1 minute"
+});
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
 });
 const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: function (req, file, cb) {
-        if (!file.mimetype.startsWith('image/')) {
-            return cb(new Error('Only image files are allowed!'), false);
-        }
-        cb(null, true);
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed!'), false);
     }
+    cb(null, true);
+  }
 });
 
-// Rate Limiter for Uploads
 const uploadLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000,
-    max: 10000,
-    handler: (req, res, _next, options) => {
-      return res.status(options.statusCode).json({
-        success: false,
-        message: "Too many uploads from this IP, please try again after a minute"
-      });
-    }
-  });
-  
-  const generalLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000,
-    max: 20000,
-    handler: (req, res, _next, options) => {
-      return res.status(options.statusCode).json({
-        success: false,
-        message: "Too many requests from this IP, please try again after a minute"
-      });
-    }
-  });
-  
-app.use(generalLimiter);
+  windowMs: 1 * 60 * 1000,
+  max: 1000,
+  handler: (req, res, _next, options) => {
+    return res.status(options.statusCode).json({
+      success: false,
+      message: "Too many uploads from this IP, please try again after a minute"
+    });
+  }
+});
+
 
 // Ensure directories exist
 const ensureDirectoryExists = (dirPath) => {
-    if (!fs.existsSync(dirPath)){
-        fs.mkdirSync(dirPath, { recursive: true });
-    }
+  if (!fs.existsSync(dirPath)){
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
 };
 ensureDirectoryExists('uploads/');
 ensureDirectoryExists('processed/');
 
-// Set up views directory and view engine
+// =============================
+// Setup View Engine dan Static Files
+// =============================
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
-
-// Middleware for serving static files and handling form data
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/processed', express.static(path.join(__dirname, 'processed')));
@@ -126,272 +203,133 @@ app.use(express.json());
 
 // Session configuration
 app.use(session({
-    store: new RedisStore({ client: redisClient }),
-    secret: 'your_session_secret_key', // Replace with your actual session secret
-    resave: false,
-    saveUninitialized: false,
-    cookie: { 
-        secure: false,    // Set to true if using HTTPS
-        httpOnly: true, 
-        maxAge: 4000000 
-    }
+  store: new RedisStore({ client: redisClient }),
+  secret: 'your_session_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, httpOnly: true, maxAge: 4000000 }
 }));
 
-
-
-
+// =============================
+// Routes
+// =============================
 app.get('/back', (req, res) => {
-    res.render('back');  // This will render the login.ejs file
+  res.render('back');
 });
 
-// Redirect root login to inspection, not login to login
 app.get('/', (req, res) => {
-    if (req.session.isAuthenticated) {
-        res.redirect('/inspection');
-    } else {
-        res.redirect('/login');
-    }
+  if (req.session.isAuthenticated) {
+    res.redirect('/inspection');
+  } else {
+    res.redirect('/login');
+  }
 });
 
-// Serve sw.js from the root URL
 app.get('/sw.js', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'public/sw.js'));
+  res.sendFile(path.resolve(__dirname, 'public/sw.js'));
 });
 
-//use dashboard routes
 app.use('/', dashboardRoutes);
-
-// Mount the Monitoring routes
 app.use('/', monitoringRoutes);
 
-
-// Login route
+// ----- LOGIN ROUTE -----
 app.post('/login', loginLimiter, async (req, res) => {
-    console.log(`Attempting login for user: ${req.body.username}`);
-    const { username, password } = req.body;
-    const query = 'SELECT u.*, r.role_name FROM user u INNER JOIN role r ON u.role_id = r.role_id WHERE u.name = ?';
-    
-    try {
-        const results = await queryAsync(query, [username]);
-        if (results.length > 0) {
-            const user = results[0];
-            const match = await bcrypt.compare(password, user.password);
-            if (match) {
-                // Set session data
-                req.session.user = { id: user.id, name: user.name, role: user.role_name };
-                req.session.isAuthenticated = true;
-                console.log(`User ${username} logged in successfully`);
-                // Jika permintaan berasal dari AJAX, kirim JSON
-                if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
-                    return res.status(200).json({
-                        success: true,
-                        message: 'Login successful',
-                        user: req.session.user
-                    });
-                }
-                // Jika bukan, lakukan redirect
-                return res.redirect('/inspection');
-            } else {
-                console.log(`Invalid password for user: ${username}`);
-                if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
-                    return res.status(401).json({ success: false, message: 'Invalid credentials' });
-                }
-                return res.status(401).json({ success: false, message: 'Invalid credentials' });
-
-            }
-        } else {
-            console.log(`Login failed: User ${username} not found`);
-            if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
-                return res.status(404).json({ success: false, message: 'User not found' });
-            }
-            return res.status(404).send('User not found');
-        }
-    } catch (err) {
-        console.error(`Database error during login for user ${username}:`, err);
+  console.log(`Attempting login for user: ${req.body.username}`);
+  const { username, password } = req.body;
+  const query = 'SELECT u.*, r.role_name FROM user u INNER JOIN role r ON u.role_id = r.role_id WHERE u.name = ?';
+  try {
+    const results = await queryAsync(query, [username]);
+    if (results.length > 0) {
+      const user = results[0];
+      const match = await bcrypt.compare(password, user.password);
+      if (match) {
+        req.session.user = { id: user.id, name: user.name, role: user.role_name };
+        req.session.isAuthenticated = true;
+        console.log(`User ${username} logged in successfully`);
         if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
-            return res.status(500).json({ success: false, message: 'Internal Server Error' });
+          return res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            user: req.session.user
+          });
         }
-        return res.status(500).send('Internal Server Error');
+        return res.redirect('/inspection');
+      } else {
+        console.log(`Invalid password for user: ${username}`);
+        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+          return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+    } else {
+      console.log(`Login failed: User ${username} not found`);
+      if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      return res.status(404).send('User not found');
     }
+  } catch (err) {
+    console.error(`Database error during login for user ${username}:`, err);
+    if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+      return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+    return res.status(500).send('Internal Server Error');
+  }
 });
 
-
-
-
-
-// Logout route
+// ----- LOGOUT ROUTE -----
 app.get('/logout', (req, res) => {
-    console.log(`User ${req.session?.user?.name || 'Unknown'} logging out`);
-
-    // 🔴 Explicitly remove user data from session before destroying it
-    if (req.session) {
-        req.session.user = null; // Remove user info
+  console.log(`User ${req.session?.user?.name || 'Unknown'} logging out`);
+  if (req.session) {
+    req.session.user = null;
+  }
+  res.clearCookie('sessionToken', { path: '/' });
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+      return res.status(500).send('Error logging out');
     }
-
-    res.clearCookie('sessionToken', { path: '/' }); // Ensure cookie is cleared
-    req.session.destroy((err) => {
-        if (err) {
-            console.error('Error destroying session:', err);
-            return res.status(500).send('Error logging out');
-        }
-
-        res.redirect('/login'); // Redirect to login page after session is cleared
-    });
+    res.redirect('/login');
+  });
 });
 
-
-
-
-
-
-
-// Upload route
+// ----- UPLOAD ROUTE (menggunakan Bull Queue) -----
+// === Endpoint /upload (Rate limiter tetap seperti semula) ===
 app.post(
     '/upload',
-    uploadLimiter,
+    uploadLimiter, // Rate limiter tidak diubah untuk kenyamanan user
     isAuthenticated,
     checkRole(['admin', 'petugas']),
     upload.single('foto'),
-    async (req, res) => {
-      try {
-        const {
-          catatan,
-          id_user,
-          id_tipe_aset,
-          id_tipe_lantai,
-          id_kondisi,
-          id_tipe_hb,
-          id_tipe_door,
-          clientTimestamp,
-        } = req.body;
-  
-        // Detailed logging: Log the received body and file info
-        console.log('Received /upload request with body:', req.body);
-        console.log('Received file info:', req.file);
-  
-        // Validate required fields
-        if (
-          !req.file ||
-          !id_kondisi ||
-          !id_user ||
-          !id_tipe_lantai ||
-          (!id_tipe_aset && !id_tipe_hb && !id_tipe_door)
-        ) {
-          console.error('Missing required fields:', {
-            file: req.file ? req.file : 'No file received',
-            id_kondisi,
-            id_user,
-            id_tipe_lantai,
-            id_tipe_aset,
-            id_tipe_hb,
-            id_tipe_door
+    (req, res) => {
+      const jobData = {
+        body: req.body,
+        file: req.file
+      };
+      // Tambahkan job ke Bull queue dan langsung kirim respons
+      uploadJobQueue.add(jobData, {
+        attempts: 3,
+        backoff: { type: 'fixed', delay: 5000 }
+      })
+        .then(job => {
+          console.log(`Job upload diterima dengan jobId: ${job.id}`);
+          // Respons cepat tanpa menunggu proses selesai
+          res.status(202).json({
+            success: true,
+            message: 'Upload job accepted',
+            jobId: job.id
           });
-          if (req.file) {
-            fs.unlink(req.file.path, (err) => {
-              if (err) console.error('Error deleting file due to missing fields:', err);
-              else console.log('Deleted file due to missing fields:', req.file.path);
-            });
-          }
-          return res
-            .status(400)
-            .json({ success: false, message: 'Missing required fields.' });
-        }
-  
-        // Validate clientTimestamp format
-        const timestamp = new Date(clientTimestamp);
-        if (!clientTimestamp || isNaN(timestamp.getTime())) {
-          console.error('Invalid client timestamp:', clientTimestamp);
-          fs.unlink(req.file.path, (err) => {
-            if (err)
-              console.error('Error deleting file after invalid timestamp:', err);
-            else
-              console.log('Deleted file due to invalid timestamp:', req.file.path);
-          });
-          return res
-            .status(400)
-            .json({ success: false, message: 'Invalid client timestamp.' });
-        }
-  
-        const filePath = req.file.path;
-        const processedPath = `processed/${path.basename(filePath)}`;
-  
-        console.log('Starting image processing for file:', filePath);
-  
-        // Wrap image processing in a promise so we can await it
-        await new Promise((resolve, reject) => {
-          imageProcessingQueue.push({ filePath }, (err) => {
-            if (err) {
-              console.error('Image processing failed for file:', filePath, 'Error:', err);
-              fs.unlink(filePath, (unlinkErr) => {
-                if (unlinkErr)
-                  console.error('Error deleting file after image processing failure:', unlinkErr);
-                else
-                  console.log('Deleted file after image processing failure:', filePath);
-              });
-              return reject(new Error('Image processing failed.'));
-            }
-            console.log('Image processing completed successfully for file:', filePath);
-            resolve();
+        })
+        .catch(err => {
+          console.error("Error adding job to queue: ", err);
+          res.status(500).json({
+            success: false,
+            message: err.message || 'Error adding job'
           });
         });
-  
-        console.log('Inserting record into database with data:', {
-          processedPath,
-          id_kondisi,
-          catatan,
-          id_user,
-          id_tipe_aset,
-          id_tipe_lantai,
-          id_tipe_hb,
-          id_tipe_door,
-          client_timestamp: timestamp.toISOString()
-        });
-  
-        // Insert the record into the database using the processed image path
-        try {
-          await queryAsync(
-            `
-              INSERT INTO aset (
-                  foto, id_kondisi, catatan, id_user, id_tipe_aset,
-                  id_tipe_lantai, id_tipe_hb, id_tipe_door, client_timestamp
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `,
-            [
-              processedPath,
-              id_kondisi,
-              catatan,
-              id_user,
-              id_tipe_aset,
-              id_tipe_lantai,
-              id_tipe_hb,
-              id_tipe_door,
-              timestamp,
-            ]
-          );
-          console.log('Database insert succeeded for file:', processedPath);
-          return res
-            .status(200)
-            .json({ success: true, message: 'Form submitted successfully!' });
-        } catch (dbError) {
-          console.error('Database error during upload for file:', processedPath, 'Error:', dbError);
-          fs.unlink(processedPath, (unlinkErr) => {
-            if (unlinkErr)
-              console.error('Error deleting processed file after database error:', unlinkErr);
-            else
-              console.log('Deleted processed file after database error:', processedPath);
-          });
-          return res
-            .status(500)
-            .json({ success: false, message: 'Internal Server Error' });
-        }
-      } catch (error) {
-        console.error('Unexpected upload error:', error);
-        return res
-          .status(500)
-          .json({ success: false, message: error.message || 'Unexpected error occurred.' });
-      }
     }
   );
+  
   
   
 
@@ -1116,6 +1054,14 @@ function deleteFileWithRetry(filePath, maxAttempts = 3) {
 
     attemptDeletion();
 }
+
+//sessioncheck
+app.get('/api/session-status', (req, res) => {
+    if (req.session.isAuthenticated) {
+        return res.json({ authenticated: true, user: req.session.user });
+    }
+    res.status(401).json({ authenticated: false });
+});
 
 
 
