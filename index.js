@@ -203,12 +203,14 @@ app.use(express.json());
 
 // Session configuration
 app.use(session({
-  store: new RedisStore({ client: redisClient }),
-  secret: 'your_session_secret_key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false, httpOnly: true, maxAge: 4000000 }
-}));
+    store: new RedisStore({ client: redisClient }),
+    secret: 'your_session_secret_key',
+    resave: false,
+    saveUninitialized: false,
+    rolling: true, // Refresh the cookie on every response
+    cookie: { secure: false, httpOnly: true, maxAge: 4000000 }
+  }));
+  
 
 // =============================
 // Routes
