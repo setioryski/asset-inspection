@@ -261,12 +261,6 @@
     border: 1px solid #ddd;
   }
   
-  /* Print Mode */
-  @media print {
-    nav, .filter-container, h1 {
-      display: none !important;
-    }
-  }
   
   /* Responsive Styles */
   @media (max-width: 768px) {
@@ -349,4 +343,82 @@
     }
   }
 
+  /* print */
+  @media print {
+    /* Hapus elemen-elemen non-esensial */
+    nav,
+    .filter-container,
+    h1,
+    .pagination,
+    .button-row,
+    .modal {
+      display: none !important;
+    }
+  
+    body {
+      background: white !important;
+      margin: 0;
+      padding: 10px;
+      font-size: 12px;
+      color: black !important;
+    }
+  
+    .dashboard-container {
+      padding: 0;
+      margin: 0;
+    }
+  
+    /* Paksa tampilan tabel desktop */
+    table, thead, tbody, th, td, tr {
+      display: table !important;
+      width: 100% !important;
+      border-collapse: collapse !important;
+      all: revert !important;
+    }
+  
+    thead {
+      display: table-header-group !important;
+    }
+  
+    tr {
+      page-break-inside: avoid !important;
+    }
+  
+    td::before {
+      content: none !important;
+    }
+  
+    td, th {
+      border: 1px solid #ccc !important;
+      padding: 8px !important;
+      text-align: left !important;
+      white-space: nowrap;
+    }
+  
+    th {
+      background-color: #007BFF !important;
+      color: white !important;
+    }
+  
+    #assetsTable img {
+      max-height: 100px !important;
+      width: auto !important;
+      border-radius: 5px;
+      display: block;
+    }
+  
+    /* Atur ukuran font dan tabel agar fit halaman */
+    table {
+      font-size: 12px !important;
+      box-shadow: none !important;
+      border: 1px solid #ccc;
+    }
+  }
+
+  @media print {
+    #assetsTable th.id-column,
+    #assetsTable td.id-column {
+      display: none !important;
+    }
+  }
   
