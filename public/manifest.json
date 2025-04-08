@@ -1,6 +1,6 @@
 {
-    "name": "inspeksi aset",
-    "short_name": "inspeksi aset",
+    "name": "inspeksi Aset",
+    "short_name": "Inspeksi_Aset",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
