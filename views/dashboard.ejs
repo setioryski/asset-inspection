@@ -27,6 +27,33 @@
       box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
       outline: none;
     }
+    /* Modal styles for the image viewer */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      z-index: 100; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto; /* Enable scroll if needed */
+      background-color: rgba(0, 0, 0, 0.9); /* Black with opacity */
+    }
+    .modal-content {
+      margin: auto;
+      display: block;
+      max-width: 90%;
+      max-height: 90%;
+    }
+    .modal-close {
+      position: absolute;
+      top: 15px;
+      right: 35px;
+      color: #f1f1f1;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -73,9 +100,7 @@
         <select id="kondisi" name="kondisi">
           <option value="">Semua Kondisi</option>
           <% kondisiOptions.forEach(option => { %>
-            <option value="<%= option.nama_kondisi %>" <%= kondisi === option.nama_kondisi ? 'selected' : '' %>>
-              <%= option.nama_kondisi %>
-            </option>
+            <option value="<%= option.nama_kondisi %>" <%= kondisi === option.nama_kondisi ? 'selected' : '' %>><%= option.nama_kondisi %></option>
           <% }); %>
         </select>
 
@@ -83,9 +108,7 @@
         <select id="user" name="user">
           <option value="">Semua User</option>
           <% userOptions.forEach(option => { %>
-            <option value="<%= option.name %>" <%= user === option.name ? 'selected' : '' %>>
-              <%= option.name %>
-            </option>
+            <option value="<%= option.name %>" <%= user === option.name ? 'selected' : '' %>><%= option.name %></option>
           <% }); %>
         </select>
 
@@ -93,9 +116,7 @@
         <select name="posisi" id="posisi">
           <option value="">Semua Posisi</option>
           <% posisiOptions.forEach(option => { %>
-            <option value="<%= option.tipe_posisi %>" <%= posisi === option.tipe_posisi ? 'selected' : '' %>>
-              <%= option.tipe_posisi %>
-            </option>
+            <option value="<%= option.tipe_posisi %>" <%= posisi === option.tipe_posisi ? 'selected' : '' %>><%= option.tipe_posisi %></option>
           <% }); %>
         </select>
 
@@ -103,9 +124,7 @@
         <select id="floor" name="floor">
           <option value="">Semua Lantai</option>
           <% floorOptions.forEach(option => { %>
-            <option value="<%= option.nama_lantai %>" <%= floor === option.nama_lantai ? 'selected' : '' %>>
-              <%= option.nama_lantai %>
-            </option>
+            <option value="<%= option.nama_lantai %>" <%= floor === option.nama_lantai ? 'selected' : '' %>><%= option.nama_lantai %></option>
           <% }); %>
         </select>
         <span id="floorLoading" style="display:none;">Loading...</span>
@@ -120,14 +139,12 @@
 
         <input type="hidden" name="page" value="1">
 
-<!-- Row 4: Buttons (horizontal layout) -->
-<div class="button-row">
-  <button type="submit" class="filter-button"><i class="fas fa-filter"></i> Filter</button>
-  <button type="button" class="export-button" id="exportPDF"><i class="fas fa-file-pdf"></i> Export PDF</button>
-  <button type="button" class="export-button" id="exportExcel"><i class="fas fa-file-excel"></i> Export Excel</button>
-</div>
-
-
+        <!-- Row 4: Buttons -->
+        <div class="button-row">
+          <button type="submit" class="filter-button"><i class="fas fa-filter"></i> Filter</button>
+          <button type="button" class="export-button" id="exportPDF"><i class="fas fa-file-pdf"></i> Export PDF</button>
+          <button type="button" class="export-button" id="exportExcel"><i class="fas fa-file-excel"></i> Export Excel</button>
+        </div>
       </form>
     </div>
 
@@ -166,14 +183,12 @@
               <% } %>
             </td>
             <td data-label="User"><%= asset.user %></td>
-            <td data-label="Jenis Aset">
-              <%= asset.nama_tipe_door || asset.nama_tipe_hb || asset.nama_tipe_aset %>
-            </td>
+            <td data-label="Jenis Aset"><%= asset.nama_tipe_door || asset.nama_tipe_hb || asset.nama_tipe_aset %></td>
             <td data-label="Lantai"><%= asset.nama_lantai %></td>
             <td data-label="Kondisi"><%= asset.nama_kondisi %></td>
             <td data-label="Foto">
               <% if (asset.foto) { %>
-                <img src="/<%= asset.foto %>" alt="Foto Aset" class="asset-photo">
+                <img src="/<%= asset.foto %>" alt="Foto Aset" class="asset-photo" style="cursor:pointer;">
               <% } else { %>
                 <span class="no-image">Tidak Ada Foto</span>
               <% } %>
@@ -213,6 +228,12 @@
         <span class="disabled">Berikutnya »</span>
       <% } %>
     </div>
+  </div>
+
+  <!-- Modal for Image Viewer -->
+  <div id="imageModal" class="modal">
+    <span class="modal-close">&times;</span>
+    <img class="modal-content" id="modalImage">
   </div>
 
   <!-- FLATPICKR & INTERACTIONS -->
@@ -279,6 +300,31 @@
 
     posisiSelect.addEventListener('change', () => fetchFloors(posisiSelect.value));
     fetchFloors(posisiSelect.value);
+
+    // Image Modal functionality
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const closeModal = document.querySelector('.modal-close');
+
+    // Attach event listener to each asset photo to open the modal viewer
+    document.querySelectorAll('.asset-photo').forEach(img => {
+      img.addEventListener('click', () => {
+        modal.style.display = 'block';
+        modalImg.src = img.src;
+      });
+    });
+
+    // Close modal when clicking on the close button
+    closeModal.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    // Optionally, close modal when clicking outside the image
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
   </script>
 </body>
 </html>

@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "start:local": "cross-env NODE_ENV=local node index.js",
-    "start:deploy": "cross-env NODE_ENV=deploy node index.js"
-  },
+"scripts": {
+  "start:local": "cross-env NODE_ENV=local node index.js",
+  "start:deploy": "cross-env NODE_ENV=deploy node index.js",
+  "start:dev": "cross-env NODE_ENV=local nodemon index.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",

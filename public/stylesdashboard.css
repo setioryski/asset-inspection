@@ -99,11 +99,13 @@
   
   .date-picker-form {
     display: grid;
-    grid-template-columns: 150px 1fr 150px 1fr; /* Labels are 150px */
+    grid-template-columns: 150px 1fr 150px 1fr;
     column-gap: 20px;
     row-gap: 16px;
     align-items: center;
+    width: 100%; /* Ensure the form stretches fully */
   }
+  
   
   
   .date-picker-form label {
