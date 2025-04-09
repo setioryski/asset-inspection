@@ -239,27 +239,30 @@
   <!-- FLATPICKR & INTERACTIONS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
-    flatpickr("#startDate", {
-      disableMobile: true,
-      defaultDate: "<%= startDate || '' %>",
-      enableTime: true,
-      time_24hr: true,
-      dateFormat: "Y-m-d H:i:S",
-      altInput: true,
-      altFormat: "d-m-Y H:i:S",
-      altInputClass: "myDateInput"
-    });
+flatpickr("#startDate", {
+  disableMobile: true,
+  enableTime: true,
+  time_24hr: true,
+  defaultHour: 0,
+  defaultMinute: 0,
+  dateFormat: "Y-m-d H:i:S",
+  altInput: true,
+  altFormat: "d-m-Y H:i:S",
+  altInputClass: "myDateInput"
+});
 
-    flatpickr("#endDate", {
-      disableMobile: true,
-      defaultDate: "<%= endDate || '' %>",
-      enableTime: true,
-      time_24hr: true,
-      dateFormat: "Y-m-d H:i:S",
-      altInput: true,
-      altFormat: "d-m-Y H:i:S",
-      altInputClass: "myDateInput"
-    });
+flatpickr("#endDate", {
+  disableMobile: true,
+  enableTime: true,
+  time_24hr: true,
+  defaultHour: 0,
+  defaultMinute: 0,
+  dateFormat: "Y-m-d H:i:S",
+  altInput: true,
+  altFormat: "d-m-Y H:i:S",
+  altInputClass: "myDateInput"
+});
+
 
     document.getElementById('exportPDF').addEventListener('click', () => window.print());
 
