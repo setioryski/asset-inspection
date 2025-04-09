@@ -1,469 +1,485 @@
 /* Reset and Base */
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
-    line-height: 1.6;
-    padding: 10px;
-    margin-top: 70px;
-  }
-  
-  /* Navigation Bar */
-  nav {
-    background-color: rgba(235, 235, 235, 0.9);
-    color: black;
-    padding: 10px 20px;
-    position: fixed;
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+  line-height: 1.6;
+  padding: 10px;
+  margin-top: 70px;
+}
+
+/* Navigation Bar */
+nav {
+  background-color: rgba(235, 235, 235, 0.9);
+  color: black;
+  padding: 10px 20px;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  flex-wrap: nowrap;
+}
+
+nav ul li a {
+  color: black;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+nav ul li a i {
+  margin-right: 8px;
+  font-size: 18px;
+  color: black;
+  transition: color 0.3s ease;
+}
+
+nav ul li a:hover {
+  background-color: #f5f5f5;
+  color: #007aff;
+}
+
+nav ul li a:hover i {
+  color: #007aff;
+}
+
+/* Title */
+h1 {
+  text-align: center;
+  margin-top: 80px;
+  color: #333;
+  font-size: 2em;
+  margin-bottom: 20px;
+}
+
+/* Dashboard Container */
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 10px;
+}
+
+/* Filter Container */
+.filter-container {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.date-picker-form {
+  display: grid;
+  grid-template-columns: 150px 1fr 150px 1fr;
+  column-gap: 20px;
+  row-gap: 16px;
+  align-items: center;
+  width: 100%;
+}
+
+.date-picker-form label {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+}
+
+.date-picker-form input,
+.date-picker-form select,
+.date-picker-form button {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.date-picker-form input:focus,
+.date-picker-form select:focus,
+.date-picker-form button:focus {
+  border-color: #007BFF;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  outline: none;
+}
+
+.date-picker-form button {
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  min-width: 140px;
+}
+
+.date-picker-form button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.button-row {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.export-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.export-button:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+th, td {
+  padding: 12px;
+  border: 1px solid #e1e1e1;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  background-color: #007BFF;
+  color: white;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+tbody tr:hover {
+  background-color: #e8f0fe;
+}
+
+#assetsTable img {
+  width: 80px;
+  height: auto;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Hide ID column */
+#assetsTable th.id-column,
+#assetsTable td.id-column {
+  display: none;
+}
+
+#assetsTable th.no-column,
+#assetsTable td.no-column {
+  width: 50px;
+  text-align: center;
+}
+
+/* Pagination */
+.pagination {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.pagination a, .pagination span {
+  display: inline-block;
+  padding: 8px 16px;
+  margin: 0 4px;
+  text-decoration: none;
+  border: 1px solid #ddd;
+  color: #333;
+  border-radius: 8px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.pagination a:hover {
+  background-color: #f0f0f0;
+}
+
+.pagination .current {
+  background-color: #007BFF;
+  color: white;
+  border: 1px solid #007BFF;
+}
+
+.pagination .disabled {
+  color: #ccc;
+  border: 1px solid #ddd;
+}
+
+/* Highlight "Kondisi" Badge */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+.badge-baik {
+  background-color: #28a745;
+}
+
+.badge-rusak {
+  background-color: #dc3545;
+}
+
+.badge-default {
+  background-color: #333;
+  color: white;
+}
+
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+
+  .date-picker-form {
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column;
+    gap: 16px;
   }
-  
+
   nav ul {
-    list-style: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    margin: 0;
-    padding: 0;
-    flex-wrap: nowrap;
+    flex-direction: row;
+    justify-content: flex-start;
+    overflow-x: auto;
+    gap: 10px;
   }
-  
-  nav ul li a {
-    color: black;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    padding: 5px 10px;
-    border-radius: 6px;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-  
-  nav ul li a i {
-    margin-right: 8px;
-    font-size: 18px;
-    color: black;
-    transition: color 0.3s ease;
-  }
-  
-  nav ul li a:hover {
-    background-color: #f5f5f5;
-    color: #007aff;
-  }
-  
-  nav ul li a:hover i {
-    color: #007aff;
-  }
-  
-  /* Title */
-  h1 {
-    text-align: center;
-    margin-top: 80px;
-    color: #333;
-    font-size: 2em;
-    margin-bottom: 20px;
-  }
-  
-  /* Dashboard Container */
+
   .dashboard-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px 10px;
+    padding: 10px 5px;
   }
-  
-  /* Filter Container */
+
+  h1 {
+    text-align: left;
+    margin-top: 100px;
+    padding-left: 10px;
+  }
+
+  .date-picker-form label,
+  .date-picker-form input,
+  .date-picker-form select,
+  .date-picker-form button {
+    width: 100%;
+    font-size: 15px;
+  }
+
+  .button-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tr {
+    margin-bottom: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 16px;
+  }
+
+  td {
+    padding: 16px 16px 16px 50%;
+    position: relative;
+    border: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    font-weight: bold;
+    color: #777;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  td:last-child {
+    border-bottom: none;
+  }
+
+/* Fix for "No." column on mobile */
+td[data-label="No."],
+td[data-label="No"] {
+  font-size: 14px;
+  padding-left: 50%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+  td[data-label="Jenis Aset"] {
+    font-size: 13px;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  td[data-label="Jenis Aset"]::before {
+    font-size: 12px;
+  }
+
+  #assetsTable img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-top: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .pagination {
+    font-size: 14px;
+  }
+
   .filter-container {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 15px;
     padding: 15px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
-    overflow-x: auto;
+    max-height: 400px; /* limit height for scroll */
+    overflow-y: auto;  /* enable vertical scrolling */
+    scroll-behavior: smooth;
   }
-  
-  .date-picker-form {
-    display: grid;
-    grid-template-columns: 150px 1fr 150px 1fr;
-    column-gap: 20px;
-    row-gap: 16px;
-    align-items: center;
-    width: 100%; /* Ensure the form stretches fully */
+  .filter-container::-webkit-scrollbar {
+    width: 6px;
   }
-  
-  
-  
-  .date-picker-form label {
-    font-size: 14px;
-    color: #333;
-    white-space: nowrap;
+  .filter-container::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 4px;
   }
-  
-  .date-picker-form input,
-  .date-picker-form select,
-  .date-picker-form button {
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 16px;
-    font-family: inherit;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  }
-  
-  .date-picker-form input:focus,
-  .date-picker-form select:focus,
-  .date-picker-form button:focus {
-    border-color: #007BFF;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-    outline: none;
-  }
-  
-  .date-picker-form button {
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    min-width: 140px;
-  }
-  
-  .date-picker-form button:hover {
-    background-color: #0056b3;
-    transform: translateY(-2px);
+}
+
+/* Print Styles */
+@media print {
+  nav,
+  .filter-container,
+  h1,
+  .pagination,
+  .button-row,
+  .modal {
+    display: none !important;
   }
 
-  .button-row {
-    grid-column: 1 / -1; /* Make it span the full width of the form grid */
-    display: flex;
-    gap: 12px;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    margin-top: 10px;
+  body {
+    background: white !important;
+    margin: 0;
+    padding: 10px;
+    font-size: 12px;
+    color: black !important;
   }
-  
-  
-  .export-button {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+
+  .dashboard-container {
+    padding: 0;
+    margin: 0;
   }
-  
-  .export-button:hover {
-    background-color: #218838;
-    transform: translateY(-2px);
+
+  table, thead, tbody, th, td, tr {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    all: revert !important;
   }
-  
-  /* Table */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    font-size: 14px;
-    margin-bottom: 20px;
+
+  thead {
+    display: table-header-group !important;
   }
-  
-  th, td {
-    padding: 12px;
-    border: 1px solid #e1e1e1;
-    text-align: left;
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  td::before {
+    content: none !important;
+  }
+
+  td, th {
+    border: 1px solid #ccc !important;
+    padding: 8px !important;
+    text-align: left !important;
     white-space: nowrap;
   }
-  
+
   th {
-    background-color: #007BFF;
-    color: white;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    background-color: #007BFF !important;
+    color: white !important;
   }
-  
-  tbody tr:nth-child(odd) {
-    background-color: #f9f9f9;
-  }
-  
-  tbody tr:hover {
-    background-color: #e8f0fe;
-  }
-  
+
   #assetsTable img {
-    width: 80px;
-    height: auto;
+    max-height: 100px !important;
+    width: auto !important;
     border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: block;
   }
-  
-  /* Hide ID column */
+
   #assetsTable th.id-column,
   #assetsTable td.id-column {
-    display: none;
+    display: none !important;
   }
-  
-  #assetsTable th.no-column,
-  #assetsTable td.no-column {
-    width: 50px;
-    text-align: center;
-  }
-  
-  /* Pagination */
-  .pagination {
-    margin: 20px 0;
-    text-align: center;
-  }
-  
-  .pagination a, .pagination span {
-    display: inline-block;
-    padding: 8px 16px;
-    margin: 0 4px;
-    text-decoration: none;
-    border: 1px solid #ddd;
-    color: #333;
-    border-radius: 8px;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-  
-  .pagination a:hover {
-    background-color: #f0f0f0;
-  }
-  
-  .pagination .current {
-    background-color: #007BFF;
-    color: white;
-    border: 1px solid #007BFF;
-  }
-  
-  .pagination .disabled {
-    color: #ccc;
-    border: 1px solid #ddd;
-  }
-  
-  
-  /* Responsive Styles */
-  @media (max-width: 768px) {
-    .date-picker-form {
-      display: flex;
-      flex-direction: column;
-    }
-  
-  
-    nav ul {
-      flex-direction: row;
-      justify-content: flex-start;
-      overflow-x: auto;
-      gap: 10px;
-    }
-  
-    .dashboard-container {
-      padding: 10px 5px;
-    }
-  
-    h1 {
-      text-align: left;
-      margin-top: 100px;
-      padding-left: 10px;
-    }
-  
-    .date-picker-form {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
-    }
-  
-    .date-picker-form label,
-    .date-picker-form input,
-    .date-picker-form select,
-    .date-picker-form button {
-      width: 100%;
-      margin-right: 0;
-    }
-  
-    table, thead, tbody, th, td, tr {
-      display: block;
-    }
-  
-    thead {
-      display: none;
-    }
-  
-    tr {
-      margin-bottom: 10px;
-      background: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-  
-    td {
-      position: relative;
-      padding-left: 50%;
-      text-align: left;
-      border: none;
-      border-bottom: 1px solid #eee;
-    }
-  
-    td::before {
-      content: attr(data-label);
-      position: absolute;
-      left: 12px;
-      top: 12px;
-      font-weight: bold;
-      white-space: nowrap;
-    }
-  
-    td:last-child {
-      border-bottom: none;
-    }
-  
-    .pagination {
-      font-size: 14px;
-    }
-  }
-
-  /* Give more breathing room */
-tr {
-  padding: 16px;
-  border-radius: 10px;
-  margin-bottom: 20px;
 }
-
-/* Space for each field inside the card */
-td {
-  padding: 16px 16px 16px 50%;
-  border-bottom: 1px solid #ddd;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-/* Label alignment */
-td::before {
-  font-size: 13px;
-  color: #777;
-  left: 16px;
-  top: 16px;
-}
-
-/* Last field spacing fix */
-td:last-child {
-  margin-bottom: 0;
-}
-
-/* Make image thumbnails look nicer */
-#assetsTable img {
-  width: 100%;
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin-top: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-}
-
-td[data-label="Jenis Aset"] {
-  font-size: 13px;
-  white-space: normal; /* allow wrapping */
-  word-break: break-word; /* break long words if needed */
-}
-
-
-  /* print */
-  @media print {
-    /* Hapus elemen-elemen non-esensial */
-    nav,
-    .filter-container,
-    h1,
-    .pagination,
-    .button-row,
-    .modal {
-      display: none !important;
-    }
-  
-    body {
-      background: white !important;
-      margin: 0;
-      padding: 10px;
-      font-size: 12px;
-      color: black !important;
-    }
-  
-    .dashboard-container {
-      padding: 0;
-      margin: 0;
-    }
-  
-    /* Paksa tampilan tabel desktop */
-    table, thead, tbody, th, td, tr {
-      display: table !important;
-      width: 100% !important;
-      border-collapse: collapse !important;
-      all: revert !important;
-    }
-  
-    thead {
-      display: table-header-group !important;
-    }
-  
-    tr {
-      page-break-inside: avoid !important;
-    }
-  
-    td::before {
-      content: none !important;
-    }
-  
-    td, th {
-      border: 1px solid #ccc !important;
-      padding: 8px !important;
-      text-align: left !important;
-      white-space: nowrap;
-    }
-  
-    th {
-      background-color: #007BFF !important;
-      color: white !important;
-    }
-  
-    #assetsTable img {
-      max-height: 100px !important;
-      width: auto !important;
-      border-radius: 5px;
-      display: block;
-    }
-  
-    /* Atur ukuran font dan tabel agar fit halaman */
-    table {
-      font-size: 12px !important;
-      box-shadow: none !important;
-      border: 1px solid #ccc;
-    }
-  }
-
-  @media print {
-    #assetsTable th.id-column,
-    #assetsTable td.id-column {
-      display: none !important;
-    }
-  }
-  

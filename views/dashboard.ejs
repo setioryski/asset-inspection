@@ -186,7 +186,18 @@
             <td data-label="User"><%= asset.user %></td>
             <td data-label="Jenis Aset"><%= asset.nama_tipe_door || asset.nama_tipe_hb || asset.nama_tipe_aset %></td>
             <td data-label="Lantai"><%= asset.nama_lantai %></td>
-            <td data-label="Kondisi"><%= asset.nama_kondisi %></td>
+            <td data-label="Kondisi">
+              <span class="badge badge-<%= asset.nama_kondisi.toLowerCase() %>">
+                <% 
+                const kondisi = asset.nama_kondisi?.toLowerCase(); 
+                const badgeClass = (kondisi === 'baik' || kondisi === 'rusak') ? kondisi : 'default'; 
+              %>
+              <span class="badge badge-<%= badgeClass %>">
+                <%= asset.nama_kondisi %>
+              </span>
+              
+            </td>
+            
             <td data-label="Foto">
               <% if (asset.foto) { %>
                 <img src="/<%= asset.foto %>" alt="Foto Aset" class="asset-photo" style="cursor:pointer;">
