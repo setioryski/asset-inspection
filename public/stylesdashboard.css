@@ -343,6 +343,51 @@
     }
   }
 
+  /* Give more breathing room */
+tr {
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+/* Space for each field inside the card */
+td {
+  padding: 16px 16px 16px 50%;
+  border-bottom: 1px solid #ddd;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Label alignment */
+td::before {
+  font-size: 13px;
+  color: #777;
+  left: 16px;
+  top: 16px;
+}
+
+/* Last field spacing fix */
+td:last-child {
+  margin-bottom: 0;
+}
+
+/* Make image thumbnails look nicer */
+#assetsTable img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-top: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+td[data-label="Jenis Aset"] {
+  font-size: 13px;
+  white-space: normal; /* allow wrapping */
+  word-break: break-word; /* break long words if needed */
+}
+
+
   /* print */
   @media print {
     /* Hapus elemen-elemen non-esensial */
