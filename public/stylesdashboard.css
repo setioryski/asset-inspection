@@ -367,10 +367,21 @@ tbody tr:hover {
 td[data-label="No."],
 td[data-label="No"] {
   font-size: 14px;
-  padding-left: 50%;
+  padding-left: 50%; /* Match other fields */
+  padding-right: 16px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: unset;
+  border-bottom: 1px solid #ddd; /* Ensure divider is there */
+}
+
+
+
+td[data-label="No."]::before,
+td[data-label="No"]::before {
+  font-size: 12px;
+  left: 16px;  /* Consistent label position */
+  top: 14px;
 }
 
 
