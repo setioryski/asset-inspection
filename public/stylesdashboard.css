@@ -281,6 +281,12 @@ tbody tr:hover {
   color: white;
 }
 
+td[data-label="Catatan"] {
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 300px; /* atau sesuaikan sesuai kebutuhan */
+}
 
 /* Responsive Styles */
 @media (max-width: 768px) {

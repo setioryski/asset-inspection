@@ -158,8 +158,12 @@
     </div>
   </div>
 
+  <button id="toggleTableBtn">Tampilkan Tabel Monitoring</button>
+
+
   <!-- Monitoring Data Table -->
-  <table>
+  <div id="tableContainer" style="display: none;">
+    <table>
     <thead>
       <tr>
         <th>No.</th>
@@ -194,6 +198,7 @@
       <% } %>
     </tbody>
   </table>
+</div>
 
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -229,6 +234,19 @@ flatpickr("#endDate", {
         alert('Gagal menyalin catatan.');
       });
     });
+
+    //togglebtn
+    document.getElementById('toggleTableBtn').addEventListener('click', function() {
+  const tableContainer = document.getElementById('tableContainer');
+  if (tableContainer.style.display === 'none') {
+    tableContainer.style.display = 'block';
+    this.textContent = 'Sembunyikan Tabel';
+  } else {
+    tableContainer.style.display = 'none';
+    this.textContent = 'Tampilkan Tabel';
+  }
+});
+
   </script>
 </body>
 </html>
