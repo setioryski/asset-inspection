@@ -112,6 +112,163 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
     `;
     const asetPerLantai = await queryAsync(asetSql);
 
+    // Query untuk tipe_aset dengan kondisi Rusak (id_kondisi = 2)
+const tipeAsetRusakSQL = `
+WITH LatestAset AS (
+    SELECT
+        a.id_tipe_aset AS aset_id,
+        ta.nama_tipe AS aset_name,
+        tl.nama_lantai AS lantai_name,
+        a.client_timestamp AS detected_date,
+        a.catatan AS catatan,
+        ROW_NUMBER() OVER (PARTITION BY a.id_tipe_aset ORDER BY a.client_timestamp DESC) AS row_num
+    FROM aset a
+    LEFT JOIN tipe_aset ta ON a.id_tipe_aset = ta.id
+    LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
+    WHERE a.id_kondisi = 2
+      AND a.id_tipe_aset IS NOT NULL
+      AND DATE(a.client_timestamp) BETWEEN ? AND ?
+)
+SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+FROM LatestAset
+WHERE row_num = 1;
+`;
+
+// Query untuk tipe_aset dengan kondisi Hilang (id_kondisi = 3)
+const tipeAsetHilangSQL = `
+WITH LatestAset AS (
+    SELECT
+        a.id_tipe_aset AS aset_id,
+        ta.nama_tipe AS aset_name,
+        tl.nama_lantai AS lantai_name,
+        a.client_timestamp AS detected_date,
+        a.catatan AS catatan,
+        ROW_NUMBER() OVER (PARTITION BY a.id_tipe_aset ORDER BY a.client_timestamp DESC) AS row_num
+    FROM aset a
+    LEFT JOIN tipe_aset ta ON a.id_tipe_aset = ta.id
+    LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
+    WHERE a.id_kondisi = 3
+      AND a.id_tipe_aset IS NOT NULL
+      AND DATE(a.client_timestamp) BETWEEN ? AND ?
+)
+SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+FROM LatestAset
+WHERE row_num = 1;
+`;
+
+// Query untuk tipe_door dengan kondisi Rusak (id_kondisi = 2)
+const tipeDoorRusakSQL = `
+WITH LatestAset AS (
+    SELECT
+        a.id_tipe_door AS aset_id,
+        td.nama_tipe AS aset_name,
+        tl.nama_lantai AS lantai_name,
+        a.client_timestamp AS detected_date,
+        a.catatan AS catatan,
+        ROW_NUMBER() OVER (PARTITION BY a.id_tipe_door ORDER BY a.client_timestamp DESC) AS row_num
+    FROM aset a
+    LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
+    LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
+    WHERE a.id_kondisi = 2
+      AND a.id_tipe_door IS NOT NULL
+      AND DATE(a.client_timestamp) BETWEEN ? AND ?
+)
+SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+FROM LatestAset
+WHERE row_num = 1;
+`;
+
+// Query untuk tipe_door dengan kondisi Hilang (id_kondisi = 3)
+const tipeDoorHilangSQL = `
+WITH LatestAset AS (
+    SELECT
+        a.id_tipe_door AS aset_id,
+        td.nama_tipe AS aset_name,
+        tl.nama_lantai AS lantai_name,
+        a.client_timestamp AS detected_date,
+        a.catatan AS catatan,
+        ROW_NUMBER() OVER (PARTITION BY a.id_tipe_door ORDER BY a.client_timestamp DESC) AS row_num
+    FROM aset a
+    LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
+    LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
+    WHERE a.id_kondisi = 3
+      AND a.id_tipe_door IS NOT NULL
+      AND DATE(a.client_timestamp) BETWEEN ? AND ?
+)
+SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+FROM LatestAset
+WHERE row_num = 1;
+`;
+
+// Query untuk tipe_hb dengan kondisi Rusak (id_kondisi = 2)
+const tipeHbRusakSQL = `
+WITH LatestAset AS (
+    SELECT
+        a.id_tipe_hb AS aset_id,
+        th.nama_tipe AS aset_name,
+        tl.nama_lantai AS lantai_name,
+        a.client_timestamp AS detected_date,
+        a.catatan AS catatan,
+        ROW_NUMBER() OVER (PARTITION BY a.id_tipe_hb ORDER BY a.client_timestamp DESC) AS row_num
+    FROM aset a
+    LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
+    LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
+    WHERE a.id_kondisi = 2
+      AND a.id_tipe_hb IS NOT NULL
+      AND DATE(a.client_timestamp) BETWEEN ? AND ?
+)
+SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+FROM LatestAset
+WHERE row_num = 1;
+`;
+
+// Query untuk tipe_hb dengan kondisi Hilang (id_kondisi = 3)
+const tipeHbHilangSQL = `
+WITH LatestAset AS (
+    SELECT
+        a.id_tipe_hb AS aset_id,
+        th.nama_tipe AS aset_name,
+        tl.nama_lantai AS lantai_name,
+        a.client_timestamp AS detected_date,
+        a.catatan AS catatan,
+        ROW_NUMBER() OVER (PARTITION BY a.id_tipe_hb ORDER BY a.client_timestamp DESC) AS row_num
+    FROM aset a
+    LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
+    LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
+    WHERE a.id_kondisi = 3
+      AND a.id_tipe_hb IS NOT NULL
+      AND DATE(a.client_timestamp) BETWEEN ? AND ?
+)
+SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+FROM LatestAset
+WHERE row_num = 1;
+`;
+
+// Jalankan query-query tersebut dengan parameter tanggal (startDate dan endDate)
+const tipeAsetRusak   = await queryAsync(tipeAsetRusakSQL, [startDate, endDate]);
+const tipeAsetHilang  = await queryAsync(tipeAsetHilangSQL, [startDate, endDate]);
+const tipeDoorRusak   = await queryAsync(tipeDoorRusakSQL, [startDate, endDate]);
+const tipeDoorHilang  = await queryAsync(tipeDoorHilangSQL, [startDate, endDate]);
+const tipeHbRusak     = await queryAsync(tipeHbRusakSQL, [startDate, endDate]);
+const tipeHbHilang    = await queryAsync(tipeHbHilangSQL, [startDate, endDate]);
+
+// Lakukan rendering view dan kirimkan data tambahan ke template
+res.render('monitoring', {
+  // Data monitoring lain jika masih diperlukan
+  data: monitoringData,           // Contoh data monitoring yang sudah ada
+  asetPerLantai: asetPerLantai,   // Data jumlah aset per lantai
+  // Data enam query kondisi baru
+  tipeAsetRusak,
+  tipeAsetHilang,
+  tipeDoorRusak,
+  tipeDoorHilang,
+  tipeHbRusak,
+  tipeHbHilang,
+  startDate,
+  endDate
+});
+
+
     // 4. Render view monitoring.ejs dengan data
     res.render('monitoring', {
       data: monitoringData,
