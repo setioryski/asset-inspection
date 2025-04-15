@@ -200,193 +200,210 @@
   </table>
 </div>
 
+<!-- START OF UPDATED SECTION -->
 <h2>Tabel Aset Rusak & Hilang</h2>
 
-<!-- Tabel Tipe Aset Rusak -->
-<h3>Tipe Aset - Rusak</h3>
-<% if (tipeAsetRusak && tipeAsetRusak.length > 0) { %>
-  <table>
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>Aset ID</th>
-        <th>Nama Tipe</th>
-        <th>Nama Lantai</th>
-        <th>Tanggal Deteksi</th>
-        <th>Catatan</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% tipeAsetRusak.forEach(function(item, index) { %>
-        <tr>
-          <td><%= index + 1 %></td>
-          <td><%= item.aset_id %></td>
-          <td><%= item.aset_name %></td>
-          <td><%= item.lantai_name %></td>
-          <td><%= item.detected_date %></td>
-          <td><%= item.catatan %></td>
-        </tr>
-      <% }); %>
-    </tbody>
-  </table>
-<% } else { %>
-  <p>Tidak ada data Tipe Aset Rusak.</p>
-<% } %>
+<!-- ASET: Rusak & Hilang -->
+<div class="table-pair-container">
+  <div class="table-card">
+    <h3>Tipe Aset - Rusak</h3>
+    <% if (tipeAsetRusak && tipeAsetRusak.length > 0) { %>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Aset ID</th>
+            <th>Nama Tipe</th>
+            <th>Nama Lantai</th>
+            <th>Tanggal Deteksi</th>
+            <th>Catatan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tipeAsetRusak.forEach(function(item, index) { %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><%= item.aset_id %></td>
+              <td><%= item.aset_name %></td>
+              <td><%= item.lantai_name %></td>
+              <td><%= item.detected_date %></td>
+              <td><%= item.catatan %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>Tidak ada data Tipe Aset Rusak.</p>
+    <% } %>
+  </div>
 
-<!-- Tabel Tipe Aset Hilang -->
-<h3>Tipe Aset - Hilang</h3>
-<% if (tipeAsetHilang && tipeAsetHilang.length > 0) { %>
-  <table>
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>Aset ID</th>
-        <th>Nama Tipe</th>
-        <th>Nama Lantai</th>
-        <th>Tanggal Deteksi</th>
-        <th>Catatan</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% tipeAsetHilang.forEach(function(item, index) { %>
-        <tr>
-          <td><%= index + 1 %></td>
-          <td><%= item.aset_id %></td>
-          <td><%= item.aset_name %></td>
-          <td><%= item.lantai_name %></td>
-          <td><%= item.detected_date %></td>
-          <td><%= item.catatan %></td>
-        </tr>
-      <% }); %>
-    </tbody>
-  </table>
-<% } else { %>
-  <p>Tidak ada data Tipe Aset Hilang.</p>
-<% } %>
+  <div class="table-card">
+    <h3>Tipe Aset - Hilang</h3>
+    <% if (tipeAsetHilang && tipeAsetHilang.length > 0) { %>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Aset ID</th>
+            <th>Nama Tipe</th>
+            <th>Nama Lantai</th>
+            <th>Tanggal Deteksi</th>
+            <th>Catatan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tipeAsetHilang.forEach(function(item, index) { %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><%= item.aset_id %></td>
+              <td><%= item.aset_name %></td>
+              <td><%= item.lantai_name %></td>
+              <td><%= item.detected_date %></td>
+              <td><%= item.catatan %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>Tidak ada data Tipe Aset Hilang.</p>
+    <% } %>
+  </div>
+</div>
 
-<!-- Tabel Tipe Door Rusak -->
-<h3>Tipe Door - Rusak</h3>
-<% if (tipeDoorRusak && tipeDoorRusak.length > 0) { %>
-  <table>
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>Aset ID</th>
-        <th>Nama Tipe</th>
-        <th>Nama Lantai</th>
-        <th>Tanggal Deteksi</th>
-        <th>Catatan</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% tipeDoorRusak.forEach(function(item, index) { %>
-        <tr>
-          <td><%= index + 1 %></td>
-          <td><%= item.aset_id %></td>
-          <td><%= item.aset_name %></td>
-          <td><%= item.lantai_name %></td>
-          <td><%= item.detected_date %></td>
-          <td><%= item.catatan %></td>
-        </tr>
-      <% }); %>
-    </tbody>
-  </table>
-<% } else { %>
-  <p>Tidak ada data Tipe Door Rusak.</p>
-<% } %>
+<!-- DOOR: Rusak & Hilang -->
+<div class="table-pair-container">
+  <div class="table-card">
+    <h3>Tipe Door - Rusak</h3>
+    <% if (tipeDoorRusak && tipeDoorRusak.length > 0) { %>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Aset ID</th>
+            <th>Nama Tipe</th>
+            <th>Nama Lantai</th>
+            <th>Tanggal Deteksi</th>
+            <th>Catatan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tipeDoorRusak.forEach(function(item, index) { %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><%= item.aset_id %></td>
+              <td><%= item.aset_name %></td>
+              <td><%= item.lantai_name %></td>
+              <td><%= item.detected_date %></td>
+              <td><%= item.catatan %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>Tidak ada data Tipe Door Rusak.</p>
+    <% } %>
+  </div>
 
-<!-- Tabel Tipe Door Hilang -->
-<h3>Tipe Door - Hilang</h3>
-<% if (tipeDoorHilang && tipeDoorHilang.length > 0) { %>
-  <table>
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>Aset ID</th>
-        <th>Nama Tipe</th>
-        <th>Nama Lantai</th>
-        <th>Tanggal Deteksi</th>
-        <th>Catatan</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% tipeDoorHilang.forEach(function(item, index) { %>
-        <tr>
-          <td><%= index + 1 %></td>
-          <td><%= item.aset_id %></td>
-          <td><%= item.aset_name %></td>
-          <td><%= item.lantai_name %></td>
-          <td><%= item.detected_date %></td>
-          <td><%= item.catatan %></td>
-        </tr>
-      <% }); %>
-    </tbody>
-  </table>
-<% } else { %>
-  <p>Tidak ada data Tipe Door Hilang.</p>
-<% } %>
+  <div class="table-card">
+    <h3>Tipe Door - Hilang</h3>
+    <% if (tipeDoorHilang && tipeDoorHilang.length > 0) { %>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Aset ID</th>
+            <th>Nama Tipe</th>
+            <th>Nama Lantai</th>
+            <th>Tanggal Deteksi</th>
+            <th>Catatan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tipeDoorHilang.forEach(function(item, index) { %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><%= item.aset_id %></td>
+              <td><%= item.aset_name %></td>
+              <td><%= item.lantai_name %></td>
+              <td><%= item.detected_date %></td>
+              <td><%= item.catatan %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>Tidak ada data Tipe Door Hilang.</p>
+    <% } %>
+  </div>
+</div>
 
-<!-- Tabel Tipe HB Rusak -->
-<h3>Tipe HB - Rusak</h3>
-<% if (tipeHbRusak && tipeHbRusak.length > 0) { %>
-  <table>
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>Aset ID</th>
-        <th>Nama Tipe</th>
-        <th>Nama Lantai</th>
-        <th>Tanggal Deteksi</th>
-        <th>Catatan</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% tipeHbRusak.forEach(function(item, index) { %>
-        <tr>
-          <td><%= index + 1 %></td>
-          <td><%= item.aset_id %></td>
-          <td><%= item.aset_name %></td>
-          <td><%= item.lantai_name %></td>
-          <td><%= item.detected_date %></td>
-          <td><%= item.catatan %></td>
-        </tr>
-      <% }); %>
-    </tbody>
-  </table>
-<% } else { %>
-  <p>Tidak ada data Tipe HB Rusak.</p>
-<% } %>
+<!-- HB: Rusak & Hilang -->
+<div class="table-pair-container">
+  <div class="table-card">
+    <h3>Tipe HB - Rusak</h3>
+    <% if (tipeHbRusak && tipeHbRusak.length > 0) { %>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Aset ID</th>
+            <th>Nama Tipe</th>
+            <th>Nama Lantai</th>
+            <th>Tanggal Deteksi</th>
+            <th>Catatan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tipeHbRusak.forEach(function(item, index) { %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><%= item.aset_id %></td>
+              <td><%= item.aset_name %></td>
+              <td><%= item.lantai_name %></td>
+              <td><%= item.detected_date %></td>
+              <td><%= item.catatan %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>Tidak ada data Tipe HB Rusak.</p>
+    <% } %>
+  </div>
 
-<!-- Tabel Tipe HB Hilang -->
-<h3>Tipe HB - Hilang</h3>
-<% if (tipeHbHilang && tipeHbHilang.length > 0) { %>
-  <table>
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>Aset ID</th>
-        <th>Nama Tipe</th>
-        <th>Nama Lantai</th>
-        <th>Tanggal Deteksi</th>
-        <th>Catatan</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% tipeHbHilang.forEach(function(item, index) { %>
-        <tr>
-          <td><%= index + 1 %></td>
-          <td><%= item.aset_id %></td>
-          <td><%= item.aset_name %></td>
-          <td><%= item.lantai_name %></td>
-          <td><%= item.detected_date %></td>
-          <td><%= item.catatan %></td>
-        </tr>
-      <% }); %>
-    </tbody>
-  </table>
-<% } else { %>
-  <p>Tidak ada data Tipe HB Hilang.</p>
-<% } %>
+  <div class="table-card">
+    <h3>Tipe HB - Hilang</h3>
+    <% if (tipeHbHilang && tipeHbHilang.length > 0) { %>
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Aset ID</th>
+            <th>Nama Tipe</th>
+            <th>Nama Lantai</th>
+            <th>Tanggal Deteksi</th>
+            <th>Catatan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% tipeHbHilang.forEach(function(item, index) { %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><%= item.aset_id %></td>
+              <td><%= item.aset_name %></td>
+              <td><%= item.lantai_name %></td>
+              <td><%= item.detected_date %></td>
+              <td><%= item.catatan %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <p>Tidak ada data Tipe HB Hilang.</p>
+    <% } %>
+  </div>
+</div>
+
 
 
   <!-- Flatpickr JS -->
