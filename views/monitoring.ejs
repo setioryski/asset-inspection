@@ -11,7 +11,36 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css" />
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <!-- Inline CSS for Tabs and Modal -->
   <style>
+    /* Tab container */
+    .tab {
+      overflow: hidden;
+      border-bottom: 1px solid #ccc;
+      margin-top: 20px;
+    }
+    .tab button {
+      background-color: inherit;
+      float: left;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 10px 20px;
+      transition: background-color 0.3s;
+      font-size: 16px;
+    }
+    .tab button:hover {
+      background-color: #ddd;
+    }
+    .tab button.active {
+      background-color: #007BFF;
+      color: white;
+    }
+    .tabcontent {
+      display: none;
+      padding: 15px 0;
+    }
     /* Modal styling */
     .modal {
       display: none; /* Hidden by default */
@@ -44,8 +73,6 @@
     .modal .close:hover,
     .modal .close:focus {
       color: #bbb;
-      text-decoration: none;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -69,421 +96,432 @@
     <button type="submit">Tampilkan</button>
   </form>
 
-  <!-- Catatan Section with 4 Columns -->
-  <div id="notes">
-    <h2>Catatan</h2>
-    <button id="copyNotes">Salin</button>
-    <div class="notes-container">
-      <!-- Column 1: Lantai tanpa patroli (record_type = 'No Record') -->
-      <div class="notes-list">
-        <h3>Tidak Ada Patroli</h3>
-        <ul>
-          <% 
-            let floorsNoPatrol = [];
-            data.forEach(item => {
-              if(item.record_type === 'No Record' && !floorsNoPatrol.find(f => f.lantai_id === item.lantai_id)) {
-                floorsNoPatrol.push({ lantai_id: item.lantai_id, nama_lantai: item.nama_lantai });
-              }
-            });
-            if (floorsNoPatrol.length === 0) { 
-          %>
-            <li>Semua lantai telah dipatroli.</li>
-          <% } else { 
-               floorsNoPatrol.forEach(floor => { %>
-            <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>) tidak ada patroli.</li>
-          <%   });
-             } %>
-        </ul>
-      </div>
+  <!-- Tab Navigation -->
+  <div class="tab">
+    <button class="tablink" onclick="openTab(event, 'overview')" id="defaultOpen">Overview</button>
+    <button class="tablink" onclick="openTab(event, 'asetTab')">Aset Rusak & Hilang</button>
+  </div>
 
-      <!-- Prepare grouped data for floors with records (duplicate_count != 'No Record') -->
-      <%
-        // Define the grouped object to be used in subsequent sections
-        let grouped = {};
-        data.forEach(item => {
-          if(item.record_type !== 'No Record') {
-            if(!grouped[item.lantai_id]) {
-              grouped[item.lantai_id] = { nama_lantai: item.nama_lantai, records: [] };
-            }
-            grouped[item.lantai_id].records.push(item);
-          }
-        });
-      %>
-
-      <!-- Column 2: Patroli 1 Kali -->
-      <div class="notes-list">
-        <h3>Patroli 1 Kali</h3>
-        <ul>
-          <%
-            let floorsPatrolOK = [];
-            let keys = Object.keys(grouped);
-            if(keys.length === 0) { 
-          %>
-            <li>Tidak ada lantai dengan record.</li>
-          <% } else {
-               keys.forEach(lantaiId => {
-                 let group = grouped[lantaiId];
-                 let hasUnique = group.records.some(r => r.duplicate_count == 1);
-                 if(hasUnique) {
-                   let monitoringCount = group.records.length;
-                   let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
-                   let totalAset = asetItem ? asetItem.total_aset : 0;
-                   if(monitoringCount === totalAset) {
-                     floorsPatrolOK.push({ lantai_id: lantaiId, nama_lantai: group.nama_lantai });
-                   }
-                 }
-               });
-               if(floorsPatrolOK.length === 0) {
-          %>
-            <li>Tidak ada laporan patroli 1 kali.</li>
-          <% } else {
-                   floorsPatrolOK.forEach(floor => { %>
-            <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>) hanya dipatroli 1 kali.</li>
-          <%     });
-               }
-             }
-          %>
-        </ul>
-      </div>
-
-      <!-- Column 3: Perlu Pengecekan -->
-      <div class="notes-list">
-        <h3>Perlu Pengecekan</h3>
-        <ul>
-          <%
-            let floorsNeedCheck = [];
-            keys.forEach(lantaiId => {
-              let group = grouped[lantaiId];
-              let hasUnique = group.records.some(r => r.duplicate_count == 1);
-              if(hasUnique) {
-                let monitoringCount = group.records.length;
-                let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
-                let totalAset = asetItem ? asetItem.total_aset : 0;
-                if(monitoringCount !== totalAset) {
-                  floorsNeedCheck.push({ lantai_id: lantaiId, nama_lantai: group.nama_lantai, monitoringCount, totalAset });
+  <!-- Tab Content for Overview -->
+  <div id="overview" class="tabcontent">
+    <!-- Notes Section -->
+    <div id="notes">
+      <h2>Catatan</h2>
+      <button id="copyNotes">Salin</button>
+      <div class="notes-container">
+        <!-- Column 1: Lantai tanpa patroli (record_type = 'No Record') -->
+        <div class="notes-list">
+          <h3>Tidak Ada Patroli</h3>
+          <ul>
+            <% 
+              // Ensure 'grouped' is defined before its use.
+              let grouped = {};
+              data.forEach(item => {
+                if(item.record_type !== 'No Record'){
+                  if(!grouped[item.lantai_id]) {
+                    grouped[item.lantai_id] = { nama_lantai: item.nama_lantai, records: [] };
+                  }
+                  grouped[item.lantai_id].records.push(item);
                 }
-              }
-            });
-            if(floorsNeedCheck.length === 0) {
-          %>
-            <li>Tidak ada yang perlu pengecekan.</li>
-          <% } else {
-                   floorsNeedCheck.forEach(floor => { %>
-            <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>): Patroli 1 kali, namun record (<%= floor.monitoringCount %>) tidak sesuai dengan total aset (<%= floor.totalAset %>).</li>
-          <%     });
+              });
+              if (Object.keys(grouped).length === 0) { 
+            %>
+              <li>Semua lantai telah dipatroli.</li>
+            <% } else { 
+                 Object.keys(grouped).forEach(lantaiId => { 
+                   let floor = grouped[lantaiId];
+            %>
+              <li>Lantai <%= floor.nama_lantai %> (ID: <%= lantaiId %>) tidak ada patroli.</li>
+            <%     });
+               } %>
+          </ul>
+        </div>
+
+        <!-- Column 2: Patroli 1 Kali -->
+        <div class="notes-list">
+          <h3>Patroli 1 Kali</h3>
+          <ul>
+            <%
+              let floorsPatrolOK = [];
+              let keys = Object.keys(grouped);
+              if(keys.length === 0) { 
+            %>
+              <li>Tidak ada lantai dengan record.</li>
+            <% } else {
+                 keys.forEach(lantaiId => {
+                   let group = grouped[lantaiId];
+                   let hasUnique = group.records.some(r => r.duplicate_count == 1);
+                   if(hasUnique) {
+                     let monitoringCount = group.records.length;
+                     let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
+                     let totalAset = asetItem ? asetItem.total_aset : 0;
+                     if(monitoringCount === totalAset) {
+                       floorsPatrolOK.push({ lantai_id: lantaiId, nama_lantai: group.nama_lantai });
+                     }
+                   }
+                 });
+                 if(floorsPatrolOK.length === 0) {
+            %>
+              <li>Tidak ada laporan patroli 1 kali.</li>
+            <% } else {
+                     floorsPatrolOK.forEach(floor => { %>
+              <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>) hanya dipatroli 1 kali.</li>
+            <%     });
+                 }
                }
-          %>
-        </ul>
-      </div>
+            %>
+          </ul>
+        </div>
 
-      <!-- Column 4: Total Aset per Lantai -->
-      <div class="notes-list">
-        <h3>Total Aset per Lantai</h3>
-        <ul>
-          <% 
-            if (!asetPerLantai || asetPerLantai.length === 0) { 
-          %>
-            <li>Tidak ada data aset.</li>
-          <% } else {
-               asetPerLantai.forEach(aset => { %>
-            <li>Lantai <%= aset.nama_lantai %> (ID: <%= aset.lantai_id %>): Total aset <%= aset.total_aset %></li>
-          <%   });
-             } %>
-        </ul>
+        <!-- Column 3: Perlu Pengecekan -->
+        <div class="notes-list">
+          <h3>Perlu Pengecekan</h3>
+          <ul>
+            <%
+              let floorsNeedCheck = [];
+              keys.forEach(lantaiId => {
+                let group = grouped[lantaiId];
+                let hasUnique = group.records.some(r => r.duplicate_count == 1);
+                if(hasUnique) {
+                  let monitoringCount = group.records.length;
+                  let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
+                  let totalAset = asetItem ? asetItem.total_aset : 0;
+                  if(monitoringCount !== totalAset) {
+                    floorsNeedCheck.push({ lantai_id: lantaiId, nama_lantai: group.nama_lantai, monitoringCount, totalAset });
+                  }
+                }
+              });
+              if(floorsNeedCheck.length === 0) {
+            %>
+              <li>Tidak ada yang perlu pengecekan.</li>
+            <% } else {
+                     floorsNeedCheck.forEach(floor => { %>
+              <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>): Patroli 1 kali, namun record (<%= floor.monitoringCount %>) tidak sesuai dengan total aset (<%= floor.totalAset %>).</li>
+            <%     });
+                 }
+            %>
+          </ul>
+        </div>
+
+        <!-- Column 4: Total Aset per Lantai -->
+        <div class="notes-list">
+          <h3>Total Aset per Lantai</h3>
+          <ul>
+            <% if (!asetPerLantai || asetPerLantai.length === 0) { %>
+              <li>Tidak ada data aset.</li>
+            <% } else {
+                 asetPerLantai.forEach(aset => { %>
+              <li>Lantai <%= aset.nama_lantai %> (ID: <%= aset.lantai_id %>): Total aset <%= aset.total_aset %></li>
+            <%   });
+               } %>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
 
-  <button id="toggleTableBtn">Tampilkan Tabel Monitoring</button>
-
-  <!-- Monitoring Data Table -->
-  <div id="tableContainer" style="display: none;">
-    <table>
-      <thead>
-        <tr>
-          <th>No.</th>
-          <th>Row Index per Lantai</th>
-          <th>Combined Tipe ID</th>
-          <th>Nama Tipe</th>
-          <th>Lantai ID</th>
-          <th>Nama Lantai</th>
-          <th>Duplicate Count</th>
-          <th>Record Type</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if (data.length > 0) { %>
-          <% data.forEach(function(item){ %>
-            <tr>
-              <td data-label="No."><%= item.overall_row_index %></td>
-              <td data-label="Row Index per Lantai"><%= item.row_index_per_lantai %></td>
-              <td data-label="Combined Tipe ID"><%= item.combined_tipe_id ? item.combined_tipe_id : '-' %></td>
-              <td data-label="Nama Tipe"><%= item.nama_tipe ? item.nama_tipe : '-' %></td>
-              <td data-label="Lantai ID"><%= item.lantai_id %></td>
-              <td data-label="Nama Lantai"><%= item.nama_lantai %></td>
-              <td data-label="Duplicate Count"><%= item.duplicate_count %></td>
-              <td data-label="Record Type"><%= item.record_type %></td>
-            </tr>
-          <% }); %>
-        <% } else { %>
+    <!-- Existing Monitoring Data Table (collapsed by a toggle button if needed) -->
+    <button id="toggleTableBtn">Tampilkan Tabel Monitoring</button>
+    <div id="tableContainer" style="display: none;">
+      <table>
+        <thead>
           <tr>
-            <td colspan="8">Tidak ada data untuk periode ini.</td>
+            <th>No.</th>
+            <th>Row Index per Lantai</th>
+            <th>Combined Tipe ID</th>
+            <th>Nama Tipe</th>
+            <th>Lantai ID</th>
+            <th>Nama Lantai</th>
+            <th>Duplicate Count</th>
+            <th>Record Type</th>
           </tr>
+        </thead>
+        <tbody>
+          <% if (data.length > 0) { %>
+            <% data.forEach(function(item){ %>
+              <tr>
+                <td data-label="No."><%= item.overall_row_index %></td>
+                <td data-label="Row Index per Lantai"><%= item.row_index_per_lantai %></td>
+                <td data-label="Combined Tipe ID"><%= item.combined_tipe_id ? item.combined_tipe_id : '-' %></td>
+                <td data-label="Nama Tipe"><%= item.nama_tipe ? item.nama_tipe : '-' %></td>
+                <td data-label="Lantai ID"><%= item.lantai_id %></td>
+                <td data-label="Nama Lantai"><%= item.nama_lantai %></td>
+                <td data-label="Duplicate Count"><%= item.duplicate_count %></td>
+                <td data-label="Record Type"><%= item.record_type %></td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+              <tr>
+                <td colspan="8">Tidak ada data untuk periode ini.</td>
+              </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab Content for Aset Rusak & Hilang (Own Tab) -->
+  <div id="asetTab" class="tabcontent">
+    <h2>Tabel Aset Rusak & Hilang</h2>
+    
+    <!-- ASET: Rusak & Hilang -->
+    <div class="table-pair-container">
+      <div class="table-card">
+        <h3>Tipe Aset - Rusak</h3>
+        <% if (tipeAsetRusak && tipeAsetRusak.length > 0) { %>
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Aset ID</th>
+                <th>Nama Tipe</th>
+                <th>Nama Lantai</th>
+                <th>Tanggal Deteksi</th>
+                <th>Catatan</th>
+                <th>Foto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% tipeAsetRusak.forEach(function(item, index) { %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= item.aset_id %></td>
+                  <td><%= item.aset_name %></td>
+                  <td><%= item.lantai_name %></td>
+                  <td>
+                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
+                  </td>
+                  <td><%= item.catatan %></td>
+                  <td>
+                    <% if(item.foto) { %>
+                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto Aset" style="max-height: 80px; cursor: pointer;">
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <p>Tidak ada data Tipe Aset Rusak.</p>
         <% } %>
-      </tbody>
-    </table>
-  </div>
+      </div>
 
-  <!-- START OF UPDATED SECTION: Tables with Images and Formatted Dates -->
-
-  <h2>Tabel Aset Rusak & Hilang</h2>
-
-  <!-- ASET: Rusak & Hilang -->
-  <div class="table-pair-container">
-    <div class="table-card">
-      <h3>Tipe Aset - Rusak</h3>
-      <% if (tipeAsetRusak && tipeAsetRusak.length > 0) { %>
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Aset ID</th>
-              <th>Nama Tipe</th>
-              <th>Nama Lantai</th>
-              <th>Tanggal Deteksi</th>
-              <th>Catatan</th>
-              <th>Foto</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% tipeAsetRusak.forEach(function(item, index) { %>
+      <div class="table-card">
+        <h3>Tipe Aset - Hilang</h3>
+        <% if (tipeAsetHilang && tipeAsetHilang.length > 0) { %>
+          <table>
+            <thead>
               <tr>
-                <td><%= index + 1 %></td>
-                <td><%= item.aset_id %></td>
-                <td><%= item.aset_name %></td>
-                <td><%= item.lantai_name %></td>
-                <td><%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %></td>
-                <td><%= item.catatan %></td>
-                <td>
-                  <% if(item.foto) { %>
-                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto Aset" style="max-height: 80px; cursor: pointer;">
-                  <% } else { %>
-                    N/A
-                  <% } %>
-                </td>
+                <th>No</th>
+                <th>Aset ID</th>
+                <th>Nama Tipe</th>
+                <th>Nama Lantai</th>
+                <th>Tanggal Deteksi</th>
+                <th>Catatan</th>
+                <th>Foto</th>
               </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <p>Tidak ada data Tipe Aset Rusak.</p>
-      <% } %>
+            </thead>
+            <tbody>
+              <% tipeAsetHilang.forEach(function(item, index) { %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= item.aset_id %></td>
+                  <td><%= item.aset_name %></td>
+                  <td><%= item.lantai_name %></td>
+                  <td>
+                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
+                  </td>
+                  <td><%= item.catatan %></td>
+                  <td>
+                    <% if(item.foto) { %>
+                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto Aset" style="max-height: 80px; cursor: pointer;">
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <p>Tidak ada data Tipe Aset Hilang.</p>
+        <% } %>
+      </div>
     </div>
 
-    <div class="table-card">
-      <h3>Tipe Aset - Hilang</h3>
-      <% if (tipeAsetHilang && tipeAsetHilang.length > 0) { %>
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Aset ID</th>
-              <th>Nama Tipe</th>
-              <th>Nama Lantai</th>
-              <th>Tanggal Deteksi</th>
-              <th>Catatan</th>
-              <th>Foto</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% tipeAsetHilang.forEach(function(item, index) { %>
+    <!-- DOOR: Rusak & Hilang -->
+    <div class="table-pair-container">
+      <div class="table-card">
+        <h3>Tipe Door - Rusak</h3>
+        <% if (tipeDoorRusak && tipeDoorRusak.length > 0) { %>
+          <table>
+            <thead>
               <tr>
-                <td><%= index + 1 %></td>
-                <td><%= item.aset_id %></td>
-                <td><%= item.aset_name %></td>
-                <td><%= item.lantai_name %></td>
-                <td><%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %></td>
-                <td><%= item.catatan %></td>
-                <td>
-                  <% if(item.foto) { %>
-                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto Aset" style="max-height: 80px; cursor: pointer;">
-                  <% } else { %>
-                    N/A
-                  <% } %>
-                </td>
+                <th>No</th>
+                <th>Aset ID</th>
+                <th>Nama Tipe</th>
+                <th>Nama Lantai</th>
+                <th>Tanggal Deteksi</th>
+                <th>Catatan</th>
+                <th>Foto</th>
               </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <p>Tidak ada data Tipe Aset Hilang.</p>
-      <% } %>
-    </div>
-  </div>
+            </thead>
+            <tbody>
+              <% tipeDoorRusak.forEach(function(item, index) { %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= item.aset_id %></td>
+                  <td><%= item.aset_name %></td>
+                  <td><%= item.lantai_name %></td>
+                  <td>
+                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
+                  </td>
+                  <td><%= item.catatan %></td>
+                  <td>
+                    <% if(item.foto) { %>
+                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto Door" style="max-height: 80px; cursor: pointer;">
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <p>Tidak ada data Tipe Door Rusak.</p>
+        <% } %>
+      </div>
 
-  <!-- DOOR: Rusak & Hilang -->
-  <div class="table-pair-container">
-    <div class="table-card">
-      <h3>Tipe Door - Rusak</h3>
-      <% if (tipeDoorRusak && tipeDoorRusak.length > 0) { %>
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Aset ID</th>
-              <th>Nama Tipe</th>
-              <th>Nama Lantai</th>
-              <th>Tanggal Deteksi</th>
-              <th>Catatan</th>
-              <th>Foto</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% tipeDoorRusak.forEach(function(item, index) { %>
+      <div class="table-card">
+        <h3>Tipe Door - Hilang</h3>
+        <% if (tipeDoorHilang && tipeDoorHilang.length > 0) { %>
+          <table>
+            <thead>
               <tr>
-                <td><%= index + 1 %></td>
-                <td><%= item.aset_id %></td>
-                <td><%= item.aset_name %></td>
-                <td><%= item.lantai_name %></td>
-                <td><%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %></td>
-                <td><%= item.catatan %></td>
-                <td>
-                  <% if(item.foto) { %>
-                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto Door" style="max-height: 80px; cursor: pointer;">
-                  <% } else { %>
-                    N/A
-                  <% } %>
-                </td>
+                <th>No</th>
+                <th>Aset ID</th>
+                <th>Nama Tipe</th>
+                <th>Nama Lantai</th>
+                <th>Tanggal Deteksi</th>
+                <th>Catatan</th>
+                <th>Foto</th>
               </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <p>Tidak ada data Tipe Door Rusak.</p>
-      <% } %>
-    </div>
-
-    <div class="table-card">
-      <h3>Tipe Door - Hilang</h3>
-      <% if (tipeDoorHilang && tipeDoorHilang.length > 0) { %>
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Aset ID</th>
-              <th>Nama Tipe</th>
-              <th>Nama Lantai</th>
-              <th>Tanggal Deteksi</th>
-              <th>Catatan</th>
-              <th>Foto</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% tipeDoorHilang.forEach(function(item, index) { %>
-              <tr>
-                <td><%= index + 1 %></td>
-                <td><%= item.aset_id %></td>
-                <td><%= item.aset_name %></td>
-                <td><%= item.lantai_name %></td>
-                <td><%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %></td>
-                <td><%= item.catatan %></td>
-                <td>
-                  <% if(item.foto) { %>
-                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto Door" style="max-height: 80px; cursor: pointer;">
-                  <% } else { %>
-                    N/A
-                  <% } %>
-                </td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <p>Tidak ada data Tipe Door Hilang.</p>
-      <% } %>
-    </div>
-  </div>
-
-  <!-- HB: Rusak & Hilang -->
-  <div class="table-pair-container">
-    <div class="table-card">
-      <h3>Tipe HB - Rusak</h3>
-      <% if (tipeHbRusak && tipeHbRusak.length > 0) { %>
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Aset ID</th>
-              <th>Nama Tipe</th>
-              <th>Nama Lantai</th>
-              <th>Tanggal Deteksi</th>
-              <th>Catatan</th>
-              <th>Foto</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% tipeHbRusak.forEach(function(item, index) { %>
-              <tr>
-                <td><%= index + 1 %></td>
-                <td><%= item.aset_id %></td>
-                <td><%= item.aset_name %></td>
-                <td><%= item.lantai_name %></td>
-                <td><%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %></td>
-                <td><%= item.catatan %></td>
-                <td>
-                  <% if(item.foto) { %>
-                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto HB" style="max-height: 80px; cursor: pointer;">
-                  <% } else { %>
-                    N/A
-                  <% } %>
-                </td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <p>Tidak ada data Tipe HB Rusak.</p>
-      <% } %>
+            </thead>
+            <tbody>
+              <% tipeDoorHilang.forEach(function(item, index) { %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= item.aset_id %></td>
+                  <td><%= item.aset_name %></td>
+                  <td><%= item.lantai_name %></td>
+                  <td>
+                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
+                  </td>
+                  <td><%= item.catatan %></td>
+                  <td>
+                    <% if(item.foto) { %>
+                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto Door" style="max-height: 80px; cursor: pointer;">
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <p>Tidak ada data Tipe Door Hilang.</p>
+        <% } %>
+      </div>
     </div>
 
-    <div class="table-card">
-      <h3>Tipe HB - Hilang</h3>
-      <% if (tipeHbHilang && tipeHbHilang.length > 0) { %>
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Aset ID</th>
-              <th>Nama Tipe</th>
-              <th>Nama Lantai</th>
-              <th>Tanggal Deteksi</th>
-              <th>Catatan</th>
-              <th>Foto</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% tipeHbHilang.forEach(function(item, index) { %>
+    <!-- HB: Rusak & Hilang -->
+    <div class="table-pair-container">
+      <div class="table-card">
+        <h3>Tipe HB - Rusak</h3>
+        <% if (tipeHbRusak && tipeHbRusak.length > 0) { %>
+          <table>
+            <thead>
               <tr>
-                <td><%= index + 1 %></td>
-                <td><%= item.aset_id %></td>
-                <td><%= item.aset_name %></td>
-                <td><%= item.lantai_name %></td>
-                <td><%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %></td>
-                <td><%= item.catatan %></td>
-                <td>
-                  <% if(item.foto) { %>
-                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto HB" style="max-height: 80px; cursor: pointer;">
-                  <% } else { %>
-                    N/A
-                  <% } %>
-                </td>
+                <th>No</th>
+                <th>Aset ID</th>
+                <th>Nama Tipe</th>
+                <th>Nama Lantai</th>
+                <th>Tanggal Deteksi</th>
+                <th>Catatan</th>
+                <th>Foto</th>
               </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <p>Tidak ada data Tipe HB Hilang.</p>
-      <% } %>
+            </thead>
+            <tbody>
+              <% tipeHbRusak.forEach(function(item, index) { %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= item.aset_id %></td>
+                  <td><%= item.aset_name %></td>
+                  <td><%= item.lantai_name %></td>
+                  <td>
+                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
+                  </td>
+                  <td><%= item.catatan %></td>
+                  <td>
+                    <% if(item.foto) { %>
+                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto HB" style="max-height: 80px; cursor: pointer;">
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <p>Tidak ada data Tipe HB Rusak.</p>
+        <% } %>
+      </div>
+
+      <div class="table-card">
+        <h3>Tipe HB - Hilang</h3>
+        <% if (tipeHbHilang && tipeHbHilang.length > 0) { %>
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Aset ID</th>
+                <th>Nama Tipe</th>
+                <th>Nama Lantai</th>
+                <th>Tanggal Deteksi</th>
+                <th>Catatan</th>
+                <th>Foto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% tipeHbHilang.forEach(function(item, index) { %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td><%= item.aset_id %></td>
+                  <td><%= item.aset_name %></td>
+                  <td><%= item.lantai_name %></td>
+                  <td>
+                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
+                  </td>
+                  <td><%= item.catatan %></td>
+                  <td>
+                    <% if(item.foto) { %>
+                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto HB" style="max-height: 80px; cursor: pointer;">
+                    <% } else { %>
+                      N/A
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <p>Tidak ada data Tipe HB Hilang.</p>
+        <% } %>
+      </div>
     </div>
   </div>
 
@@ -496,6 +534,24 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
+    // Tab navigation functionality
+    function openTab(evt, tabName) {
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+      }
+      tablinks = document.getElementsByClassName("tablink");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+      }
+      document.getElementById(tabName).style.display = "block";
+      evt.currentTarget.className += " active";
+    }
+    // Open default tab
+    document.getElementById("defaultOpen").click();
+
+    // Flatpickr initialization
     flatpickr("#startDate", {
       disableMobile: true,
       enableTime: true,
@@ -527,7 +583,7 @@
       });
     });
 
-    // Toggle table visibility
+    // Toggle Monitoring Table visibility
     document.getElementById('toggleTableBtn').addEventListener('click', function() {
       const tableContainer = document.getElementById('tableContainer');
       if (tableContainer.style.display === 'none') {
@@ -544,7 +600,7 @@
     const modalImg = document.getElementById('modalImage');
     const closeBtn = document.querySelector('.modal .close');
 
-    // Attach click event to all images with class "clickable-image"
+    // Add click event to all images with class "clickable-image"
     document.querySelectorAll('.clickable-image').forEach(img => {
       img.addEventListener('click', function() {
         modal.style.display = "block";
@@ -552,12 +608,12 @@
       });
     });
 
-    // Close modal when clicking on close button
+    // Close modal on clicking close button
     closeBtn.addEventListener('click', function() {
       modal.style.display = "none";
     });
 
-    // Close modal when clicking outside the modal image
+    // Close modal when clicking outside the image
     modal.addEventListener('click', function(e) {
       if(e.target === modal) {
         modal.style.display = "none";
