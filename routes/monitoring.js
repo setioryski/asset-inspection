@@ -113,7 +113,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
     `;
     const asetPerLantai = await queryAsync(asetSql);
 
-    // 4. Query for six separate tables
+    // 4. Query for six separate tables (each query now selects a.foto as well)
 
     // 4.1. Tipe Aset - Rusak (id_kondisi = 2)
     const tipeAsetRusakSQL = `
@@ -124,6 +124,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
               tl.nama_lantai AS lantai_name,
               a.client_timestamp AS detected_date,
               a.catatan AS catatan,
+              a.foto AS foto,
               ROW_NUMBER() OVER (PARTITION BY a.id_tipe_aset ORDER BY a.client_timestamp DESC) AS row_num
           FROM aset a
           LEFT JOIN tipe_aset ta ON a.id_tipe_aset = ta.id
@@ -132,7 +133,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
             AND a.id_tipe_aset IS NOT NULL
             AND DATE(a.client_timestamp) BETWEEN ? AND ?
       )
-      SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+      SELECT aset_id, aset_name, lantai_name, detected_date, catatan, foto
       FROM LatestAset
       WHERE row_num = 1;
     `;
@@ -147,6 +148,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
               tl.nama_lantai AS lantai_name,
               a.client_timestamp AS detected_date,
               a.catatan AS catatan,
+              a.foto AS foto,
               ROW_NUMBER() OVER (PARTITION BY a.id_tipe_aset ORDER BY a.client_timestamp DESC) AS row_num
           FROM aset a
           LEFT JOIN tipe_aset ta ON a.id_tipe_aset = ta.id
@@ -155,7 +157,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
             AND a.id_tipe_aset IS NOT NULL
             AND DATE(a.client_timestamp) BETWEEN ? AND ?
       )
-      SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+      SELECT aset_id, aset_name, lantai_name, detected_date, catatan, foto
       FROM LatestAset
       WHERE row_num = 1;
     `;
@@ -170,6 +172,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
               tl.nama_lantai AS lantai_name,
               a.client_timestamp AS detected_date,
               a.catatan AS catatan,
+              a.foto AS foto,
               ROW_NUMBER() OVER (PARTITION BY a.id_tipe_door ORDER BY a.client_timestamp DESC) AS row_num
           FROM aset a
           LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
@@ -178,7 +181,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
             AND a.id_tipe_door IS NOT NULL
             AND DATE(a.client_timestamp) BETWEEN ? AND ?
       )
-      SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+      SELECT aset_id, aset_name, lantai_name, detected_date, catatan, foto
       FROM LatestAset
       WHERE row_num = 1;
     `;
@@ -193,6 +196,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
               tl.nama_lantai AS lantai_name,
               a.client_timestamp AS detected_date,
               a.catatan AS catatan,
+              a.foto AS foto,
               ROW_NUMBER() OVER (PARTITION BY a.id_tipe_door ORDER BY a.client_timestamp DESC) AS row_num
           FROM aset a
           LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
@@ -201,7 +205,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
             AND a.id_tipe_door IS NOT NULL
             AND DATE(a.client_timestamp) BETWEEN ? AND ?
       )
-      SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+      SELECT aset_id, aset_name, lantai_name, detected_date, catatan, foto
       FROM LatestAset
       WHERE row_num = 1;
     `;
@@ -216,6 +220,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
               tl.nama_lantai AS lantai_name,
               a.client_timestamp AS detected_date,
               a.catatan AS catatan,
+              a.foto AS foto,
               ROW_NUMBER() OVER (PARTITION BY a.id_tipe_hb ORDER BY a.client_timestamp DESC) AS row_num
           FROM aset a
           LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
@@ -224,7 +229,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
             AND a.id_tipe_hb IS NOT NULL
             AND DATE(a.client_timestamp) BETWEEN ? AND ?
       )
-      SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+      SELECT aset_id, aset_name, lantai_name, detected_date, catatan, foto
       FROM LatestAset
       WHERE row_num = 1;
     `;
@@ -239,6 +244,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
               tl.nama_lantai AS lantai_name,
               a.client_timestamp AS detected_date,
               a.catatan AS catatan,
+              a.foto AS foto,
               ROW_NUMBER() OVER (PARTITION BY a.id_tipe_hb ORDER BY a.client_timestamp DESC) AS row_num
           FROM aset a
           LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
@@ -247,7 +253,7 @@ router.get('/monitoring', isAuthenticated, checkRole(['admin']), async (req, res
             AND a.id_tipe_hb IS NOT NULL
             AND DATE(a.client_timestamp) BETWEEN ? AND ?
       )
-      SELECT aset_id, aset_name, lantai_name, detected_date, catatan
+      SELECT aset_id, aset_name, lantai_name, detected_date, catatan, foto
       FROM LatestAset
       WHERE row_num = 1;
     `;
