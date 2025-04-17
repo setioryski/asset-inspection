@@ -268,366 +268,363 @@
     </div>
   </div>
 
-  <!-- Tab Content for Aset Rusak & Hilang (Own Tab) -->
-  <div id="asetTab" class="tabcontent">
-    <h2>Tabel Aset Rusak & Hilang</h2>
-    
-    <!-- ASET: Rusak & Hilang -->
-    <div class="table-pair-container">
-      <div class="table-card">
-        <h3>Tipe Aset - Rusak</h3>
-        <% if (tipeAsetRusak && tipeAsetRusak.length > 0) { %>
-          <table>
-            <thead>
+ <!-- Tab Content for Aset Rusak & Hilang (Own Tab) -->
+ <div id="asetTab" class="tabcontent">
+  <h2>Tabel Aset Rusak & Hilang</h2>
+  <div class="table-pair-container">
+    <div class="table-card">
+      <h3>Tipe Aset - Rusak</h3>
+      <% if (tipeAsetRusak && tipeAsetRusak.length > 0) { %>
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Aset ID</th>
+              <th>Nama Tipe</th>
+              <th>Nama Lantai</th>
+              <th>Tanggal Deteksi</th>
+              <th>Catatan</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% tipeAsetRusak.forEach(function(item, index) { %>
               <tr>
-                <th>No</th>
-                <th>Aset ID</th>
-                <th>Nama Tipe</th>
-                <th>Nama Lantai</th>
-                <th>Tanggal Deteksi</th>
-                <th>Catatan</th>
-                <th>Foto</th>
+                <td><%= index + 1 %></td>
+                <td><%= item.aset_id %></td>
+                <td><%= item.aset_name %></td>
+                <td><%= item.lantai_name %></td>
+                <td class="detected-date" data-ts="<%= item.detected_date %>"></td>
+                <td><%= item.catatan %></td>
+                <td>
+                  <% if(item.foto) { %>
+                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto Aset" style="max-height: 80px; cursor: pointer;">
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              <% tipeAsetRusak.forEach(function(item, index) { %>
-                <tr>
-                  <td><%= index + 1 %></td>
-                  <td><%= item.aset_id %></td>
-                  <td><%= item.aset_name %></td>
-                  <td><%= item.lantai_name %></td>
-                  <td>
-                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
-                  </td>
-                  <td><%= item.catatan %></td>
-                  <td>
-                    <% if(item.foto) { %>
-                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto Aset" style="max-height: 80px; cursor: pointer;">
-                    <% } else { %>
-                      N/A
-                    <% } %>
-                  </td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        <% } else { %>
-          <p>Tidak ada data Tipe Aset Rusak.</p>
-        <% } %>
-      </div>
-
-      <div class="table-card">
-        <h3>Tipe Aset - Hilang</h3>
-        <% if (tipeAsetHilang && tipeAsetHilang.length > 0) { %>
-          <table>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Aset ID</th>
-                <th>Nama Tipe</th>
-                <th>Nama Lantai</th>
-                <th>Tanggal Deteksi</th>
-                <th>Catatan</th>
-                <th>Foto</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% tipeAsetHilang.forEach(function(item, index) { %>
-                <tr>
-                  <td><%= index + 1 %></td>
-                  <td><%= item.aset_id %></td>
-                  <td><%= item.aset_name %></td>
-                  <td><%= item.lantai_name %></td>
-                  <td>
-                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
-                  </td>
-                  <td><%= item.catatan %></td>
-                  <td>
-                    <% if(item.foto) { %>
-                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto Aset" style="max-height: 80px; cursor: pointer;">
-                    <% } else { %>
-                      N/A
-                    <% } %>
-                  </td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        <% } else { %>
-          <p>Tidak ada data Tipe Aset Hilang.</p>
-        <% } %>
-      </div>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p>Tidak ada data Tipe Aset Rusak.</p>
+      <% } %>
     </div>
 
-    <!-- DOOR: Rusak & Hilang -->
-    <div class="table-pair-container">
-      <div class="table-card">
-        <h3>Tipe Door - Rusak</h3>
-        <% if (tipeDoorRusak && tipeDoorRusak.length > 0) { %>
-          <table>
-            <thead>
+    <div class="table-card">
+      <h3>Tipe Aset - Hilang</h3>
+      <% if (tipeAsetHilang && tipeAsetHilang.length > 0) { %>
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Aset ID</th>
+              <th>Nama Tipe</th>
+              <th>Nama Lantai</th>
+              <th>Tanggal Deteksi</th>
+              <th>Catatan</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% tipeAsetHilang.forEach(function(item, index) { %>
               <tr>
-                <th>No</th>
-                <th>Aset ID</th>
-                <th>Nama Tipe</th>
-                <th>Nama Lantai</th>
-                <th>Tanggal Deteksi</th>
-                <th>Catatan</th>
-                <th>Foto</th>
+                <td><%= index + 1 %></td>
+                <td><%= item.aset_id %></td>
+                <td><%= item.aset_name %></td>
+                <td><%= item.lantai_name %></td>
+                <td class="detected-date" data-ts="<%= item.detected_date %>"></td>
+                <td><%= item.catatan %></td>
+                <td>
+                  <% if(item.foto) { %>
+                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto Aset" style="max-height: 80px; cursor: pointer;">
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              <% tipeDoorRusak.forEach(function(item, index) { %>
-                <tr>
-                  <td><%= index + 1 %></td>
-                  <td><%= item.aset_id %></td>
-                  <td><%= item.aset_name %></td>
-                  <td><%= item.lantai_name %></td>
-                  <td>
-                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
-                  </td>
-                  <td><%= item.catatan %></td>
-                  <td>
-                    <% if(item.foto) { %>
-                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto Door" style="max-height: 80px; cursor: pointer;">
-                    <% } else { %>
-                      N/A
-                    <% } %>
-                  </td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        <% } else { %>
-          <p>Tidak ada data Tipe Door Rusak.</p>
-        <% } %>
-      </div>
-
-      <div class="table-card">
-        <h3>Tipe Door - Hilang</h3>
-        <% if (tipeDoorHilang && tipeDoorHilang.length > 0) { %>
-          <table>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Aset ID</th>
-                <th>Nama Tipe</th>
-                <th>Nama Lantai</th>
-                <th>Tanggal Deteksi</th>
-                <th>Catatan</th>
-                <th>Foto</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% tipeDoorHilang.forEach(function(item, index) { %>
-                <tr>
-                  <td><%= index + 1 %></td>
-                  <td><%= item.aset_id %></td>
-                  <td><%= item.aset_name %></td>
-                  <td><%= item.lantai_name %></td>
-                  <td>
-                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
-                  </td>
-                  <td><%= item.catatan %></td>
-                  <td>
-                    <% if(item.foto) { %>
-                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto Door" style="max-height: 80px; cursor: pointer;">
-                    <% } else { %>
-                      N/A
-                    <% } %>
-                  </td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        <% } else { %>
-          <p>Tidak ada data Tipe Door Hilang.</p>
-        <% } %>
-      </div>
-    </div>
-
-    <!-- HB: Rusak & Hilang -->
-    <div class="table-pair-container">
-      <div class="table-card">
-        <h3>Tipe HB - Rusak</h3>
-        <% if (tipeHbRusak && tipeHbRusak.length > 0) { %>
-          <table>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Aset ID</th>
-                <th>Nama Tipe</th>
-                <th>Nama Lantai</th>
-                <th>Tanggal Deteksi</th>
-                <th>Catatan</th>
-                <th>Foto</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% tipeHbRusak.forEach(function(item, index) { %>
-                <tr>
-                  <td><%= index + 1 %></td>
-                  <td><%= item.aset_id %></td>
-                  <td><%= item.aset_name %></td>
-                  <td><%= item.lantai_name %></td>
-                  <td>
-                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
-                  </td>
-                  <td><%= item.catatan %></td>
-                  <td>
-                    <% if(item.foto) { %>
-                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto HB" style="max-height: 80px; cursor: pointer;">
-                    <% } else { %>
-                      N/A
-                    <% } %>
-                  </td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        <% } else { %>
-          <p>Tidak ada data Tipe HB Rusak.</p>
-        <% } %>
-      </div>
-
-      <div class="table-card">
-        <h3>Tipe HB - Hilang</h3>
-        <% if (tipeHbHilang && tipeHbHilang.length > 0) { %>
-          <table>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Aset ID</th>
-                <th>Nama Tipe</th>
-                <th>Nama Lantai</th>
-                <th>Tanggal Deteksi</th>
-                <th>Catatan</th>
-                <th>Foto</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% tipeHbHilang.forEach(function(item, index) { %>
-                <tr>
-                  <td><%= index + 1 %></td>
-                  <td><%= item.aset_id %></td>
-                  <td><%= item.aset_name %></td>
-                  <td><%= item.lantai_name %></td>
-                  <td>
-                    <%= new Date(item.detected_date).toISOString().slice(0, 19).replace('T', ' ') %>
-                  </td>
-                  <td><%= item.catatan %></td>
-                  <td>
-                    <% if(item.foto) { %>
-                      <img class="clickable-image" src="<%= item.foto %>" alt="Foto HB" style="max-height: 80px; cursor: pointer;">
-                    <% } else { %>
-                      N/A
-                    <% } %>
-                  </td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        <% } else { %>
-          <p>Tidak ada data Tipe HB Hilang.</p>
-        <% } %>
-      </div>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p>Tidak ada data Tipe Aset Hilang.</p>
+      <% } %>
     </div>
   </div>
 
-  <!-- Modal for displaying image on click -->
-  <div id="imageModal" class="modal">
-    <span class="close">&times;</span>
-    <img class="modal-content" id="modalImage">
+  <div class="table-pair-container">
+    <div class="table-card">
+      <h3>Tipe Door - Rusak</h3>
+      <% if (tipeDoorRusak && tipeDoorRusak.length > 0) { %>
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Aset ID</th>
+              <th>Nama Tipe</th>
+              <th>Nama Lantai</th>
+              <th>Tanggal Deteksi</th>
+              <th>Catatan</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% tipeDoorRusak.forEach(function(item, index) { %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td><%= item.aset_id %></td>
+                <td><%= item.aset_name %></td>
+                <td><%= item.lantai_name %></td>
+                <td class="detected-date" data-ts="<%= item.detected_date %>"></td>
+                <td><%= item.catatan %></td>
+                <td>
+                  <% if(item.foto) { %>
+                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto Door" style="max-height: 80px; cursor: pointer;">
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p>Tidak ada data Tipe Door Rusak.</p>
+      <% } %>
+    </div>
+
+    <div class="table-card">
+      <h3>Tipe Door - Hilang</h3>
+      <% if (tipeDoorHilang && tipeDoorHilang.length > 0) { %>
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Aset ID</th>
+              <th>Nama Tipe</th>
+              <th>Nama Lantai</th>
+              <th>Tanggal Deteksi</th>
+              <th>Catatan</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% tipeDoorHilang.forEach(function(item, index) { %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td><%= item.aset_id %></td>
+                <td><%= item.aset_name %></td>
+                <td><%= item.lantai_name %></td>
+                <td class="detected-date" data-ts="<%= item.detected_date %>"></td>
+                <td><%= item.catatan %></td>
+                <td>
+                  <% if(item.foto) { %>
+                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto Door" style="max-height: 80px; cursor: pointer;">
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p>Tidak ada data Tipe Door Hilang.</p>
+      <% } %>
+    </div>
   </div>
 
-  <!-- Flatpickr JS -->
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script>
-    // Tab navigation functionality
-    function openTab(evt, tabName) {
-      var i, tabcontent, tablinks;
-      tabcontent = document.getElementsByClassName("tabcontent");
-      for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-      }
-      tablinks = document.getElementsByClassName("tablink");
-      for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
-      }
-      document.getElementById(tabName).style.display = "block";
-      evt.currentTarget.className += " active";
+  <div class="table-pair-container">
+    <div class="table-card">
+      <h3>Tipe HB - Rusak</h3>
+      <% if (tipeHbRusak && tipeHbRusak.length > 0) { %>
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Aset ID</th>
+              <th>Nama Tipe</th>
+              <th>Nama Lantai</th>
+              <th>Tanggal Deteksi</th>
+              <th>Catatan</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% tipeHbRusak.forEach(function(item, index) { %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td><%= item.aset_id %></td>
+                <td><%= item.aset_name %></td>
+                <td><%= item.lantai_name %></td>
+                <td class="detected-date" data-ts="<%= item.detected_date %>"></td>
+                <td><%= item.catatan %></td>
+                <td>
+                  <% if(item.foto) { %>
+                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto HB" style="max-height: 80px; cursor: pointer;">
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p>Tidak ada data Tipe HB Rusak.</p>
+      <% } %>
+    </div>
+
+    <div class="table-card">
+      <h3>Tipe HB - Hilang</h3>
+      <% if (tipeHbHilang && tipeHbHilang.length > 0) { %>
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Aset ID</th>
+              <th>Nama Tipe</th>
+              <th>Nama Lantai</th>
+              <th>Tanggal Deteksi</th>
+              <th>Catatan</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% tipeHbHilang.forEach(function(item, index) { %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td><%= item.aset_id %></td>
+                <td><%= item.aset_name %></td>
+                <td><%= item.lantai_name %></td>
+                <td class="detected-date" data-ts="<%= item.detected_date %>"></td>
+                <td><%= item.catatan %></td>
+                <td>
+                  <% if(item.foto) { %>
+                    <img class="clickable-image" src="<%= item.foto %>" alt="Foto HB" style="max-height: 80px; cursor: pointer;">
+                  <% } else { %>
+                    N/A
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p>Tidak ada data Tipe HB Hilang.</p>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for displaying image on click -->
+<div id="imageModal" class="modal">
+  <span class="close">&times;</span>
+  <img class="modal-content" id="modalImage">
+</div>
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  // Tab navigation functionality
+  function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
     }
-    // Open default tab
-    document.getElementById("defaultOpen").click();
+    tablinks = document.getElementsByClassName("tablink");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+  }
+  document.getElementById("defaultOpen").click();
 
-    // Flatpickr initialization
-    flatpickr("#startDate", {
-      disableMobile: true,
-      enableTime: true,
-      time_24hr: true,
-      dateFormat: "Y-m-d H:i:S",
-      altInput: true,
-      altFormat: "d-m-Y H:i:S",
-      altInputClass: "myDateInput",
-      defaultDate: "<%= startDate %>"
+  // Flatpickr initialization
+  flatpickr("#startDate", {
+    disableMobile: true,
+    enableTime: true,
+    time_24hr: true,
+    dateFormat: "Y-m-d H:i:S",
+    altInput: true,
+    altFormat: "d-m-Y H:i:S",
+    altInputClass: "myDateInput",
+    defaultDate: "<%= startDate %>"
+  });
+  flatpickr("#endDate", {
+    disableMobile: true,
+    enableTime: true,
+    time_24hr: true,
+    dateFormat: "Y-m-d H:i:S",
+    altInput: true,
+    altFormat: "d-m-Y H:i:S",
+    altInputClass: "myDateInput",
+    defaultDate: "<%= endDate %>"
+  });
+
+  // Copy notes functionality
+  document.getElementById('copyNotes').addEventListener('click', function() {
+    const notesContent = document.getElementById('notes').innerText;
+    navigator.clipboard.writeText(notesContent).then(() => {
+      alert('Catatan berhasil disalin!');
+    }).catch(err => {
+      alert('Gagal menyalin catatan.');
     });
-    flatpickr("#endDate", {
-      disableMobile: true,
-      enableTime: true,
-      time_24hr: true,
-      dateFormat: "Y-m-d H:i:S",
-      altInput: true,
-      altFormat: "d-m-Y H:i:S",
-      altInputClass: "myDateInput",
-      defaultDate: "<%= endDate %>"
+  });
+
+  // Toggle Monitoring Table visibility
+  document.getElementById('toggleTableBtn').addEventListener('click', function() {
+    const tableContainer = document.getElementById('tableContainer');
+    if (tableContainer.style.display === 'none') {
+      tableContainer.style.display = 'block';
+      this.textContent = 'Sembunyikan Tabel';
+    } else {
+      tableContainer.style.display = 'none';
+      this.textContent = 'Tampilkan Tabel';
+    }
+  });
+
+  // Modal functionality for image click
+  const modal = document.getElementById('imageModal');
+  const modalImg = document.getElementById('modalImage');
+  const closeBtn = document.querySelector('.modal .close');
+  document.querySelectorAll('.clickable-image').forEach(img => {
+    img.addEventListener('click', function() {
+      modal.style.display = "block";
+      modalImg.src = this.src;
     });
-
-    // Copy notes functionality
-    document.getElementById('copyNotes').addEventListener('click', function() {
-      const notesContent = document.getElementById('notes').innerText;
-      navigator.clipboard.writeText(notesContent).then(() => {
-        alert('Catatan berhasil disalin!');
-      }).catch(err => {
-        alert('Gagal menyalin catatan.');
-      });
-    });
-
-    // Toggle Monitoring Table visibility
-    document.getElementById('toggleTableBtn').addEventListener('click', function() {
-      const tableContainer = document.getElementById('tableContainer');
-      if (tableContainer.style.display === 'none') {
-        tableContainer.style.display = 'block';
-        this.textContent = 'Sembunyikan Tabel';
-      } else {
-        tableContainer.style.display = 'none';
-        this.textContent = 'Tampilkan Tabel';
-      }
-    });
-
-    // Modal functionality for image click
-    const modal = document.getElementById('imageModal');
-    const modalImg = document.getElementById('modalImage');
-    const closeBtn = document.querySelector('.modal .close');
-
-    // Add click event to all images with class "clickable-image"
-    document.querySelectorAll('.clickable-image').forEach(img => {
-      img.addEventListener('click', function() {
-        modal.style.display = "block";
-        modalImg.src = this.src;
-      });
-    });
-
-    // Close modal on clicking close button
-    closeBtn.addEventListener('click', function() {
+  });
+  closeBtn.addEventListener('click', function() {
+    modal.style.display = "none";
+  });
+  modal.addEventListener('click', function(e) {
+    if(e.target === modal) {
       modal.style.display = "none";
-    });
+    }
+  });
 
-    // Close modal when clicking outside the image
-    modal.addEventListener('click', function(e) {
-      if(e.target === modal) {
-        modal.style.display = "none";
-      }
+  // Localize detected-date cells after DOM is ready
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.detected-date').forEach(td => {
+      const ts = td.dataset.ts;
+      const d = new Date(ts);
+      td.textContent = d.toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        year:   'numeric',
+        month:  '2-digit',
+        day:    '2-digit',
+        hour:   '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      })
+      .replace(/\./g, ':')
+      .replace(/,/g, '');
     });
-  </script>
+  });
+</script>
 </body>
 </html>
