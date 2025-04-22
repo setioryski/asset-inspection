@@ -10,6 +10,7 @@ const fs = require('fs');
 const { jsPDF } = require('jspdf');
 require('jspdf-autotable'); // Import the autoTable plugin
 const fetch = require('node-fetch');
+const fetchNode      = (...args) => import('node-fetch').then(m => m.default(...args));
 
 // Base URL for constructing absolute URLs
 const BASE_URL = 'http://localhost:3000/'; // Adjust this to match your server's base URL
@@ -335,48 +336,27 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
 });
 
 // Export to Excel
-// --- at top of routes/dashboard.js ---
-// Helper: parse a bare "YYYY-MM-DD HH:mm:ss" as UTC so you keep the original local time
-function parseAsUTC(dtString) {
-    return new Date(dtString.replace(' ', 'T') + 'Z');
-  }
-  
-  router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, res) => {
+router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, res) => {
     try {
-      // 1) Grab and name your raw query params
-      const { startDate: sd, endDate: ed, kondisi, posisi, user, floor } = req.query;
+      // 1) Read filter params
+      const { startDate, endDate, kondisi, posisi, user, floor } = req.query;
   
-      // 2) Build WHERE conditions + parameter array
+      // 2) Build SQL WHERE clauses with exact start/end datetimes
       const conditions = [];
       const params     = [];
   
-      if (sd) {
+      if (startDate && endDate) {
         conditions.push(`a.client_timestamp >= ?`);
-        params.push(sd);
-      }
-      if (ed) {
         conditions.push(`a.client_timestamp <= ?`);
-        params.push(ed);
+        params.push(startDate, endDate);
       }
-      if (kondisi) {
-        conditions.push(`k.nama_kondisi = ?`);
-        params.push(kondisi);
-      }
-      if (posisi) {
-        conditions.push(`p.tipe_posisi = ?`);
-        params.push(posisi);
-      }
-      if (user) {
-        conditions.push(`u.name = ?`);
-        params.push(user);
-      }
-      if (floor) {
-        conditions.push(`tl.nama_lantai = ?`);
-        params.push(floor);
-      }
+      if (kondisi)  { conditions.push(`k.nama_kondisi = ?`); params.push(kondisi); }
+      if (posisi)   { conditions.push(`p.tipe_posisi   = ?`); params.push(posisi); }
+      if (user)     { conditions.push(`u.name          = ?`); params.push(user); }
+      if (floor)    { conditions.push(`tl.nama_lantai  = ?`); params.push(floor); }
   
-      // 3) The full SELECT + JOIN list—no placeholders!
-      let sql = `
+      // 3) Full SELECT with joins
+      const sql = `
         SELECT
           a.id,
           a.foto,
@@ -389,36 +369,27 @@ function parseAsUTC(dtString) {
           td.nama_tipe    AS nama_tipe_door,
           th.nama_tipe    AS nama_tipe_hb
         FROM aset a
-        LEFT JOIN user u          ON a.id_user         = u.id
-        LEFT JOIN tipe_aset ta    ON a.id_tipe_aset    = ta.id
-        LEFT JOIN tipe_lantai tl  ON a.id_tipe_lantai  = tl.id
-        LEFT JOIN tipe_kondisi k  ON a.id_kondisi      = k.id
-        LEFT JOIN tipe_door td    ON a.id_tipe_door    = td.id
-        LEFT JOIN tipe_hb th      ON a.id_tipe_hb      = th.id
-        LEFT JOIN posisi p        ON tl.posisi         = p.id
+        LEFT JOIN user u          ON a.id_user        = u.id
+        LEFT JOIN tipe_aset ta    ON a.id_tipe_aset   = ta.id
+        LEFT JOIN tipe_lantai tl  ON a.id_tipe_lantai = tl.id
+        LEFT JOIN tipe_kondisi k  ON a.id_kondisi     = k.id
+        LEFT JOIN tipe_door td    ON a.id_tipe_door   = td.id
+        LEFT JOIN tipe_hb th      ON a.id_tipe_hb     = th.id
+        LEFT JOIN posisi p        ON tl.posisi        = p.id
         ${conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''}
         ORDER BY a.client_timestamp DESC
       `;
   
-      // DEBUG: verify your final SQL & params in the console
-      console.log('[/export/excel] SQL:', sql);
-      console.log('[/export/excel] Params:', params);
-  
-      // 4) Fetch the rows
+      // 4) Fetch the filtered rows
       const rows = await queryAsync(sql, params);
   
-      // 5) Build the Excel workbook
+      // 5) Create Excel workbook & worksheet
       const workbook  = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Assets Report');
   
       worksheet.columns = [
-        { header: 'No.',           key: 'no',        width: 6 },
-        {
-          header: 'Date Created',
-          key:    'date',
-          width:  20,
-          style:  { numFmt: 'dd/mm/yyyy hh:mm:ss' }
-        },
+        { header: 'No.',           key: 'no',        width: 6  },
+        { header: 'Date Created',  key: 'date',      width: 20 },
         { header: 'User',          key: 'user',      width: 20 },
         { header: 'Asset Type',    key: 'assetType', width: 20 },
         { header: 'Floor',         key: 'floor',     width: 10 },
@@ -427,7 +398,7 @@ function parseAsUTC(dtString) {
         { header: 'Notes',         key: 'notes',     width: 40 }
       ];
   
-      // Style header
+      // Style header row
       worksheet.getRow(1).eachCell(cell => {
         cell.font      = { bold: true };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -439,21 +410,24 @@ function parseAsUTC(dtString) {
         };
       });
   
-      // 6) Populate rows
+      // 6) Populate rows, formatting date exactly like dashboard.ejs
       let counter = 1;
-      const fetchNode = (...args) => import('node-fetch').then(m => m.default(...args));
       for (const asset of rows) {
-        // parse client_timestamp as UTC so 15:03:57 stays 15:03:57
-        const raw       = asset.client_timestamp;
-        const excelDate = typeof raw === 'string'
-          ? parseAsUTC(raw)
-          : raw instanceof Date
-            ? raw
-            : new Date(raw);
+        // Normalize timestamp into a Date
+        let d;
+        if (typeof asset.client_timestamp === 'string') {
+          d = new Date(asset.client_timestamp.replace(' ', 'T'));
+        } else {
+          d = new Date(asset.client_timestamp);
+        }
+  
+        // Format with Indonesian locale, 24‑hr, including seconds
+        const dateStr = d.toLocaleDateString('id-ID') + ' ' +
+                        d.toLocaleTimeString('id-ID', { hour12: false });
   
         const newRow = worksheet.addRow({
           no:        counter++,
-          date:      excelDate,
+          date:      dateStr,
           user:      asset.user || '-',
           assetType: asset.nama_tipe_door || asset.nama_tipe_hb || asset.nama_tipe_aset || '-',
           floor:     asset.nama_lantai || '-',
@@ -461,6 +435,7 @@ function parseAsUTC(dtString) {
           notes:     asset.catatan || '-'
         });
   
+        // Style each cell
         newRow.eachCell(cell => {
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
           cell.border    = {
@@ -475,36 +450,42 @@ function parseAsUTC(dtString) {
         if (asset.foto) {
           try {
             const url    = new URL(asset.foto, BASE_URL).href;
-            const buf    = await fetchNode(url).then(r => r.buffer());
-            const imgId  = workbook.addImage({ buffer: buf, extension: 'jpeg' });
+            const resp   = await fetchNode(url);
+            const buffer = await resp.buffer();
+            const imgId  = workbook.addImage({ buffer, extension: 'jpeg' });
             worksheet.addImage(imgId, {
               tl:  { col: 6, row: newRow.number - 1 },
               ext: { width: 100, height: 75 }
             });
             newRow.height = 75;
           } catch (e) {
-            console.error('Image embed error for asset', asset.id, e);
+            console.error('Error embedding photo for asset', asset.id, e);
           }
         }
       }
   
-      // 7) Send it down
+      // 7) Build a filename including the exact date/time bounds
       const filename = [
         'assets_report',
-        sd && `_from_${sd.replace(/[: ]/g, '-')}`,
-        ed && `_to_${ed.replace(/[: ]/g, '-')}`
+        startDate && `_from_${startDate.replace(/[: ]/g, '-')}`,
+        endDate   && `_to_${endDate.replace(/[: ]/g, '-')}`
       ].filter(Boolean).join('') + '.xlsx';
   
-      res.setHeader('Content-Type',  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      // 8) Send the Excel file
+      res.setHeader('Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition',
+        `attachment; filename="${filename}"`);
       await workbook.xlsx.write(res);
       res.end();
-  
-    } catch (err) {
-      console.error('[/export/excel] ERROR', err);
+    }
+    catch (err) {
+      console.error('[export/excel] ERROR', err);
       res.status(500).send('Error generating Excel');
     }
   });
+  
+  
   
   
 
