@@ -341,5 +341,47 @@ flatpickr("#endDate", {
       }
     });
   </script>
+<script>
+  // 1) Grab the server‑side “floor” into JS
+  const initialFloor = "<%= floor %>" || "";
+
+  async function fetchFloors(posisi) {
+    floorLoading.style.display = 'inline';
+    try {
+      const res    = await fetch(`/getFloors?posisi=${encodeURIComponent(posisi)}`);
+      const floors = await res.json();
+
+      // Reset the <select>
+      floorSelect.innerHTML = '<option value="">Semua Lantai</option>';
+
+      // 2) Rebuild with a ‘selected’ on the initialFloor
+      floors.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value       = f.nama_lantai;
+        opt.textContent = f.nama_lantai;
+        if (f.nama_lantai === initialFloor) {
+          opt.selected = true;
+        }
+        floorSelect.appendChild(opt);
+      });
+    } catch {
+      alert('Gagal memuat data lantai.');
+    } finally {
+      floorLoading.style.display = 'none';
+    }
+  }
+
+  posisiSelect.addEventListener('change', () => {
+    // Clear initialFloor if user actively changes posisi
+    // (optional; remove this line if you always want to stick to the original)
+    // initialFloor = ""; 
+    fetchFloors(posisiSelect.value);
+  });
+
+  // On page‑load we still want to fetch & pre‑select based on the server’s “floor”
+  fetchFloors(posisiSelect.value);
+</script>
+
+
 </body>
 </html>

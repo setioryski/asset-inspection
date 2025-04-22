@@ -56,10 +56,11 @@ router.get('/dashboard', isAuthenticated, checkRole(['admin']), async (req, res)
 
     const conditions = [];
 
-    if (startDate && endDate) {
-        conditions.push(`a.client_timestamp BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)`);
-        params.push(startDate, endDate);
-    }
+ if (startDate && endDate) {
+   // use the exact startDate and endDate the user selected
+   conditions.push(`a.client_timestamp BETWEEN ? AND ?`);
+   params.push(startDate, endDate);
+ }
 
     if (kondisi) {
         conditions.push(`k.nama_kondisi = ?`);
@@ -187,10 +188,11 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
         const params = [];
         const conditions = [];
 
-        if (startDate && endDate) {
-            conditions.push(`a.client_timestamp BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)`);
-            params.push(startDate, endDate);
-        }
+ if (startDate && endDate) {
+   // use the exact startDate and endDate the user selected
+   conditions.push(`a.client_timestamp BETWEEN ? AND ?`);
+   params.push(startDate, endDate);
+ }
 
         if (kondisi) {
             conditions.push(`k.nama_kondisi = ?`);
@@ -333,167 +335,178 @@ router.get('/export/pdf', isAuthenticated, checkRole(['admin']), async (req, res
 });
 
 // Export to Excel
-router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, res) => {
-    const fetch = (await import('node-fetch')).default;
-    const { startDate, endDate, kondisi, posisi, user, floor } = req.query;
-
-    let query = `
-        SELECT 
-            a.id, 
-            a.foto, 
-            k.nama_kondisi, 
-            a.catatan, 
-            a.client_timestamp, 
-            u.name AS user, 
-            ta.nama_tipe AS nama_tipe_aset, 
-            tl.nama_lantai AS nama_lantai,
-            td.nama_tipe AS nama_tipe_door,
-            th.nama_tipe AS nama_tipe_hb
-        FROM aset a
-        LEFT JOIN user u ON a.id_user = u.id
-        LEFT JOIN tipe_aset ta ON a.id_tipe_aset = ta.id
-        LEFT JOIN tipe_lantai tl ON a.id_tipe_lantai = tl.id
-        LEFT JOIN tipe_kondisi k ON a.id_kondisi = k.id
-        LEFT JOIN tipe_door td ON a.id_tipe_door = td.id
-        LEFT JOIN tipe_hb th ON a.id_tipe_hb = th.id
-        LEFT JOIN posisi p ON tl.posisi = p.id`; // Add the correct JOIN to 'posisi'
-
-    const params = [];
-    const conditions = [];
-
-    if (startDate && endDate) {
-        conditions.push(`a.client_timestamp BETWEEN ? AND DATE_ADD(?, INTERVAL 1 DAY)`);
-        params.push(startDate, endDate);
-    }
-
-    if (kondisi) {
+// --- at top of routes/dashboard.js ---
+// Helper: parse a bare "YYYY-MM-DD HH:mm:ss" as UTC so you keep the original local time
+function parseAsUTC(dtString) {
+    return new Date(dtString.replace(' ', 'T') + 'Z');
+  }
+  
+  router.get('/export/excel', isAuthenticated, checkRole(['admin']), async (req, res) => {
+    try {
+      // 1) Grab and name your raw query params
+      const { startDate: sd, endDate: ed, kondisi, posisi, user, floor } = req.query;
+  
+      // 2) Build WHERE conditions + parameter array
+      const conditions = [];
+      const params     = [];
+  
+      if (sd) {
+        conditions.push(`a.client_timestamp >= ?`);
+        params.push(sd);
+      }
+      if (ed) {
+        conditions.push(`a.client_timestamp <= ?`);
+        params.push(ed);
+      }
+      if (kondisi) {
         conditions.push(`k.nama_kondisi = ?`);
         params.push(kondisi);
-    }
-
-    if (posisi) {
+      }
+      if (posisi) {
         conditions.push(`p.tipe_posisi = ?`);
         params.push(posisi);
-    }
-
-    // **New Filters: User and Floor**
-    if (user) {
+      }
+      if (user) {
         conditions.push(`u.name = ?`);
         params.push(user);
-    }
-
-    if (floor) {
+      }
+      if (floor) {
         conditions.push(`tl.nama_lantai = ?`);
         params.push(floor);
-    }
-
-    if (conditions.length > 0) {
-        query += ` WHERE ` + conditions.join(' AND ');
-    }
-
-    query += ` ORDER BY a.id ASC`;
-
-    try {
-        const results = await queryAsync(query, params);
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Assets Report');
-
-        worksheet.columns = [
-            { header: 'No.', key: 'no', width: 10 }, // Updated header for No.
-            { header: 'Date Created', key: 'date', width: 20 },
-            { header: 'User', key: 'user', width: 20 },
-            { header: 'Asset Type', key: 'assetType', width: 20 },
-            { header: 'Floor', key: 'floor', width: 10 },
-            { header: 'Condition', key: 'condition', width: 15 },
-            { header: 'Photo', key: 'photo', width: 30 },
-            { header: 'Notes', key: 'notes', width: 30 },
-        ];
-
-        // Apply styling to header row
-        worksheet.getRow(1).eachCell((cell) => {
-            cell.font = { bold: true };
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
-            cell.border = {
-                top: { style: 'thin' },
-                left: { style: 'thin' },
-                bottom: { style: 'thin' },
-                right: { style: 'thin' }
-            };
+      }
+  
+      // 3) The full SELECT + JOIN list—no placeholders!
+      let sql = `
+        SELECT
+          a.id,
+          a.foto,
+          k.nama_kondisi,
+          a.catatan,
+          a.client_timestamp,
+          u.name          AS user,
+          ta.nama_tipe    AS nama_tipe_aset,
+          tl.nama_lantai  AS nama_lantai,
+          td.nama_tipe    AS nama_tipe_door,
+          th.nama_tipe    AS nama_tipe_hb
+        FROM aset a
+        LEFT JOIN user u          ON a.id_user         = u.id
+        LEFT JOIN tipe_aset ta    ON a.id_tipe_aset    = ta.id
+        LEFT JOIN tipe_lantai tl  ON a.id_tipe_lantai  = tl.id
+        LEFT JOIN tipe_kondisi k  ON a.id_kondisi      = k.id
+        LEFT JOIN tipe_door td    ON a.id_tipe_door    = td.id
+        LEFT JOIN tipe_hb th      ON a.id_tipe_hb      = th.id
+        LEFT JOIN posisi p        ON tl.posisi         = p.id
+        ${conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''}
+        ORDER BY a.client_timestamp DESC
+      `;
+  
+      // DEBUG: verify your final SQL & params in the console
+      console.log('[/export/excel] SQL:', sql);
+      console.log('[/export/excel] Params:', params);
+  
+      // 4) Fetch the rows
+      const rows = await queryAsync(sql, params);
+  
+      // 5) Build the Excel workbook
+      const workbook  = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Assets Report');
+  
+      worksheet.columns = [
+        { header: 'No.',           key: 'no',        width: 6 },
+        {
+          header: 'Date Created',
+          key:    'date',
+          width:  20,
+          style:  { numFmt: 'dd/mm/yyyy hh:mm:ss' }
+        },
+        { header: 'User',          key: 'user',      width: 20 },
+        { header: 'Asset Type',    key: 'assetType', width: 20 },
+        { header: 'Floor',         key: 'floor',     width: 10 },
+        { header: 'Condition',     key: 'condition', width: 15 },
+        { header: 'Photo',         key: 'photo',     width: 30 },
+        { header: 'Notes',         key: 'notes',     width: 40 }
+      ];
+  
+      // Style header
+      worksheet.getRow(1).eachCell(cell => {
+        cell.font      = { bold: true };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border    = {
+          top:    { style: 'thin' },
+          left:   { style: 'thin' },
+          bottom: { style: 'thin' },
+          right:  { style: 'thin' }
+        };
+      });
+  
+      // 6) Populate rows
+      let counter = 1;
+      const fetchNode = (...args) => import('node-fetch').then(m => m.default(...args));
+      for (const asset of rows) {
+        // parse client_timestamp as UTC so 15:03:57 stays 15:03:57
+        const raw       = asset.client_timestamp;
+        const excelDate = typeof raw === 'string'
+          ? parseAsUTC(raw)
+          : raw instanceof Date
+            ? raw
+            : new Date(raw);
+  
+        const newRow = worksheet.addRow({
+          no:        counter++,
+          date:      excelDate,
+          user:      asset.user || '-',
+          assetType: asset.nama_tipe_door || asset.nama_tipe_hb || asset.nama_tipe_aset || '-',
+          floor:     asset.nama_lantai || '-',
+          condition: asset.nama_kondisi || '-',
+          notes:     asset.catatan || '-'
         });
-
-        let rowNumber = 1; // Initialize row number (No.)
-        for (const asset of results) {
-            const row = {
-                no: rowNumber++, // Assign sequential number for No.
-                date: new Date(asset.client_timestamp).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
-                user: asset.user,
-                assetType: asset.nama_tipe_door || asset.nama_tipe_hb || asset.nama_tipe_aset,
-                floor: asset.nama_lantai,
-                condition: asset.nama_kondisi,
-                notes: asset.catatan
-            };
-
-            const newRow = worksheet.addRow(row);
-
-            newRow.eachCell((cell) => {
-                cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                cell.border = {
-                    top: { style: 'thin' },
-                    left: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
+  
+        newRow.eachCell(cell => {
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border    = {
+            top:    { style: 'thin' },
+            left:   { style: 'thin' },
+            bottom: { style: 'thin' },
+            right:  { style: 'thin' }
+          };
+        });
+  
+        // Embed photo if present
+        if (asset.foto) {
+          try {
+            const url    = new URL(asset.foto, BASE_URL).href;
+            const buf    = await fetchNode(url).then(r => r.buffer());
+            const imgId  = workbook.addImage({ buffer: buf, extension: 'jpeg' });
+            worksheet.addImage(imgId, {
+              tl:  { col: 6, row: newRow.number - 1 },
+              ext: { width: 100, height: 75 }
             });
-
-            // Handle image for the 'photo' column (6th index)
-            if (asset.foto) {
-                try {
-                    const imageUrl = new URL(asset.foto, BASE_URL).href;
-                    const imageBuffer = await fetch(imageUrl).then(res => res.buffer());
-
-                    const imageId = workbook.addImage({
-                        buffer: imageBuffer,
-                        extension: 'jpeg',
-                    });
-
-                    // Adjust the cell address based on the 'photo' column (6th index, zero-based)
-                    worksheet.addImage(imageId, {
-                        tl: { col: 6, row: newRow.number - 1 },
-                        ext: { width: 100, height: 100 }
-                    });
-
-                    newRow.height = 75; // Adjust the row height to accommodate the image
-                } catch (err) {
-                    console.error('Error adding image to Excel for asset', asset.id, err);
-                }
-            }
+            newRow.height = 75;
+          } catch (e) {
+            console.error('Image embed error for asset', asset.id, e);
+          }
         }
-
-        let filename = `assets_report`;
-        if (startDate && endDate) {
-            filename += `_from_${startDate}_to_${endDate}`;
-        }
-        if (kondisi) {
-            filename += `_condition_${kondisi}`;
-        }
-        if (user) {
-            filename += `_user_${user}`;
-        }
-        if (floor) {
-            filename += `_floor_${floor}`;
-        }
-        filename += `.xlsx`;
-
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-        await workbook.xlsx.write(res);
-        res.end();
+      }
+  
+      // 7) Send it down
+      const filename = [
+        'assets_report',
+        sd && `_from_${sd.replace(/[: ]/g, '-')}`,
+        ed && `_to_${ed.replace(/[: ]/g, '-')}`
+      ].filter(Boolean).join('') + '.xlsx';
+  
+      res.setHeader('Content-Type',  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      await workbook.xlsx.write(res);
+      res.end();
+  
     } catch (err) {
-        console.error('Failed to export to Excel:', err);
-        res.status(500).send('Error generating Excel report');
+      console.error('[/export/excel] ERROR', err);
+      res.status(500).send('Error generating Excel');
     }
-});
+  });
+  
+  
 
 
 // Route to fetch floors based on posisi
