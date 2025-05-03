@@ -721,61 +721,120 @@ function filterDropdownOptions(selectId, lantaiId) {
 // Data Submission Functions
 // ===========================
 
-/**
- * Submit all saved entries to the server.
- */
+// ===========================
+// Data Submission Functions
+// ===========================
 async function handleSubmitAll() {
     if (!navigator.onLine) {
-        showNotification('Anda sedang offline. Tidak dapat mengirim data.', 'error');
-        return;
+      showNotification('Anda sedang offline. Tidak dapat mengirim data.', 'error');
+      return;
     }
-
+  
     try {
-        const savedAssets = await getSavedAssets();
-        let canEnable = false;
-        for (const floorId in floorAssets) {
-            const totalAssets = floorAssets[floorId].length;
-            const savedCount = savedAssets[floorId] ? savedAssets[floorId].size : 0;
-            if (savedCount === totalAssets) {
-                canEnable = true;
-                break;
-            }
+      // 1) enforce full-floor entry before sending
+      const savedAssets = await getSavedAssets();
+      const selectedFloor = document.getElementById('id_tipe_lantai').value;
+      const totalAssets   = floorAssets[selectedFloor].length;
+      const savedCount    = savedAssets[selectedFloor]
+        ? savedAssets[selectedFloor].size
+        : 0;
+  
+      if (savedCount !== totalAssets) {
+        showNotification(
+          `Silakan rekam semua aset pada lantai ini sebelum mengirim. (${savedCount}/${totalAssets})`,
+          'error'
+        );
+        return;
+      }
+  
+      // 2) fetch all entries from IndexedDB
+      kirimSemuaButton.disabled    = true;
+      kirimSemuaSpinner.style.display = 'inline-block';
+  
+      const tx      = db.transaction([STORE_NAME], 'readonly');
+      const store   = tx.objectStore(STORE_NAME);
+      const request = store.getAll();
+  
+      request.onsuccess = function(event) {
+        const entriesToSubmit = event.target.result
+          .sort((a, b) =>
+            new Date(a.client_timestamp) - new Date(b.client_timestamp)
+          );
+  
+        if (entriesToSubmit.length === 0) {
+          kirimSemuaButton.disabled      = false;
+          kirimSemuaSpinner.style.display = 'none';
+          showNotification('Tidak ada data tersimpan untuk dikirim.', 'info');
+          return;
         }
-        if (!canEnable) {
-            showNotification('Ada aset yang belum direkam. Silakan rekam semua aset pada setidaknya satu lantai sebelum mengirim.', 'error');
-            return;
-        }
-
-        kirimSemuaButton.disabled = true;
-        kirimSemuaSpinner.style.display = 'inline-block';
-
-        const transaction = db.transaction([STORE_NAME], 'readonly');
-        const objectStore = transaction.objectStore(STORE_NAME);
-        const request = objectStore.getAll();
-
-        request.onsuccess = function(event) {
-            let entriesToSubmit = event.target.result;
-            entriesToSubmit.sort((a, b) => new Date(a.client_timestamp) - new Date(b.client_timestamp));
-            if (entriesToSubmit.length === 0) {
-                kirimSemuaButton.disabled = false;
-                kirimSemuaSpinner.style.display = 'none';
-                showNotification('Tidak ada data tersimpan untuk dikirim.', 'info');
-                return;
-            }
-            submitEntries(entriesToSubmit);
-        };
-
-        request.onerror = function(event) {
-            kirimSemuaButton.disabled = false;
+  
+        // 3) submit, then check for failures
+        submitEntries(entriesToSubmit)
+          .then(() => {
+            // After all batches processed...
+            const tx2    = db.transaction([STORE_NAME], 'readonly');
+            const store2 = tx2.objectStore(STORE_NAME);
+            const req2   = store2.getAll();
+  
+            req2.onsuccess = function(e) {
+              const remaining = e.target.result.filter(
+                entry => entry.errorMessage
+              );
+  
+              if (remaining.length > 0) {
+                // show Retry button if any failed
+                retryButton.style.display = 'inline-block';
+                showNotification(
+                  'Sebagian data gagal dikirim. Silakan tekan Retry.',
+                  'error'
+                );
+              } else {
+                // all succeeded!
+                retryButton.style.display = 'none';
+                showNotification('Semua data berhasil dikirim!', 'success');
+              }
+  
+              // restore UI controls
+              kirimSemuaButton.disabled      = false;
+              kirimSemuaSpinner.style.display = 'none';
+              displaySavedEntries();
+            };
+  
+            req2.onerror = function(err) {
+              console.error('Error checking for failures:', err);
+              // always re-enable
+              retryButton.style.display = 'inline-block';
+              kirimSemuaButton.disabled      = false;
+              kirimSemuaSpinner.style.display = 'none';
+              showNotification(
+                'Gagal memeriksa status akhir pengiriman.',
+                'error'
+              );
+            };
+          })
+          .catch(err => {
+            console.error('submitEntries threw:', err);
+            kirimSemuaButton.disabled      = false;
             kirimSemuaSpinner.style.display = 'none';
-            console.error('Error fetching entries for submission:', event.target.errorCode);
-            showNotification('Error mengambil data untuk pengiriman.', 'error');
-        };
+            showNotification('Error saat mengirim data.', 'error');
+          });
+      };
+  
+      request.onerror = function(event) {
+        console.error('Error fetching entries for submission:', event.target.errorCode);
+        kirimSemuaButton.disabled      = false;
+        kirimSemuaSpinner.style.display = 'none';
+        showNotification('Error mengambil data untuk pengiriman.', 'error');
+      };
+  
     } catch (error) {
-        console.error('Error during Kirim Semua:', error);
-        showNotification('Terjadi kesalahan saat memeriksa status aset.', 'error');
+      console.error('Error during handleSubmitAll:', error);
+      kirimSemuaButton.disabled      = false;
+      kirimSemuaSpinner.style.display = 'none';
+      showNotification('Terjadi kesalahan saat memeriksa status aset.', 'error');
     }
-}
+  }
+  
 
 /**
  * Submit entries in batches with retry logic.

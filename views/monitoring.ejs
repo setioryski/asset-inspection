@@ -184,30 +184,23 @@
         <div class="notes-list">
           <h3>Perlu Pengecekan</h3>
           <ul>
-            <%
-              let floorsNeedCheck = [];
-              keys.forEach(lantaiId => {
-                let group = grouped[lantaiId];
-                let hasUnique = group.records.some(r => r.duplicate_count == 1);
-                if(hasUnique) {
-                  let monitoringCount = group.records.length;
-                  let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
-                  let totalAset = asetItem ? asetItem.total_aset : 0;
-                  if(monitoringCount !== totalAset) {
-                    floorsNeedCheck.push({ lantai_id: lantaiId, nama_lantai: group.nama_lantai, monitoringCount, totalAset });
-                  }
-                }
-              });
-              if(floorsNeedCheck.length === 0) {
-            %>
-              <li>Tidak ada yang perlu pengecekan.</li>
-            <% } else {
-                     floorsNeedCheck.forEach(floor => { %>
-              <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>): Patroli 1 kali, namun record (<%= floor.monitoringCount %>) tidak sesuai dengan total aset (<%= floor.totalAset %>).</li>
-            <%     });
-                 }
-            %>
+            <% keys.forEach(lantaiId => {
+                 const group       = grouped[lantaiId];
+                 // hitung record unik (duplicate_count == 1)
+                 const uniqueCount = group.records.filter(r => r.duplicate_count === 1).length;
+                 // total aset untuk lantai ini
+                 const asetItem    = asetPerLantai.find(a => a.lantai_id == lantaiId);
+                 const totalAset   = asetItem ? asetItem.total_aset : 0;
+                 // hanya render jika ada unik (>0) dan jumlahnya tidak sama dengan total aset
+                 if (uniqueCount > 0 && uniqueCount !== totalAset) { %>
+              <li>
+                Lantai <%= group.nama_lantai %> (ID: <%= lantaiId %>):  
+                jumlah record unik (<%= uniqueCount %>)  
+                tidak sesuai dengan total aset (<%= totalAset %>).
+              </li>
+            <% } }); %>
           </ul>
+        
         </div>
   
         <!-- Column 4: Total Aset per Lantai -->
