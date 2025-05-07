@@ -55,6 +55,25 @@
       font-weight: bold;
       cursor: pointer;
     }
+
+    /*filter*/
+    /* dim by default */
+.filter-icon {
+  margin-left: 6px;
+  opacity: 0.4;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+/* when this header is sorted ascending */
+th.sorted-asc .filter-icon {
+  transform: rotate(180deg);  /* flip to point down */
+  opacity: 1;
+}
+/* when sorted descending */
+th.sorted-desc .filter-icon {
+  transform: rotate(0deg);
+  opacity: 1;
+}
   </style>
 </head>
 
@@ -153,16 +172,16 @@
     <table id="assetsTable">
       <thead>
         <tr>
-          <th class="no-column">No.</th>
-          <th>Tanggal/Waktu</th>
-          <th>User</th>
-          <th>Jenis Aset</th>
-          <th>Lantai</th>
-          <th>Kondisi</th>
-          <th>Foto</th>
-          <th>Catatan</th>
-          <th class="id-column">Id</th>
-        </tr>
+          <th class="no-column">No. <i class="fas fa-filter filter-icon"></i></th>
+          <th>Tanggal/Waktu <i class="fas fa-filter filter-icon"></i></th>
+          <th>User <i class="fas fa-filter filter-icon"></i></th>
+          <th>Jenis Aset <i class="fas fa-filter filter-icon"></i></th>
+          <th>Lantai <i class="fas fa-filter filter-icon"></i></th>
+          <th>Kondisi <i class="fas fa-filter filter-icon"></i></th>
+          <th>Foto <i class="fas fa-filter filter-icon"></i></th>
+          <th>Catatan <i class="fas fa-filter filter-icon"></i></th>
+          <th class="id-column">Id <i class="fas fa-filter filter-icon"></i></th>
+        </tr>        
       </thead>
       <tbody>
         <% assets.forEach((asset, index) => { %>
@@ -381,6 +400,44 @@ flatpickr("#endDate", {
   // On page‑load we still want to fetch & pre‑select based on the server’s “floor”
   fetchFloors(posisiSelect.value);
 </script>
+
+<script>
+  (function(){
+    const table  = document.getElementById('assetsTable');
+    const tbody  = table.querySelector('tbody');
+    const headers = table.querySelectorAll('thead th');
+  
+    // get cell text or number
+    const getCell = (tr,i) => tr.children[i].innerText.trim();
+    const comparator = (i, asc) => (a,b) => {
+      let vA = getCell(a,i), vB = getCell(b,i);
+      const nA = parseFloat(vA.replace(/[^0-9.\-]/g,'')), 
+            nB = parseFloat(vB.replace(/[^0-9.\-]/g,''));
+      if (!isNaN(nA) && !isNaN(nB)) {
+        return asc ? nA - nB : nB - nA;
+      }
+      return asc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+    };
+  
+    headers.forEach((th, idx) => {
+      let asc = true;
+      th.style.cursor = 'pointer';
+      th.addEventListener('click', () => {
+        // clear classes on all headers
+        headers.forEach(h => h.classList.remove('sorted-asc','sorted-desc'));
+        // sort rows
+        const rows = Array.from(tbody.rows).sort(comparator(idx, asc));
+        rows.forEach(r => tbody.appendChild(r));
+        // mark this header
+        th.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
+        asc = !asc;
+      });
+    });
+  })();
+  </script>
+  
+  
+  
 
 
 </body>
