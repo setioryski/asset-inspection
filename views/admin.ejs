@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="/stylesadmin.css?v=<%= Date.now() %>">
     <!-- Include Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Search/Filter Styles -->
+    <style>
+        .filter-box { margin: 10px 0; }
+        .filter-box input { width: 100%; padding: 8px; font-size: 1rem; }
+    </style>
 </head>
 <body>
     <nav>
@@ -31,38 +36,27 @@
             <div class="table-container">
                 <div class="data-table">
                     <h2>Manage User</h2>
+                    <div class="filter-box">
+                        <input type="text" id="searchManageUser" placeholder="Search users..." onkeyup="filterTable('manageUser','searchManageUser')">
+                    </div>
                     <button onclick="window.location.href='/add-user-form';">Add User</button>
                     <table>
                         <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Actions</th>
-                            </tr>
+                            <tr><th>No</th><th>ID</th><th>Name</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                            <% if (user && Array.isArray(user) && user.length > 0) { %>
-                                <% user.forEach((item, index) => { %>
-                                    <tr>
-                                        <td><%= index + 1 %></td> <!-- Display row number -->
-                                        <td><%= item.id %></td>
-                                        <td><%= item.name %></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button onclick="window.location.href='/edit-user-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-user" style="display: inline;" onsubmit="storeCurrentTab('manageUser')">
-                                                    <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <% }) %>
-                            <% } else { %>
+                            <% if (user && user.length) { user.forEach((item,index)=>{ %>
                                 <tr>
-                                    <td colspan="4">No users found</td>
+                                    <td><%= index+1 %></td>
+                                    <td><%= item.id %></td>
+                                    <td><%= item.name %></td>
+                                    <td>
+                                        <button onclick="window.location.href='/edit-user-form/<%= item.id %>'">Edit</button>
+                                        <form method="POST" action="/delete-user" onsubmit="storeCurrentTab('manageUser')" style="display:inline;"><input type="hidden" name="id" value="<%= item.id %>"><button type="submit">Delete</button></form>
+                                    </td>
                                 </tr>
+                            <% }) } else { %>
+                                <tr><td colspan="4">No users found</td></tr>
                             <% } %>
                         </tbody>
                     </table>
@@ -75,38 +69,27 @@
             <div class="table-container">
                 <div class="data-table">
                     <h2>Manage Tipe Lantai</h2>
+                    <div class="filter-box">
+                        <input type="text" id="searchManageTipeLantai" placeholder="Search floor types..." onkeyup="filterTable('manageTipeLantai','searchManageTipeLantai')">
+                    </div>
                     <button onclick="window.location.href='/add-tipe-lantai-form';">Add Tipe Lantai</button>
                     <table>
                         <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>ID</th>
-                                <th>Floor Type</th>
-                                <th>Actions</th>
-                            </tr>
+                            <tr><th>No</th><th>ID</th><th>Floor Type</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                            <% if (tipe_lantai && Array.isArray(tipe_lantai) && tipe_lantai.length > 0) { %>
-                                <% tipe_lantai.forEach((item, index) => { %>
-                                    <tr>
-                                        <td><%= index + 1 %></td> <!-- Display row number -->
-                                        <td><%= item.id %></td>
-                                        <td><%= item.nama_lantai %></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button onclick="window.location.href='/edit-tipe-lantai-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-tipe-lantai" style="display: inline;" onsubmit="storeCurrentTab('manageTipeLantai')">
-                                                    <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <% }) %>
-                            <% } else { %>
+                            <% if (tipe_lantai && tipe_lantai.length) { tipe_lantai.forEach((item,index)=>{ %>
                                 <tr>
-                                    <td colspan="4">No floor types found</td>
+                                    <td><%= index+1 %></td>
+                                    <td><%= item.id %></td>
+                                    <td><%= item.nama_lantai %></td>
+                                    <td>
+                                        <button onclick="window.location.href='/edit-tipe-lantai-form/<%= item.id %>'">Edit</button>
+                                        <form method="POST" action="/delete-tipe-lantai" onsubmit="storeCurrentTab('manageTipeLantai')" style="display:inline;"><input type="hidden" name="id" value="<%= item.id %>"><button type="submit">Delete</button></form>
+                                    </td>
                                 </tr>
+                            <% }) } else { %>
+                                <tr><td colspan="4">No floor types found</td></tr>
                             <% } %>
                         </tbody>
                     </table>
@@ -119,40 +102,28 @@
             <div class="table-container">
                 <div class="data-table">
                     <h2>Manage Tipe Aset</h2>
+                    <div class="filter-box">
+                        <input type="text" id="searchManageTipeAset" placeholder="Search asset types..." onkeyup="filterTable('manageTipeAset','searchManageTipeAset')">
+                    </div>
                     <button onclick="window.location.href='/add-tipe-aset-form';">Add Tipe Aset</button>
                     <table>
                         <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>ID</th>
-                                <th>Asset Type</th>
-                                <th>Floor</th>
-                                <th>Actions</th>
-                            </tr>
+                            <tr><th>No</th><th>ID</th><th>Asset Type</th><th>Floor</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                            <% if (tipe_aset && Array.isArray(tipe_aset) && tipe_aset.length > 0) { %>
-                                <% tipe_aset.forEach((item, index) => { %>
-                                    <tr>
-                                        <td><%= index + 1 %></td> <!-- Display row number -->
-                                        <td><%= item.id %></td>
-                                        <td><%= item.nama_tipe %></td>
-                                        <td><%= item.nama_lantai %></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button onclick="window.location.href='/edit-tipe-aset-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-tipe-aset" style="display: inline;" onsubmit="storeCurrentTab('manageTipeAset')">
-                                                    <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <% }) %>
-                            <% } else { %>
+                            <% if (tipe_aset && tipe_aset.length) { tipe_aset.forEach((item,index)=>{ %>
                                 <tr>
-                                    <td colspan="5">No asset types found</td>
+                                    <td><%= index+1 %></td>
+                                    <td><%= item.id %></td>
+                                    <td><%= item.nama_tipe %></td>
+                                    <td><%= item.nama_lantai %></td>
+                                    <td>
+                                        <button onclick="window.location.href='/edit-tipe-aset-form/<%= item.id %>'">Edit</button>
+                                        <form method="POST" action="/delete-tipe-aset" onsubmit="storeCurrentTab('manageTipeAset')" style="display:inline;"><input type="hidden" name="id" value="<%= item.id %>"><button type="submit">Delete</button></form>
+                                    </td>
                                 </tr>
+                            <% }) } else { %>
+                                <tr><td colspan="5">No asset types found</td></tr>
                             <% } %>
                         </tbody>
                     </table>
@@ -165,40 +136,28 @@
             <div class="table-container">
                 <div class="data-table">
                     <h2>Manage Tipe Door</h2>
+                    <div class="filter-box">
+                        <input type="text" id="searchManageTipeDoor" placeholder="Search door types..." onkeyup="filterTable('manageTipeDoor','searchManageTipeDoor')">
+                    </div>
                     <button onclick="window.location.href='/add-tipe-door-form';">Add Tipe Door</button>
                     <table>
                         <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>ID</th>
-                                <th>Door Type</th>
-                                <th>Floor</th>
-                                <th>Actions</th>
-                            </tr>
+                            <tr><th>No</th><th>ID</th><th>Door Type</th><th>Floor</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                            <% if (tipe_door && Array.isArray(tipe_door) && tipe_door.length > 0) { %>
-                                <% tipe_door.forEach((item, index) => { %>
-                                    <tr>
-                                        <td><%= index + 1 %></td> <!-- Display row number -->
-                                        <td><%= item.id %></td>
-                                        <td><%= item.nama_tipe %></td>
-                                        <td><%= item.nama_lantai %></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button onclick="window.location.href='/edit-tipe-door-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-tipe-door" style="display: inline;" onsubmit="storeCurrentTab('manageTipeDoor')">
-                                                    <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <% }) %>
-                            <% } else { %>
+                            <% if (tipe_door && tipe_door.length) { tipe_door.forEach((item,index)=>{ %>
                                 <tr>
-                                    <td colspan="5">No door types found</td>
+                                    <td><%= index+1 %></td>
+                                    <td><%= item.id %></td>
+                                    <td><%= item.nama_tipe %></td>
+                                    <td><%= item.nama_lantai %></td>
+                                    <td>
+                                        <button onclick="window.location.href='/edit-tipe-door-form/<%= item.id %>'">Edit</button>
+                                        <form method="POST" action="/delete-tipe-door" onsubmit="storeCurrentTab('manageTipeDoor')" style="display:inline;"><input type="hidden" name="id" value="<%= item.id %>"><button type="submit">Delete</button></form>
+                                    </td>
                                 </tr>
+                            <% }) } else { %>
+                                <tr><td colspan="5">No door types found</td></tr>
                             <% } %>
                         </tbody>
                     </table>
@@ -211,76 +170,149 @@
             <div class="table-container">
                 <div class="data-table">
                     <h2>Manage Tipe HB</h2>
+                    <div class="filter-box">
+                        <input type="text" id="searchManageTipeHB" placeholder="Search HB types..." onkeyup="filterTable('manageTipeHB','searchManageTipeHB')">
+                    </div>
                     <button onclick="window.location.href='/add-tipe-hb-form';">Add Tipe HB</button>
                     <table>
                         <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>ID</th>
-                                <th>HB Type</th>
-                                <th>Floor</th>
-                                <th>Actions</th>
-                            </tr>
+                            <tr><th>No</th><th>ID</th><th>HB Type</th><th>Floor</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                            <% if (tipe_hb && Array.isArray(tipe_hb) && tipe_hb.length > 0) { %>
-                                <% tipe_hb.forEach((item, index) => { %>
-                                    <tr>
-                                        <td><%= index + 1 %></td> <!-- Display row number -->
-                                        <td><%= item.id %></td>
-                                        <td><%= item.nama_tipe %></td>
-                                        <td><%= item.nama_lantai %></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button onclick="window.location.href='/edit-tipe-hb-form/<%= item.id %>';">Edit</button>
-                                                <form method="POST" action="/delete-tipe-hb" style="display: inline;" onsubmit="storeCurrentTab('manageTipeHB')">
-                                                    <input type="hidden" name="id" value="<%= item.id %>">
-                                                    <button type="submit">Delete</button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <% }) %>
-                            <% } else { %>
+                            <% if (tipe_hb && tipe_hb.length) { tipe_hb.forEach((item,index)=>{ %>
                                 <tr>
-                                    <td colspan="5">No HB types found</td>
+                                    <td><%= index+1 %></td>
+                                    <td><%= item.id %></td>
+                                    <td><%= item.nama_tipe %></td>
+                                    <td><%= item.nama_lantai %></td>
+                                    <td>
+                                        <button onclick="window.location.href='/edit-tipe-hb-form/<%= item.id %>'">Edit</button>
+                                        <form method="POST" action="/delete-tipe-hb" onsubmit="storeCurrentTab('manageTipeHB')" style="display:inline;"><input type="hidden" name="id" value="<%= item.id %>"><button type="submit">Delete</button></form>
+                                    </td>
                                 </tr>
+                            <% }) } else { %>
+                                <tr><td colspan="5">No HB types found</td></tr>
                             <% } %>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
+
     </main>
 
     <script>
-        // Store the current active tab in localStorage
+        // Store current tab
         function storeCurrentTab(tabName) {
             localStorage.setItem('activeTab', tabName);
         }
-
-        // Open the tab based on the clicked button
+        // Tab switching
         function openTab(event, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tab-content");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-                tabcontent[i].classList.remove("active");
-            }
-            tablinks = document.getElementsByClassName("tab-link");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            document.getElementById(tabName).classList.add("active");
-            event.currentTarget.className += " active";
+            document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
+            document.querySelectorAll('.tab-link').forEach(b=>b.classList.remove('active'));
+            document.getElementById(tabName).style.display='block';
+            event.currentTarget.classList.add('active');
+        }
+        // Initialize active tab
+        document.addEventListener('DOMContentLoaded',()=>{
+            const tab = localStorage.getItem('activeTab')||'manageUser';
+            document.querySelector(`.tab-link[onclick*="${tab}"]`).click();
+        });
+
+        // Filter function
+        function filterTable(tabId,inputId) {
+            const query=document.getElementById(inputId).value.toLowerCase();
+            const rows=document.getElementById(tabId).querySelectorAll('tbody tr');
+            rows.forEach(r=>r.style.display=r.textContent.toLowerCase().includes(query)?'':'none');
+        }
+    </script>
+    <script>
+        // Tab switching
+        function openTab(event, tabName) {
+            document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
+            document.querySelectorAll('.tab-link').forEach(b=>b.classList.remove('active'));
+            document.getElementById(tabName).style.display='block';
+            event.currentTarget.classList.add('active');
+            localStorage.setItem('activeTab', tabName);
         }
 
-        // On page load, set the active tab from localStorage
-        document.addEventListener("DOMContentLoaded", function() {
-            var activeTab = localStorage.getItem('activeTab') || 'manageUser';  // Default to 'manageUser'
-            document.querySelector(`.tab-link[onclick="openTab(event, '${activeTab}')"]`).click();
+        // Initialize active tab
+        document.addEventListener('DOMContentLoaded',()=>{
+            const tab = localStorage.getItem('activeTab')||'manageUser';
+            document.querySelector(`.tab-link[onclick*="${tab}"]`).click();
+        });
+
+        // Simple text filter
+        function filterTable(tabId,inputId) {
+            const query = document.getElementById(inputId).value.toLowerCase();
+            const rows = document.getElementById(tabId).querySelectorAll('tbody tr');
+            rows.forEach(r=>{
+                r.style.display = r.textContent.toLowerCase().includes(query) ? '' : 'none';
+            });
+        }
+
+        // —— NEW: Sort table by column —— //
+        /**
+         * Sorts the rows of a table element in-place.
+         * @param {HTMLTableElement} table 
+         * @param {number} colIndex 
+         * @param {boolean} asc 
+         */
+        function sortTableByColumn(table, colIndex, asc = true) {
+            const dirModifier = asc ? 1 : -1;
+            const tBody = table.tBodies[0];
+            const rows = Array.from(tBody.querySelectorAll('tr'));
+
+            // Sort each row
+            const sortedRows = rows.sort((a, b) => {
+                const aText = a.children[colIndex].textContent.trim();
+                const bText = b.children[colIndex].textContent.trim();
+
+                // If both values are numbers, sort numerically
+                if (!isNaN(aText) && !isNaN(bText)) {
+                    return (parseFloat(aText) - parseFloat(bText)) * dirModifier;
+                }
+                // Otherwise sort as strings
+                return aText.localeCompare(bText) * dirModifier;
+            });
+
+            // Remove existing rows
+            while (tBody.firstChild) {
+                tBody.removeChild(tBody.firstChild);
+            }
+            // Re-add sorted
+            sortedRows.forEach(row => tBody.appendChild(row));
+        }
+
+        // Attach click handlers to every <th> in every table
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.data-table table').forEach(table => {
+                table.querySelectorAll('th').forEach((header, i) => {
+                    header.style.cursor = 'pointer';
+
+                    // Track sort direction in a property on the header
+                    header._asc = true;
+
+                    header.addEventListener('click', () => {
+                        sortTableByColumn(table, i, header._asc);
+                        header._asc = !header._asc;
+
+                        // Optional: add visual indicator
+                        table.querySelectorAll('th').forEach(h => {
+                            h.classList.remove('sort-asc','sort-desc');
+                        });
+                        header.classList.toggle('sort-asc', header._asc);
+                        header.classList.toggle('sort-desc', !header._asc);
+                    });
+                });
+            });
         });
     </script>
+
+    <style>
+      /* Optional arrows in headers when sorted */
+      th.sort-asc::after  { content: " ▲"; }
+      th.sort-desc::after { content: " ▼"; }
+    </style>
 </body>
 </html>
