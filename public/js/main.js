@@ -562,74 +562,76 @@ async function saveData() {
         return;
     }
 
+    // Collect all form fields except 'foto'
     const fileInput = document.getElementById('foto');
     const processedBlob = fileInput.processedBlob;
 
-    if (processedBlob) {
-        entry['foto'] = processedBlob;
-        formData.forEach(function(value, key) {
-            if (key !== 'foto') {
-                entry[key] = value;
-            }
-        });
+    if (!processedBlob) {
+        showNotification('Silakan foto terlebih dahulu.', 'error');
+        return;
+    }
+    entry['foto'] = processedBlob;
+    formData.forEach((value, key) => {
+        if (key !== 'foto') entry[key] = value;
+    });
 
-        entry['nama_petugas'] = document.querySelector('#id_user option:checked').textContent;
-        entry['nama_lantai'] = document.querySelector('#id_tipe_lantai option:checked').textContent;
-        entry['nama_kondisi'] = kondisiSelect.options[kondisiSelect.selectedIndex].text;
+    // Add human-readable names
+    entry['nama_petugas'] = document.querySelector('#id_user option:checked').textContent;
+    entry['nama_lantai'] = document.querySelector('#id_tipe_lantai option:checked').textContent;
+    entry['nama_kondisi'] = kondisiSelect.options[kondisiSelect.selectedIndex].text;
+    if (entry['id_tipe_aset']) entry['nama_aset'] = document.querySelector('#id_tipe_aset option:checked').textContent;
+    if (entry['id_tipe_hb'])   entry['nama_hb']   = document.querySelector('#id_tipe_hb option:checked').textContent;
+    if (entry['id_tipe_door']) entry['nama_door'] = document.querySelector('#id_tipe_door option:checked').textContent;
 
-        if (entry['id_tipe_aset']) {
-            entry['nama_aset'] = document.querySelector('#id_tipe_aset option:checked').textContent;
+    // Timestamp
+    entry['client_timestamp'] = getReliableTimestamp();
+
+    // === DUPLICATE CHECK START ===
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const getAllReq = store.getAll();
+
+    getAllReq.onsuccess = function(ev) {
+        const allEntries = ev.target.result;
+        const isDuplicate = allEntries.some(e => 
+            e.id_tipe_lantai === entry.id_tipe_lantai &&
+            (
+              (entry.id_tipe_aset  && e.id_tipe_aset  === entry.id_tipe_aset)  ||
+              (entry.id_tipe_hb    && e.id_tipe_hb    === entry.id_tipe_hb)    ||
+              (entry.id_tipe_door  && e.id_tipe_door  === entry.id_tipe_door)
+            )
+        );
+
+        if (isDuplicate) {
+            showNotification('Entry ini sudah tersimpan pada lantai dan jenis aset yang sama.', 'error');
+            return;  // abort add
         }
-        if (entry['id_tipe_hb']) {
-            entry['nama_hb'] = document.querySelector('#id_tipe_hb option:checked').textContent;
-        }
-        if (entry['id_tipe_door']) {
-            entry['nama_door'] = document.querySelector('#id_tipe_door option:checked').textContent;
-        }
 
-        const reliableTimestamp = getReliableTimestamp();
-        entry['client_timestamp'] = reliableTimestamp;
-
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const objectStore = transaction.objectStore(STORE_NAME);
-        const request = objectStore.add(entry);
-
-        request.onsuccess = function(event) {
+        // No duplicate found → perform add
+        const addReq = store.add(entry);
+        addReq.onsuccess = function() {
             displaySavedEntries();
             showNotification('Data berhasil disimpan secara lokal.', 'success');
-        
-            // Store the currently selected floor value
+            // …then reset form & UI exactly as before:contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}:contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
             const selectedFloor = document.getElementById('id_tipe_lantai').value;
-        
-            // Reset the form
             inspectionForm.reset();
-        
-            // Restore the floor selection
-            if (selectedFloor) {
-                document.getElementById('id_tipe_lantai').value = selectedFloor;
-            }
-        
-            if (previewImg) {
-                previewImg.src = '';
-                previewImg.style.display = 'none';
-            }
-            resetSelectOptions('id_tipe_aset');
-            resetSelectOptions('id_tipe_hb');
-            resetSelectOptions('id_tipe_door');
+            if (selectedFloor) document.getElementById('id_tipe_lantai').value = selectedFloor;
+            previewImg && (previewImg.src = '', previewImg.style.display = 'none');
+            ['id_tipe_aset','id_tipe_hb','id_tipe_door'].forEach(resetSelectOptions);
             document.getElementById('id_kondisi').disabled = true;
-        
-            // Reapply filtering so the assets are repopulated based on the preserved floor value
             filterOptionsByLantai();
             debouncedUpdateKirimSemuaButton();
         };
-        
-
-        request.onerror = function(event) {
-            showNotification('Error menyimpan data: ' + event.target.errorCode, 'error');
+        addReq.onerror = function(e) {
+            showNotification('Error menyimpan data: ' + e.target.errorCode, 'error');
         };
-    } else {
-        showNotification('Silakan foto terlebih dahulu.', 'error');
-    }
+    };
+
+    getAllReq.onerror = function(e) {
+        console.error('Gagal membaca data tersimpan:', e.target.errorCode);
+        showNotification('Gagal memeriksa duplikat data.', 'error');
+    };
+    // === DUPLICATE CHECK END ===
 }
 
 /**
