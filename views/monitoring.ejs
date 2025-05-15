@@ -13,68 +13,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
   <!-- Inline CSS for Tabs and Modal -->
-  <style>
-    /* Tab container */
-    .tab {
-      overflow: hidden;
-      border-bottom: 1px solid #ccc;
-      margin-top: 20px;
-    }
-    .tab button {
-      background-color: inherit;
-      float: left;
-      border: none;
-      outline: none;
-      cursor: pointer;
-      padding: 10px 20px;
-      transition: background-color 0.3s;
-      font-size: 16px;
-    }
-    .tab button:hover {
-      background-color: #ddd;
-    }
-    .tab button.active {
-      background-color: #007BFF;
-      color: white;
-    }
-    .tabcontent {
-      display: none;
-      padding: 15px 0;
-    }
-    /* Modal styling */
-    .modal {
-      display: none; /* Hidden by default */
-      position: fixed;
-      z-index: 2000;
-      padding-top: 60px;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.8); /* Black with opacity */
-    }
-    .modal-content {
-      margin: auto;
-      display: block;
-      max-width: 80%;
-      max-height: 80%;
-    }
-    .modal .close {
-      position: absolute;
-      top: 20px;
-      right: 35px;
-      color: #f1f1f1;
-      font-size: 40px;
-      font-weight: bold;
-      transition: 0.3s;
-      cursor: pointer;
-    }
-    .modal .close:hover,
-    .modal .close:focus {
-      color: #bbb;
-    }
-  </style>
+
 </head>
 <body>
   <!-- Header Navigation -->
@@ -105,121 +44,120 @@
   <!-- Tab Content for Overview -->
   <div id="overview" class="tabcontent">
     <!-- Notes Section -->
-    <div id="notes">
-      <h2>Catatan</h2>
-      <button id="copyNotes">Salin</button>
-      <div class="notes-container">
-        <!-- Column 1: Lantai tanpa patroli (record_type = 'No Record') -->
-        <div class="notes-list">
-          <h3>Tidak Ada Patroli</h3>
-          <ul>
-            <% 
-              let floorsNoPatrol = [];
-              data.forEach(item => {
-                if(item.record_type === 'No Record' && !floorsNoPatrol.find(f => f.lantai_id === item.lantai_id)) {
-                  floorsNoPatrol.push({ lantai_id: item.lantai_id, nama_lantai: item.nama_lantai });
-                }
-              });
-              if (floorsNoPatrol.length === 0) { 
-            %>
-              <li>Semua lantai telah dipatroli.</li>
-            <% } else { 
-                 floorsNoPatrol.forEach(floor => { %>
-              <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>) tidak ada patroli.</li>
-            <%   });
-               } %>
-          </ul>
-        </div>
-  
-        <!-- Prepare grouped data for floors with records (duplicate_count = 1) -->
-        <%
-          let grouped = {};
-          data.forEach(item => {
-            if(item.record_type !== 'No Record') {
-              if(!grouped[item.lantai_id]) {
-                grouped[item.lantai_id] = { nama_lantai: item.nama_lantai, records: [] };
+<div id="notes">
+    <h2>Catatan</h2>
+    <button id="copyNotes">Salin</button>
+    <div class="notes-container">
+      <!-- Column 1: Lantai tanpa patroli (record_type = 'No Record') -->
+      <div class="notes-list">
+        <h3>Tidak Ada Patroli</h3>
+        <ol>
+          <% 
+            let floorsNoPatrol = [];
+            data.forEach(item => {
+              if(item.record_type === 'No Record' && !floorsNoPatrol.find(f => f.lantai_id === item.lantai_id)) {
+                floorsNoPatrol.push({ lantai_id: item.lantai_id, nama_lantai: item.nama_lantai });
               }
-              grouped[item.lantai_id].records.push(item);
+            });
+            if (floorsNoPatrol.length === 0) { 
+          %>
+            <li>Semua lantai telah dipatroli.</li>
+          <% } else { 
+               floorsNoPatrol.forEach(floor => { %>
+            <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>) tidak ada patroli.</li>
+          <%   });
+             } %>
+        </ol>
+      </div>
+
+      <!-- Prepare grouped data for floors with records (duplicate_count = 1) -->
+      <%
+        let grouped = {};
+        data.forEach(item => {
+          if(item.record_type !== 'No Record') {
+            if(!grouped[item.lantai_id]) {
+              grouped[item.lantai_id] = { nama_lantai: item.nama_lantai, records: [] };
             }
-          });
-        %>
-  
-        <!-- Column 2: Patroli 1 Kali (record exists and monitoringCount matches total aset) -->
-        <div class="notes-list">
-          <h3>Patroli 1 Kali</h3>
-          <ul>
-            <%
-              let floorsPatrolOK = [];
-              let keys = Object.keys(grouped);
-              if(keys.length === 0) { 
-            %>
-              <li>Tidak ada lantai dengan record.</li>
-            <% } else {
-                 keys.forEach(lantaiId => {
-                   let group = grouped[lantaiId];
-                   let hasUnique = group.records.some(r => r.duplicate_count == 1);
-                   if(hasUnique) {
-                     let monitoringCount = group.records.length;
-                     let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
-                     let totalAset = asetItem ? asetItem.total_aset : 0;
-                     if(monitoringCount === totalAset) {
-                       floorsPatrolOK.push({ lantai_id: lantaiId, nama_lantai: group.nama_lantai });
-                     }
+            grouped[item.lantai_id].records.push(item);
+          }
+        });
+      %>
+
+      <!-- Column 2: Patroli 1 Kali (record exists and monitoringCount matches total aset) -->
+      <div class="notes-list">
+        <h3>Patroli 1 Kali</h3>
+        <ol>
+          <%
+            let floorsPatrolOK = [];
+            let keys = Object.keys(grouped);
+            if(keys.length === 0) { 
+          %>
+            <li>Tidak ada lantai dengan record.</li>
+          <% } else {
+               keys.forEach(lantaiId => {
+                 let group = grouped[lantaiId];
+                 let hasUnique = group.records.some(r => r.duplicate_count == 1);
+                 if(hasUnique) {
+                   let monitoringCount = group.records.length;
+                   let asetItem = asetPerLantai.find(a => a.lantai_id == lantaiId);
+                   let totalAset = asetItem ? asetItem.total_aset : 0;
+                   if(monitoringCount === totalAset) {
+                     floorsPatrolOK.push({ lantai_id: lantaiId, nama_lantai: group.nama_lantai });
                    }
-                 });
-                 if(floorsPatrolOK.length === 0) {
-            %>
-              <li>Tidak ada laporan patroli 1 kali.</li>
-            <% } else {
-                     floorsPatrolOK.forEach(floor => { %>
-              <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>) hanya dipatroli 1 kali.</li>
-            <%     });
                  }
+               });
+               if(floorsPatrolOK.length === 0) {
+          %>
+            <li>Tidak ada laporan patroli 1 kali.</li>
+          <% } else {
+                   floorsPatrolOK.forEach(floor => { %>
+            <li>Lantai <%= floor.nama_lantai %> (ID: <%= floor.lantai_id %>) hanya dipatroli 1 kali.</li>
+          <%     });
                }
-            %>
-          </ul>
-        </div>
-  
-        <!-- Column 3: Perlu Pengecekan (record exists with duplicate_count = 1 but monitoringCount does not match total aset) -->
-        <div class="notes-list">
-          <h3>Perlu Pengecekan</h3>
-          <ul>
-            <% keys.forEach(lantaiId => {
-                 const group       = grouped[lantaiId];
-                 // hitung record unik (duplicate_count == 1)
-                 const uniqueCount = group.records.filter(r => r.duplicate_count === 1).length;
-                 // total aset untuk lantai ini
-                 const asetItem    = asetPerLantai.find(a => a.lantai_id == lantaiId);
-                 const totalAset   = asetItem ? asetItem.total_aset : 0;
-                 // hanya render jika ada unik (>0) dan jumlahnya tidak sama dengan total aset
-                 if (uniqueCount > 0 && uniqueCount !== totalAset) { %>
-              <li>
-                Lantai <%= group.nama_lantai %> (ID: <%= lantaiId %>):  
-                jumlah record unik (<%= uniqueCount %>)  
-                tidak sesuai dengan total aset (<%= totalAset %>).
-              </li>
-            <% } }); %>
-          </ul>
-        
-        </div>
-  
-        <!-- Column 4: Total Aset per Lantai -->
-        <div class="notes-list">
-          <h3>Total Aset per Lantai</h3>
-          <ul>
-            <% 
-              if (!asetPerLantai || asetPerLantai.length === 0) { 
-            %>
-              <li>Tidak ada data aset.</li>
-            <% } else {
-                 asetPerLantai.forEach(aset => { %>
-              <li>Lantai <%= aset.nama_lantai %> (ID: <%= aset.lantai_id %>): Total aset <%= aset.total_aset %></li>
-            <%   });
-               } %>
-          </ul>
-        </div>
+             }
+          %>
+        </ol>
+      </div>
+
+      <!-- Column 3: Perlu Pengecekan (record exists with duplicate_count = 1 but monitoringCount does not match total aset) -->
+      <div class="notes-list">
+        <h3>Perlu Pengecekan</h3>
+        <ol>
+          <% keys.forEach(lantaiId => {
+               const group       = grouped[lantaiId];
+               // hitung record unik (duplicate_count == 1)
+               const uniqueCount = group.records.filter(r => r.duplicate_count === 1).length;
+               // total aset untuk lantai ini
+               const asetItem    = asetPerLantai.find(a => a.lantai_id == lantaiId);
+               const totalAset   = asetItem ? asetItem.total_aset : 0;
+               // hanya render jika ada unik (>0) dan jumlahnya tidak sama dengan total aset
+               if (uniqueCount > 0 && uniqueCount !== totalAset) { %>
+            <li>
+              Lantai <%= group.nama_lantai %> (ID: <%= lantaiId %>):  
+              jumlah record unik (<%= uniqueCount %>)  
+              tidak sesuai dengan total aset (<%= totalAset %>).
+            </li>
+          <% } }); %>
+        </ol>
+      </div>
+
+      <!-- Column 4: Total Aset per Lantai -->
+      <div class="notes-list">
+        <h3>Total Aset per Lantai</h3>
+        <ol>
+          <% 
+            if (!asetPerLantai || asetPerLantai.length === 0) { 
+          %>
+            <li>Tidak ada data aset.</li>
+          <% } else {
+               asetPerLantai.forEach(aset => { %>
+            <li>Lantai <%= aset.nama_lantai %> (ID: <%= aset.lantai_id %>): Total aset <%= aset.total_aset %></li>
+          <%   });
+             } %>
+        </ol>
       </div>
     </div>
+  </div>
 
     <!-- Existing Monitoring Data Table (collapsed by a toggle button if needed) -->
     <button id="toggleTableBtn">Tampilkan Tabel Monitoring</button>
